@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OfficeQuest - Painel do Mestre</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="main-wrapper">
+        <div class="top-bar">
+            <div class="player-info">
+                <div class="avatar" style="background-color: #f1c40f;">DM<br>Admin</div>
+                <div class="stats">
+                    <h1 id="playerName" data-cy="admin-name">Mestre da Guilda</h1>
+                    <div style="font-size: 10px; color: #7f8c8d;">Centro de Comando</div>
+                </div>
+            </div>
+            <div class="actions">
+                <button class="btn-pixel logout-btn" data-cy="btn-logout" onclick="logout()">Sair</button>
+            </div>
+        </div>
+
+        <div class="admin-layout">
+            
+            <div class="dashboard-section" data-cy="dashboard-report">
+                <h2 class="section-title">📈 RELATÓRIO DE PERFORMANCE (SPRINT)</h2>
+                <div class="report-grid">
+                    <div class="report-card">
+                        <div class="report-label">Gold Acumulado</div>
+                        <div class="report-value gold-text">
+                            <span class="coin-icon">💰</span> <span id="repTotalGold">0</span>
+                        </div>
+                    </div>
+                    <div class="report-card">
+                        <div class="report-label">Integridade do SLA</div>
+                        <div class="report-value sla-text">
+                            <span>🛡️</span> <span id="repSlaHealth">100%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="factions-grid">
+                    <div class="faction-card">
+                        <h3 class="section-title" style="font-size: 10px; border-bottom: none;">🏆 TOP PERFORMERS (XP)</h3>
+                        <div id="topPerformersList"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-section" data-cy="dashboard-metrics">
+                <h2 class="section-title">📊 DESEMPENHO DAS FACÇÕES (SPRINT ATUAL)</h2>
+                <div class="factions-grid" id="factionsGrid"></div>
+            </div>
+
+            <div class="dashboard-section" data-cy="dashboard-forge">
+                <h2 class="section-title">🔨 FORJA DE LOOT (GERENCIAR ITEM)</h2>
+                <form id="lootForm" class="forge-form" data-cy="form-add-loot">
+                    <div class="forge-group">
+                        <label for="lootName">Nome do Item</label>
+                        <input type="text" id="lootName" class="pixel-input" data-cy="input-loot-name" placeholder="Ex: Moletom Épico" required autocomplete="off">
+                    </div>
+                    <div class="forge-group">
+                        <label for="lootPrice">Preço (Gold 💰)</label>
+                        <input type="number" id="lootPrice" class="pixel-input" data-cy="input-loot-price" placeholder="Ex: 800" required min="1">
+                    </div>
+                    <div class="forge-group">
+                        <label for="lootImage">Imagem (Pixel Art)</label>
+                        <select id="lootImage" class="pixel-input" data-cy="select-loot-image">
+                            <option value="assets/imgs/camiseta_pixel.jpg">Camiseta/Roupa</option>
+                            <option value="assets/imgs/caneca_pixel.jpg">Caneca/Copo</option>
+                            <option value="assets/imgs/mochila_pixel.jpg">Mochila/Bolsa</option>
+                            <option value="assets/imgs/mouse_pixel.jpg">Eletrônico/Mouse</option>
+                            <option value="assets/imgs/caneta_pixel.jpg">Caneta/Acessório</option>
+                        </select>
+                    </div>
+                    <button type="submit" id="btnSubmitLoot" class="btn-pixel" data-cy="btn-submit-loot" style="background-color: #8e44ad; padding: 15px;">FORJAR ITEM</button>
+                    <button type="button" id="btnCancelEdit" class="btn-pixel" style="background-color: #7f8c8d; padding: 15px; display: none;" onclick="cancelEdit()">CANCELAR</button>
+                </form>
+            </div>
+
+            <div class="dashboard-section" data-cy="dashboard-inventory">
+                <h2 class="section-title">📦 ESTOQUE DA GUILDA (CADASTRADOS)</h2>
+                <div id="inventoryList" class="inventory-list" data-cy="inventory-list"></div>
+            </div>
+
+            <div class="dashboard-section" data-cy="dashboard-users">
+                <h2 class="section-title">🛡️ MEMBROS DA GUILDA (ROSTER)</h2>
+                <div class="users-table-wrapper">
+                    <table class="users-table" data-cy="users-table">
+                        <thead>
+                            <tr>
+                                <th>Avatar</th>
+                                <th>Aventureiro (Herói)</th>
+                                <th>Nível (XP)</th>
+                                <th>Entregas (Quests)</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Edição de Loot -->
+    <div id="editLootModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h2 class="section-title">🔨 EDITAR LOOT</h2>
+            <form id="editLootForm" class="forge-form">
+                <div class="forge-group">
+                    <label>Novo Nome</label>
+                    <input type="text" id="editLootName" class="pixel-input" required>
+                </div>
+                <div class="forge-group">
+                    <label>Novo Preço</label>
+                    <input type="number" id="editLootPrice" class="pixel-input" required>
+                </div>
+                <div class="actions" style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn-pixel" style="background-color: #27ae60;">SALVAR</button>
+                    <button type="button" class="btn-pixel" style="background-color: #7f8c8d;" onclick="closeEditModal()">CANCELAR</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast-container" data-cy="toast-container"></div>
+    
+    <script src="js/utils.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
