@@ -10,7 +10,7 @@
     <div class="main-wrapper">
         <div class="top-bar">
             <div class="player-info">
-                <div class="avatar" style="background-color: #f1c40f;">DM<br>Admin</div>
+                <img src="assets/imgs/caneca_pixel.jpg" alt="Avatar" class="avatar" id="adminAvatar" style="cursor: pointer; object-fit: cover; border-color: #797979;" onclick="openProfileModal()" title="Editar Perfil">
                 <div class="stats">
                     <h1 id="playerName" data-cy="admin-name">Mestre da Guilda</h1>
                     <div style="font-size: 10px; color: #7f8c8d;">Centro de Comando</div>
@@ -149,6 +149,7 @@
                                 <th>Avatar</th>
                                 <th>Aventureiro (Herói)</th>
                                 <th>Nível (XP)</th>
+                                <th>Gold (💰)</th>
                                 <th>Entregas (Quests)</th>
                                 <th>Status</th>
                             </tr>
@@ -177,6 +178,37 @@
                 <div class="actions" style="display: flex; gap: 10px;">
                     <button type="submit" class="btn-pixel" style="background-color: #27ae60;">SALVAR</button>
                     <button type="button" class="btn-pixel" style="background-color: #7f8c8d;" onclick="closeEditModal()">CANCELAR</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="profileModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h2 class="section-title" style="text-align: center;">🛡️ MESTRE DA GUILDA</h2>
+            <img src="" id="modalAvatarPreview" class="avatar-preview" alt="Preview" style="border-color: #f1c40f;">
+            <form id="profileForm">
+                <div class="form-group">
+                    <label>Nome de Comando</label>
+                    <input type="text" id="editProfileName" class="pixel-input" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label style="text-align: center; margin-top: 15px;">Escolha um Avatar</label>
+                    <div class="avatar-grid">
+                        <img src="assets/imgs/caneca_pixel.jpg" class="avatar-option" onclick="selectAvatar('assets/imgs/caneca_pixel.jpg', this)">
+                        <img src="assets/imgs/mouse_pixel.jpg" class="avatar-option" onclick="selectAvatar('assets/imgs/mouse_pixel.jpg', this)">
+                        <img src="assets/imgs/mochila_pixel.jpg" class="avatar-option" onclick="selectAvatar('assets/imgs/mochila_pixel.jpg', this)">
+                        <img src="assets/imgs/caneta_pixel.jpg" class="avatar-option" onclick="selectAvatar('assets/imgs/caneta_pixel.jpg', this)">
+                    </div>
+                </div>
+                <div class="modal-divider"><span>OU</span></div>
+                <div class="form-group">
+                    <label>URL da Imagem Customizada</label>
+                    <input type="text" id="editProfilePic" class="pixel-input" placeholder="Cole o link...">
+                </div>
+                <div class="actions" style="margin-top: 25px; justify-content: space-between;">
+                    <button type="button" class="btn-pixel" style="background-color: #7f8c8d;" onclick="closeProfileModal()">CANCELAR</button>
+                    <button type="submit" class="btn-pixel" style="background-color: #27ae60;">SALVAR</button>
                 </div>
             </form>
         </div>

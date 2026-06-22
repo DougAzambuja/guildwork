@@ -22,15 +22,16 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
             localStorage.setItem('guild_token', data.token);
             localStorage.setItem('guild_role',  data.user.role);
 
-            // FIX: backend retorna 'nome', não 'name'
-            localStorage.setItem('guild_user', data.user.nome);
+            // CORREÇÃO: O Back-end envia a chave como 'name' (que recebe o valor de 'nome' do banco)
+            const displayName = data.user.name || data.user.username;
+            localStorage.setItem('guild_user', displayName);
 
             // Chaves com prefixo de usuário para o admin conseguir ler separado
             localStorage.setItem('guild_active_user',            `player_${usernameInput}`);
-            localStorage.setItem(`guild_user_${usernameInput}`,  data.user.nome);
+            localStorage.setItem(`guild_user_${usernameInput}`,  displayName);
 
             if (data.user.role === 'admin') {
-                showToast(`⚔️ Bem-vindo, ${data.user.nome}! Abrindo os portões do castelo...`);
+                showToast(`⚔️ Bem-vindo, ${displayName}! Abrindo os portões do castelo...`);
                 setTimeout(() => { window.location.href = 'admin.html'; }, 1500);
             } else {
                 showToast(`🛡️ Login com sucesso! Preparando suas missões...`);

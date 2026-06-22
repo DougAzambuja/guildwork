@@ -12,10 +12,25 @@ document.addEventListener('DOMContentLoaded', () => {
     initAdminPanel();
 });
 
+let adminData = { name: '', avatar: '' };
+
 async function initAdminPanel() {
-    const adminName = localStorage.getItem('guild_user') || 'Mestre da Guilda';
-    const nameEl    = document.getElementById('playerName');
-    if (nameEl) nameEl.innerText = adminName;
+    // Busca os dados reais do Admin no banco de dados!
+    try {
+        const res = await fetch(`${API_URL}/players/me`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            adminData.name = data.nome || data.username;
+            adminData.avatar = data.avatar_url || 'assets/imgs/caneca_pixel.jpg';
+            
+            document.getElementById('playerName').innerText = adminData.name;
+            document.getElementById('adminAvatar').src = adminData.avatar;
+        }
+    } catch (err) {
+        console.error('Erro ao buscar perfil do admin:', err);
+    }
 
     setupLootForm();
     setupQuestForm();
@@ -24,7 +39,6 @@ async function initAdminPanel() {
     await renderUsersTable();
     await renderAdminQuests();
 
-    // Atualiza roster a cada 10 segundos
     setInterval(renderUsersTable, 10000);
 }
 
@@ -251,25 +265,30 @@ function setupQuestForm() {
 // 4. ROSTER E STATUS DOS JOGADORES
 // ==========================================
 async function renderUsersTable() {
-    const tbody = document.getElementById('usersTableBody');
-    if (!tbody) return;
+    const tableBody = document.getElementById('usersTableBody');
+    if (!tableBody) return;
 
     try {
-        // FIX: endpoint correto é /admin/roster
         const response = await fetch(`${API_URL}/admin/roster`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (response.ok) {
             const players = await response.json();
-
+            
+            // Atualiza HUD superior
             renderDashboardStats(players);
 
-            tbody.innerHTML = players.map(p => `
+            tableBody.innerHTML = players.map(p => `
                 <tr>
                     <td><img src="${p.avatar_url || 'assets/imgs/caneca_pixel.jpg'}" style="width:30px; border-radius:4px; object-fit:cover;"></td>
                     <td>${p.nome || p.username}</td>
                     <td>Lv.${p.level || 1} — ${p.xp || 0} XP</td>
+                    
+                    <td style="color: #f1c40f; font-weight: bold; text-shadow: 1px 1px 0 #000;">
+                        ${p.coins || 0}
+                    </td>
+                    
                     <td>${p.quests_completed || 0}</td>
                     <td><span class="status-badge ${p.is_cursed ? 'cursed' : 'online'}">
                         ${p.is_cursed ? '🚨 Maldição (Bug Aberto)' : '✅ Saudável'}
@@ -308,4 +327,75 @@ async function renderAdminQuests() {
     }
 }
 
-// Lembre-se de adicionar `await renderAdminQuests();` dentro do seu initAdminPanel() e após o form de criar quest dar sucesso!
+// ==========================================
+// LÓGICA DO MODAL DO ADMIN
+// ==========================================
+let tempSelectedAvatar = '';
+
+window.openProfileModal = () => {
+    document.getElementById('profileModal').style.display = 'flex';
+    document.getElementById('editProfileName').value = adminData.name;
+    tempSelectedAvatar = adminData.avatar;
+    document.getElementById('modalAvatarPreview').src = tempSelectedAvatar;
+    document.querySelectorAll('.avatar-option').forEach(el => {
+        el.classList.remove('selected');
+        if (el.getAttribute('src') === adminData.avatar) el.classList.add('selected');
+    });
+};
+
+window.closeProfileModal = () => {
+    document.getElementById('profileModal').style.display = 'none';
+};
+
+window.selectAvatar = (url, element) => {
+    tempSelectedAvatar = url;
+    document.getElementById('modalAvatarPreview').src = url;
+    document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
+    if (element) element.classList.add('selected');
+};
+
+const editProfilePicEl = document.getElementById('editProfilePic');
+if (editProfilePicEl) {
+    editProfilePicEl.addEventListener('input', function(e) {
+        const val = e.target.value.trim();
+        if (val) {
+            tempSelectedAvatar = val;
+            document.getElementById('modalAvatarPreview').src = val;
+            document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
+        }
+    });
+}
+
+const profileForm = document.getElementById('profileForm');
+if (profileForm) {
+    profileForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newName = document.getElementById('editProfileName').value.trim();
+        const newPic  = document.getElementById('editProfilePic').value.trim() || tempSelectedAvatar;
+
+        try {
+            const res = await fetch(`${API_URL}/players/me`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ nome: newName, avatar_url: newPic })
+            });
+
+            if (res.ok) {
+                adminData.name   = newName;
+                adminData.avatar = newPic;
+                document.getElementById('playerName').innerText = adminData.name;
+                document.getElementById('adminAvatar').src = adminData.avatar;
+                localStorage.setItem('guild_user', newName);
+                
+                closeProfileModal();
+                showToast('Identidade Forjada com Sucesso!');
+                renderUsersTable(); // Atualiza a tabela na mesma hora!
+            }
+        } catch (err) {
+            showToast('Erro de conexão com a Forja.', 'error');
+        }
+    });
+}

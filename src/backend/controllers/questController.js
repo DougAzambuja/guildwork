@@ -22,19 +22,24 @@ exports.completeQuest = async (req, res) => {
         const quest = await Quest.findById(questId);
 
         if (!quest) {
-            return res.status(404).json({ message: 'Quest não encontrada nos registros da Guilda.' });
+            return res.status(404).json({ message: 'Quest não encontrada nos registros.' });
         }
 
-        // Calcula XP baseando-se na fonte da verdade (Banco de Dados)
         let xpGained    = quest.xp_reward;
         let coinsGained = quest.coin_reward;
 
-        // Regra de negócio: Quests de suporte variam pelo CSAT (1 a 5)
         if (quest.type === 'support' && csatScore) {
             xpGained = Math.round(quest.xp_reward * (csatScore / 5));
         }
 
-        // Registra a conclusão para histórico e auditoria
+        // 🚨 NOVA REGRA DE NEGÓCIO: PENALIDADE DA MALDIÇÃO 
+        let wasCursed = user.is_cursed;
+        if (wasCursed) {
+            xpGained = Math.floor(xpGained / 2);
+            coinsGained = Math.floor(coinsGained / 2);
+            user.is_cursed = false; // A maldição é quebrada assim que ele entrega a missão!
+        }
+
         await QuestCompletion.create({
             user_id: user._id,
             quest_id: quest._id,
@@ -43,12 +48,10 @@ exports.completeQuest = async (req, res) => {
             csat_score: csatScore || null
         });
 
-        // Atualiza a carteira e experiência do jogador
         user.quests_completed = (user.quests_completed || 0) + 1;
         user.xp += xpGained;
         user.coins += coinsGained;
 
-        // Motor de Level Up
         let leveledUp = false;
         if (user.xp >= MAX_XP) {
             user.xp -= MAX_XP;
@@ -58,12 +61,12 @@ exports.completeQuest = async (req, res) => {
 
         await user.save();
 
-        // Resposta formatada para o frontend atualizar a UI instantaneamente
         res.json({
-            message: 'Quest concluída e validada pelo servidor!',
+            message: 'Quest concluída!',
             xpGained,
             coinsGained,
             leveledUp,
+            wasCursed, // Avisa o Front-end que a maldição foi processada
             updatedState: {
                 xp: user.xp,
                 coins: user.coins,
@@ -75,4 +78,4 @@ exports.completeQuest = async (req, res) => {
     } catch (err) {
         res.status(500).json({ message: 'Erro interno.', error: err.message });
     }
-};  
+};

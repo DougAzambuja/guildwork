@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const LootItem = require('../models/LootItem');
 
 const MAX_XP = 10000;
 
@@ -76,21 +77,36 @@ exports.updateCurse = async (req, res) => {
     }
 };
 
-// POST /api/players/checkout — debita moedas com segurança
+// POST /api/players/checkout — debita moedas com segurança consultando o banco
 exports.checkout = async (req, res) => {
     try {
-        const { totalValue, items } = req.body;
+        const { items } = req.body; // Ignoramos o totalValue do front-end
         const user = await User.findById(req.user.id);
 
+        if (!items || items.length === 0) {
+            return res.status(400).json({ message: 'Carrinho vazio.' });
+        }
+
+        let realTotalValue = 0;
+
+        // Calcula o valor real consultando a "fonte da verdade" (Banco de Dados)
+        for (const cartItem of items) {
+            const dbItem = await LootItem.findOne({ name: cartItem.name });
+            if (!dbItem) {
+                return res.status(404).json({ message: `Item ${cartItem.name} não encontrado na forja.` });
+            }
+            realTotalValue += (dbItem.price * cartItem.quantity);
+        }
+
         // Validação back-end: Impede que o jogador burle o front-end
-        if (user.coins < totalValue) {
+        if (user.coins < realTotalValue) {
             return res.status(400).json({ message: 'Gold insuficiente. A guilda detectou uma anomalia.' });
         }
 
-        user.coins -= totalValue;
+        user.coins -= realTotalValue;
         await user.save();
         
-        res.json({ message: 'Compra processada.', updatedCoins: user.coins });
+        res.json({ message: 'Compra processada com segurança.', updatedCoins: user.coins });
 
     } catch (err) {
         res.status(500).json({ message: 'Erro interno.', error: err.message });

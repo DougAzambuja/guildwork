@@ -35,6 +35,7 @@ const UserSchema = new mongoose.Schema({
     xp:       { type: Number, default: 0 },
     coins:    { type: Number, default: 100 },
     level:    { type: Number, default: 1 },
+    quests_completed: { type: Number, default: 0 },
     is_cursed:{ type: Boolean, default: false },
 
 }, { timestamps: true });
