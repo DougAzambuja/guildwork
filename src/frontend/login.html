@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OfficeQuest - Login da Guilda</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div class="login-wrapper">
+        <div class="login-box">
+            <h2 class="login-title">OFFICE QUEST<br><br>ENTRAR NA GUILDA</h2>
+            
+            <form id="loginForm" data-cy="login-form">
+                <div class="form-group">
+                    <label for="username">Usuário (Classe)</label>
+                    <input type="text" id="username" class="pixel-input" data-cy="input-username" placeholder="Digite seu nome..." required autocomplete="off">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Senha Secreta</label>
+                    <input type="password" id="password" class="pixel-input" data-cy="input-password" placeholder="********" required>
+                </div>
+                
+                <button type="submit" class="btn-pixel btn-login" data-cy="btn-submit-login">PRESS START</button>
+            </form>
+
+            <div class="login-hint">
+                <strong>DICAS DE ACESSO (BANCO DE DADOS):</strong><br><br>
+                👤 Mestre da Guilda (Admin):<br>Usuário: admin | Senha: 123<br><br>
+                👤 Aventureiro QA:<br>Usuário: funcionario | Senha: 123
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" data-cy="toast-container"></div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/login.js"></script>
+</body>
+</html>

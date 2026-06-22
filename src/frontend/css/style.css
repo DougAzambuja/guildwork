@@ -1,0 +1,975 @@
+/* =========================================
+   1. IMPORTAÇÕES E VARIÁVEIS GLOBAIS
+   ========================================= */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+:root {
+    --text-color: #000000;
+    --primary-color: #4CAF50;
+    --coin-color: #f1c40f;
+    --paper-color: #f4e8c1;
+    --danger-color: #e74c3c;
+    --header-bg: rgba(255, 255, 255, 0.95);
+    --shop-panel: rgba(20, 20, 20, 0.85); /* Usado caso queira escurecer fundos depois */
+}
+
+/* =========================================
+   2. BASE E ESTRUTURA
+   ========================================= */
+body {
+    font-family: 'Press Start 2P', cursive;
+    margin: 0;
+    padding: 0;
+    background-image: url('../assets/imgs/fundo_arvores_pixel.jpg');
+    background-size: cover;
+    background-position: center bottom;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+}
+
+.main-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+/* Painéis de Madeira (Usado no Mural e na Loja) */
+/* OBS: Ajuste a extensão para .jpg ou .png dependendo de como salvou a imagem */
+.board-container, 
+.shop-container {
+    background-image: url('../assets/imgs/fundo_placa_madeira_pixel.jpg');
+    background-repeat: repeat;
+    border: 12px solid #3e2312;
+    padding: 40px;
+    flex-grow: 1;
+}
+
+/* Sombra específica do Mural */
+.board-container {
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 12px 12px 0px rgba(0,0,0,0.6);
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 30px;
+    align-items: start;
+}
+
+/* Sombra específica da Loja (mais escura) */
+.shop-container {
+    box-shadow: inset 0 0 40px rgba(0,0,0,0.9), 12px 12px 0px rgba(0,0,0,0.6);
+    width: 70%;
+}
+
+/* =========================================
+   3. COMPONENTES GLOBAIS (HEADER E BOTÕES)
+   ========================================= */
+.top-bar {
+    background-color: var(--header-bg);
+    border: 6px solid #111;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #111;
+    box-shadow: 8px 8px 0px rgba(0,0,0,0.4);
+    z-index: 10;
+    margin-bottom: 30px;
+}
+
+.player-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.avatar {
+    width: 60px;
+    height: 60px;
+    background-color: #ddd;
+    border: 4px solid #111;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    text-align: center;
+}
+
+.stats h1 {
+    font-size: 16px;
+    color: #d35400;
+    margin: 0 0 10px 0;
+}
+
+.coin-display {
+    font-size: 14px; /* Padronizado o tamanho da loja */
+    color: #b8860b;
+    background: #fff;
+    border: 2px solid #111;
+    padding: 5px 10px;
+    display: inline-block;
+}
+
+.coin-icon {
+    color: var(--coin-color);
+    text-shadow: 1px 1px 0 #000;
+}
+
+.btn-pixel {
+    font-family: 'Press Start 2P', cursive;
+    background-color: #e67e22; /* Cor padrão alterada para laranja da loja */
+    color: #fff;
+    border: 4px solid #111;
+    padding: 10px;
+    font-size: 10px;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px #111;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-pixel:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0px 0px 0px transparent;
+}
+
+.actions {
+    display: flex;
+    gap: 15px;
+}
+
+.btn-pixel.logout-btn {
+    background-color: #c0392b;
+}
+
+.btn-pixel.logout-btn:hover {
+    background-color: #e74c3c;
+}
+
+/* =========================================
+   4. ESPECÍFICOS DO MURAL (INDEX)
+   ========================================= */
+.xp-container {
+    width: 100%;
+    max-width: 400px;
+    background-color: #000;
+    border: 4px solid #111;
+    height: 15px;
+    position: relative;
+    margin-bottom: 5px;
+}
+
+.xp-bar {
+    background-color: var(--primary-color);
+    height: 100%;
+    width: 45%;
+    transition: width 0.5s ease-in-out;
+}
+
+.actions {
+    display: flex;
+    gap: 15px;
+}
+
+/* Modificadores de botão do Mural */
+.actions .btn-pixel { background-color: #2980b9; } /* Botão Sync Jira */
+.btn-pixel.shop-btn { background-color: #8e44ad; } /* Botão Ir pra Loja */
+
+.quest-paper {
+    background-color: var(--paper-color);
+    border: 4px solid #111;
+    padding: 20px;
+    box-shadow: 8px 8px 0px rgba(0,0,0,0.6);
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.1s;
+}
+
+.quest-paper:nth-child(even) { transform: rotate(2deg); }
+.quest-paper:nth-child(odd) { transform: rotate(-2deg); }
+.quest-paper:hover { transform: scale(1.05); z-index: 5; }
+.quest-paper.urgent { border-color: var(--danger-color); background-color: #ffcccc; }
+
+.quest-title { font-size: 12px; line-height: 1.5; margin-bottom: 20px; min-height: 50px; }
+.quest-meta { display: flex; justify-content: space-between; font-size: 10px; border-top: 4px dotted #888; padding-top: 10px; color: #333; }
+
+.xp-reward { color: #1e824c; font-weight: bold; }
+.coin-reward { color: #d35400; font-weight: bold; }
+
+.completed-stamp {
+    display: none; position: absolute; top: 30%; left: 10%; color: var(--danger-color);
+    border: 6px solid var(--danger-color); padding: 10px; font-size: 16px;
+    transform: rotate(-15deg); background: rgba(255,255,255,0.8); font-weight: bold;
+}
+
+.quest-paper.done .completed-stamp { display: block; }
+.quest-paper.done { pointer-events: none; opacity: 0.8; filter: grayscale(0.5); }
+
+/* =========================================
+   5. ESPECÍFICOS DA LOJA E CARRINHO (LOJA.HTML)
+   ========================================= */
+.shop-layout {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.shop-title {
+    text-align: center;
+    color: #fff;
+    text-shadow: 4px 4px 0 #000;
+    margin-top: 0;
+    margin-bottom: 40px;
+}
+
+.items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 30px;
+}
+
+.shop-item {
+    background-color: #2c3e50;
+    border: 4px solid #bdc3c7;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 6px 6px 0px rgba(0,0,0,0.5);
+    transition: transform 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.shop-item:hover { transform: translateY(-5px); border-color: #f1c40f; }
+
+.item-name {
+    color: #ecf0f1;
+    font-size: 12px;
+    margin-bottom: 15px;
+    line-height: 1.4;
+    height: 30px;
+}
+
+.item-img {
+    width: 80px;
+    height: 80px;
+    background-color: #34495e;
+    border: 2px dashed #7f8c8d;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #7f8c8d;
+    image-rendering: pixelated;
+}
+
+.item-price {
+    color: var(--coin-color);
+    font-size: 12px;
+    margin-bottom: 15px;
+}
+
+.btn-buy {
+    background-color: #27ae60;
+    width: 100%;
+}
+
+.btn-buy:disabled {
+    background-color: #7f8c8d;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+/* Configurações do Carrinho de Compras lateral */
+.cart-container {
+    width: 30%;
+    background-color: #2c3e50;
+    border: 6px solid #111;
+    padding: 20px;
+    color: #fff;
+    box-shadow: 8px 8px 0px rgba(0,0,0,0.6);
+    position: sticky;
+    top: 20px;
+}
+
+.cart-title { 
+    font-size: 14px; 
+    color: #f1c40f; 
+    margin-bottom: 20px; 
+    text-align: center; 
+    border-bottom: 4px dashed #7f8c8d; 
+    padding-bottom: 10px;
+}
+
+.cart-items { 
+    min-height: 100px; 
+    margin-bottom: 20px; 
+    font-size: 10px; 
+    line-height: 1.8; 
+}
+
+.cart-item-row { 
+    display: flex; 
+    justify-content: space-between; 
+    border-bottom: 2px solid #34495e; 
+    padding: 5px 0; 
+}
+
+.cart-total { 
+    font-size: 12px; 
+    text-align: right; 
+    margin-bottom: 20px; 
+    color: #e74c3c; 
+}
+
+.btn-checkout { 
+    background-color: #27ae60; 
+    width: 100%; 
+    font-size: 12px; 
+    padding: 15px; 
+}
+
+.btn-checkout:hover { 
+    background-color: #2ecc71; 
+}
+
+/* =========================================
+   6. NOVOS COMPONENTES DO CARRINHO
+   ========================================= */
+.cart-item-info {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.item-qtd {
+    color: #f1c40f;
+    font-weight: bold;
+}
+
+.cart-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-remove {
+    background-color: #c0392b;
+    color: white;
+    border: 2px solid #111;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 8px;
+    padding: 4px 6px;
+    cursor: pointer;
+    box-shadow: 2px 2px 0px #111;
+}
+
+.btn-remove:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0px 0px 0px transparent;
+}
+
+.btn-clear {
+    background-color: #7f8c8d;
+    width: 100%;
+    font-size: 10px;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.btn-clear:hover {
+    background-color: #95a5a6;
+}
+
+/* =========================================
+   7. FORMULÁRIOS E TELA DE LOGIN
+   ========================================= */
+.login-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.login-box {
+    background-color: #2c3e50;
+    border: 8px solid #111;
+    padding: 40px;
+    box-shadow: 12px 12px 0px rgba(0,0,0,0.6);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    position: relative;
+}
+
+.login-title {
+    color: #f1c40f;
+    text-shadow: 2px 2px 0 #000;
+    margin-bottom: 30px;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    color: #ecf0f1;
+    font-size: 10px;
+    margin-bottom: 8px;
+}
+
+.pixel-input {
+    font-family: 'Press Start 2P', cursive;
+    width: 100%;
+    padding: 12px;
+    border: 4px solid #111;
+    background-color: #ecf0f1;
+    font-size: 10px;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.pixel-input:focus {
+    border-color: var(--primary-color);
+}
+
+.btn-login {
+    background-color: #27ae60;
+    width: 100%;
+    font-size: 12px;
+    padding: 15px;
+    margin-top: 10px;
+}
+
+.btn-login:hover {
+    background-color: #2ecc71;
+}
+
+.login-hint {
+    font-size: 8px;
+    color: #95a5a6;
+    margin-top: 20px;
+    line-height: 1.5;
+}
+.mural-layout {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+/* Reduz o mural de 100% para 70% para caber a barra lateral */
+.mural-layout .board-container {
+    width: 70%;
+}
+
+.objectives-container {
+    width: 30%;
+    background-color: #2c3e50;
+    border: 6px solid #111;
+    padding: 20px;
+    color: #fff;
+    box-shadow: 8px 8px 0px rgba(0,0,0,0.6);
+    position: sticky;
+    top: 20px;
+}
+
+.objectives-title {
+    font-size: 14px;
+    color: #f1c40f;
+    margin-bottom: 20px;
+    text-align: center;
+    border-bottom: 4px dashed #7f8c8d;
+    padding-bottom: 10px;
+}
+
+.objective-item {
+    margin-bottom: 20px;
+}
+
+.objective-name {
+    font-size: 10px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.obj-bar-bg {
+    width: 100%;
+    background-color: #111;
+    border: 2px solid #7f8c8d;
+    height: 12px;
+    position: relative;
+}
+
+.obj-bar-fill {
+    background-color: #3498db; /* Azul para a barra de progresso */
+    height: 100%;
+    width: 0%; /* O JavaScript vai controlar isso */
+    transition: width 0.5s ease-in-out;
+}
+
+.obj-bar-fill.gold-bar {
+    background-color: #e67e22; /* Laranja para a meta de gold */
+}
+
+.obj-bar-fill.complete {
+    background-color: #2ecc71 !important; /* Fica verde quando chega em 100% */
+}
+
+/* =========================================
+   8. LAYOUT DO MURAL E OBJETIVOS
+   ========================================= */
+.mural-layout {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+/* Quadro Maior e com Rolagem (Scroll) Responsiva */
+.mural-layout .board-container {
+    width: 75%;
+    height: 65vh; /* Força o quadro a sempre ocupar 65% da altura da tela */
+    min-height: 550px; /* Garante que o tamanho mínimo sempre comporte umas 6 missões */
+    overflow-y: auto; /* A barra de rolagem só aparece se o conteúdo passar desse tamanho */
+    align-content: start; /* Fixa as 2 missões iniciais lá no topo, deixando o restante da madeira visível */
+}
+
+/* Scrollbar Temática em Pixel Art para o Quadro */
+.mural-layout .board-container::-webkit-scrollbar {
+    width: 16px;
+}
+.mural-layout .board-container::-webkit-scrollbar-track {
+    background: #3e2312; /* Cor do fundo da madeira */
+    border-left: 4px solid #111;
+}
+.mural-layout .board-container::-webkit-scrollbar-thumb {
+    background: #f1c40f; /* Cor amarela combinando com o ouro */
+    border: 3px solid #111;
+}
+.mural-layout .board-container::-webkit-scrollbar-thumb:hover {
+    background: #e67e22; /* Fica laranja ao passar o mouse */
+}
+
+/* Painel Lateral Redimensionado */
+.objectives-container {
+    width: 25%; /* Reduzido para encaixar com os 75% do quadro */
+    background-color: #2c3e50;
+    border: 6px solid #111;
+    padding: 20px;
+    color: #fff;
+    box-shadow: 8px 8px 0px rgba(0,0,0,0.6);
+    position: sticky;
+    top: 20px;
+}
+
+.objectives-title {
+    font-size: 14px;
+    color: #f1c40f;
+    margin-bottom: 20px;
+    text-align: center;
+    border-bottom: 4px dashed #7f8c8d;
+    padding-bottom: 10px;
+}
+
+.objective-item {
+    margin-bottom: 20px;
+}
+
+.objective-name {
+    font-size: 10px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.obj-bar-bg {
+    width: 100%;
+    background-color: #111;
+    border: 2px solid #7f8c8d;
+    height: 12px;
+    position: relative;
+}
+
+.obj-bar-fill {
+    background-color: #3498db; /* Azul para a barra de progresso */
+    height: 100%;
+    width: 0%; /* O JavaScript vai controlar isso */
+    transition: width 0.5s ease-in-out;
+}
+
+.obj-bar-fill.gold-bar {
+    background-color: #e67e22; /* Laranja para a meta de gold */
+}
+
+.obj-bar-fill.complete {
+    background-color: #2ecc71 !important; /* Fica verde quando chega em 100% */
+}
+
+/* =========================================
+   9. ALERTAS VISUAIS (TOASTS)
+   ========================================= */
+#toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pixel-toast {
+    background-color: #2c3e50;
+    color: #fff;
+    border: 4px solid #f1c40f;
+    padding: 15px 20px;
+    font-size: 10px;
+    line-height: 1.5;
+    box-shadow: 6px 6px 0px rgba(0,0,0,0.8);
+    animation: slideIn 0.3s ease-out, fadeOut 0.5s ease-in 3.5s forwards;
+}
+
+.pixel-toast.error {
+    border-color: #e74c3c;
+    color: #e74c3c;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeOut {
+    to { opacity: 0; visibility: hidden; }
+}
+
+/* =========================================
+   10. PAINEL DO MESTRE DA GUILDA (ADMIN)
+   ========================================= */
+.admin-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.dashboard-section {
+    background-color: #2c3e50;
+    border: 6px solid #111;
+    padding: 20px;
+    box-shadow: 8px 8px 0px rgba(0,0,0,0.6);
+}
+
+.section-title {
+    color: #f1c40f;
+    font-size: 14px;
+    margin-top: 0;
+    margin-bottom: 20px;
+    border-bottom: 4px dashed #7f8c8d;
+    padding-bottom: 10px;
+}
+
+/* Cards das Facções */
+.factions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.faction-card {
+    background-color: #34495e;
+    border: 4px solid #7f8c8d;
+    padding: 15px;
+    color: #ecf0f1;
+}
+
+.faction-name {
+    font-size: 12px;
+    margin-bottom: 15px;
+    color: #3498db;
+}
+
+/* Formulário da Forja de Loot */
+.forge-form {
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.forge-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.forge-group label {
+    display: block;
+    font-size: 10px;
+    color: #ecf0f1;
+    margin-bottom: 8px;
+}
+/* Estoque e Gerenciamento de Itens (Admin) */
+.inventory-list {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.inventory-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #34495e;
+    padding: 10px 15px;
+    border: 2px solid #7f8c8d;
+}
+
+.inventory-item-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 10px;
+    color: #fff;
+}
+
+.inventory-item-info img {
+    width: 40px;
+    height: 40px;
+    image-rendering: pixelated;
+    border: 2px solid #111;
+    background-color: #2c3e50;
+}
+
+.inventory-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-edit { background-color: #2980b9; font-size: 8px; padding: 6px 12px; }
+.btn-delete { background-color: #c0392b; font-size: 8px; padding: 6px 12px; }
+
+/* =========================================
+   11. MODAIS (PERFIL E CONFIGURAÇÕES)
+   ========================================= */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+.modal-content {
+    background-color: #2c3e50;
+    border: 6px solid #111;
+    padding: 30px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 12px 12px 0px rgba(0,0,0,0.8);
+    color: white;
+}
+
+.avatar-preview {
+    width: 80px;
+    height: 80px;
+    border: 4px solid #f1c40f;
+    margin: 0 auto 20px auto;
+    display: block;
+    background-color: #111;
+    object-fit: cover;
+    image-rendering: pixelated;
+}
+
+/* Módulo de Criação de Avatar (Seleção) */
+.avatar-grid {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.avatar-option {
+    width: 45px;
+    height: 45px;
+    border: 2px solid #7f8c8d;
+    cursor: pointer;
+    object-fit: cover;
+    image-rendering: pixelated;
+    transition: transform 0.2s;
+    background-color: #111;
+}
+
+.avatar-option:hover {
+    transform: scale(1.1);
+    border-color: #bdc3c7;
+}
+
+.avatar-option.selected {
+    border: 3px solid #2ecc71;
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+    transform: scale(1.1);
+}
+
+.modal-divider {
+    text-align: center;
+    font-size: 8px;
+    color: #7f8c8d;
+    margin: 20px 0;
+    border-bottom: 2px dashed #7f8c8d;
+    line-height: 0.1em;
+}
+
+.modal-divider span {
+    background: #2c3e50;
+    padding: 0 10px;
+}
+
+/* =========================================
+   12. TABELA DE AVENTUREIROS (ADMIN)
+   ========================================= */
+.users-table-wrapper {
+    overflow-x: auto;
+}
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+    color: #fff;
+    margin-top: 20px;
+}
+
+.users-table th, .users-table td {
+    border: 2px solid #7f8c8d;
+    padding: 12px;
+    text-align: left;
+}
+
+.users-table th {
+    background-color: #34495e;
+    color: #f1c40f;
+}
+
+.users-table tr:nth-child(even) {
+    background-color: rgba(52, 73, 94, 0.5);
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border: 2px solid #111;
+    font-size: 8px;
+}
+.status-badge.online { background-color: #27ae60; }
+.status-badge.cursed { background-color: #c0392b; animation: pulse 1.5s infinite; }
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* =========================================
+   13. MECÂNICA DE REGRAS: MALDIÇÃO DE SLA
+   ========================================= */
+/* Texto do cronômetro dentro do card */
+.quest-timer {
+    font-size: 9px;
+    color: #c0392b;
+    margin-top: 12px;
+    text-align: center;
+    font-weight: bold;
+    border: 2px dashed #c0392b;
+    padding: 4px;
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* --- STATUS 1: ALERTA (SLA QUASE ESTOURANDO) --- */
+.avatar.curse-warning {
+    border-color: #e67e22 !important;
+    animation: borderPulse 0.8s infinite alternate;
+}
+.xp-bar.curse-warning {
+    background-color: #e67e22 !important;
+}
+
+/* --- STATUS 2: CRÍTICO (AMALDIÇOADO / SLA ESTOURADO) --- */
+.avatar.curse-critical {
+    border-color: #c0392b !important;
+    animation: borderFlicker 0.4s infinite alternate;
+    filter: hue-rotate(90deg) saturate(2) brightness(0.8); /* Filtro Verde Zumbi/Envenenado */
+}
+#xpContainer.curse-critical {
+    animation: shakeXp 0.2s infinite; /* Barra de XP tremendo */
+    border-color: #c0392b !important;
+}
+.xp-bar.curse-critical {
+    background-color: #c0392b !important;
+}
+
+/* --- ANIMAÇÕES DA MALDIÇÃO --- */
+@keyframes borderPulse {
+    from { box-shadow: 0 0 4px #e67e22; }
+    to { box-shadow: 0 0 16px #e67e22; }
+}
+
+@keyframes borderFlicker {
+    0% { box-shadow: 0 0 4px #c0392b; }
+    100% { box-shadow: 0 0 24px #e74c3c; }
+}
+
+@keyframes shakeXp {
+    0% { transform: translate(1px, 1px); }
+    20% { transform: translate(-1px, -1px); }
+    40% { transform: translate(-2px, 0px); }
+    60% { transform: translate(1px, 2px); }
+    80% { translate: (-1px, -1px); }
+    100% { transform: translate(1px, 0px); }
+}
+
+/* HUD de Métricas (Dashboard) */
+.report-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Dividido em duas colunas perfeitas */
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.report-card {
+    background-color: #1a252f; /* Um tom mais escuro que o background do painel */
+    border: 4px solid #34495e;
+    padding: 15px;
+    text-align: center;
+    border-radius: 4px;
+}
+
+.report-label {
+    font-size: 13px;
+    color: #bdc3c7;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.report-value {
+    font-size: 18px;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Cores dos valores */
+.gold-text { color: #f1c40f; text-shadow: 1px 1px 0 #000; }
+.sla-text { color: #2ecc71; text-shadow: 1px 1px 0 #000; }

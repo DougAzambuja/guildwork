@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OfficeQuest - Loja de Loot</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="main-wrapper">
+        <div class="top-bar">
+            <div class="player-info">
+                <div class="avatar">QA<br>Master</div>
+                <div class="stats">
+                    <h1 id="playerName" data-cy="player-name">Loja da Guilda</h1>
+                    <div class="coin-display"><span class="coin-icon">💰</span> <span id="coinCount" data-cy="coin-count">0</span> Gold</div>
+                </div>
+            </div>
+            <div class="actions">
+                <a href="index.html" class="btn-pixel" data-cy="btn-voltar-mural">Voltar ao Mural</a>
+                <button class="btn-pixel logout-btn" data-cy="btn-logout" onclick="logout()">Sair</button>
+            </div>
+        </div>
+
+        <div class="shop-layout">
+            
+            <div class="shop-container">
+                <h2 class="shop-title">LOJA DE LOOT (SWAG)</h2>
+                
+                <div class="items-grid" id="itemsGrid" data-cy="items-grid">
+                    </div>
+            </div>
+
+            <div class="cart-container">
+                <div class="cart-title">SEU INVENTÁRIO</div>
+                <div class="cart-items" id="cartList" data-cy="cart-list">
+                    </div>
+                <div class="cart-total">Total: <span id="cartTotal" data-cy="cart-total">0</span> 💰</div>
+                
+                <button class="btn-pixel btn-checkout" data-cy="btn-checkout" onclick="checkout()">FINALIZAR COMPRA</button>
+                <button class="btn-pixel btn-clear" data-cy="btn-clear-cart" onclick="clearCart()" style="margin-top: 10px;">ESVAZIAR CARRINHO</button>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="toast-container" data-cy="toast-container"></div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/loja.js"></script>
+</body>
+</html>
