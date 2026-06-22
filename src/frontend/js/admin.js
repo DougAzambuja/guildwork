@@ -2,10 +2,9 @@
 // 0. PROTEÇÃO E INICIALIZAÇÃO
 // ==========================================
 const API_URL = 'http://localhost:3001/api';
-const token = localStorage.getItem('guild_token');
+const token   = localStorage.getItem('guild_token');
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Validação dupla: Verifica se é admin E se possui um token válido da API
     if (!token || localStorage.getItem('guild_role') !== 'admin') {
         window.location.href = 'login.html';
         return;
@@ -15,16 +14,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function initAdminPanel() {
     const adminName = localStorage.getItem('guild_user') || 'Mestre da Guilda';
-    const nameEl = document.getElementById('playerName');
+    const nameEl    = document.getElementById('playerName');
     if (nameEl) nameEl.innerText = adminName;
-    
+
     setupLootForm();
-    
-    // Carrega os dados reais do banco
+    setupQuestForm();
+
     await renderInventory();
     await renderUsersTable();
+    await renderAdminQuests();
 
-    // Atualiza a tabela de usuários a cada 10 segundos buscando do servidor
+    // Atualiza roster a cada 10 segundos
     setInterval(renderUsersTable, 10000);
 }
 
@@ -32,19 +32,18 @@ async function initAdminPanel() {
 // 1. DASHBOARD E RELATÓRIOS
 // ==========================================
 function renderDashboardStats(players) {
-    // Calcula o total de moedas da guilda somando o saldo de todos os jogadores
     const totalGold = players.reduce((sum, p) => sum + (p.coins || 0), 0);
     const goldEl = document.getElementById('repTotalGold');
     if (goldEl) goldEl.innerText = totalGold.toString();
 
-    // Simulação de SLA (Pode ser substituído por uma rota específica da API depois)
     const slaEl = document.getElementById('repSlaHealth');
-    if (slaEl) slaEl.innerText = "85%";
+    if (slaEl) slaEl.innerText = '85%';
 
-    // Ordena os jogadores pelo XP para o Top Performers
-    const performers = [...players].sort((a, b) => (b.xp || 0) - (a.xp || 0)).slice(0, 3);
+    const performers = [...players]
+        .sort((a, b) => (b.xp || 0) - (a.xp || 0))
+        .slice(0, 3);
+
     const list = document.getElementById('topPerformersList');
-    
     if (list) {
         list.innerHTML = performers.map(p => `
             <div class="top-performer-row">
@@ -66,15 +65,16 @@ function setupLootForm() {
 
     lootForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         const newItem = {
-            name: document.getElementById('lootName').value.trim(),
-            price: parseInt(document.getElementById('lootPrice').value),
-            image: document.getElementById('lootImage').value
+            name:      document.getElementById('lootName').value.trim(),
+            price:     parseInt(document.getElementById('lootPrice').value),
+            image_url: document.getElementById('lootImage').value
         };
 
         try {
-            const response = await fetch(`${API_URL}/admin/inventory`, {
+            // FIX: endpoint correto é /admin/loot
+            const response = await fetch(`${API_URL}/admin/loot`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -85,7 +85,7 @@ function setupLootForm() {
 
             if (response.ok) {
                 lootForm.reset();
-                showToast(`Item "${newItem.name}" forjado no Banco de Dados!`);
+                showToast(`Item "${newItem.name}" forjado!`);
                 await renderInventory();
             } else {
                 const error = await response.json();
@@ -103,13 +103,13 @@ async function renderInventory() {
     if (!inventoryList) return;
 
     try {
-        const response = await fetch(`${API_URL}/admin/inventory`, {
+        const response = await fetch(`${API_URL}/admin/loot`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        
+
         if (response.ok) {
             currentInventory = await response.json();
-            
+
             inventoryList.innerHTML = currentInventory.map(item => `
                 <div class="inventory-item">
                     <div class="inventory-item-info">
@@ -124,19 +124,17 @@ async function renderInventory() {
             `).join('');
         }
     } catch (err) {
-        console.error("Erro ao buscar inventário:", err);
+        console.error('Erro ao buscar inventário:', err);
     }
 }
 
-// Logica do Modal de Edição
 let currentEditId = null;
 
 window.openEditModal = (itemId) => {
     const item = currentInventory.find(i => i._id === itemId);
     if (!item) return;
-
     currentEditId = itemId;
-    document.getElementById('editLootName').value = item.name;
+    document.getElementById('editLootName').value  = item.name;
     document.getElementById('editLootPrice').value = item.price;
     document.getElementById('editLootModal').style.display = 'flex';
 };
@@ -148,14 +146,15 @@ window.closeEditModal = () => {
 
 document.getElementById('editLootForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const updatedData = {
-        name: document.getElementById('editLootName').value.trim(),
+        name:  document.getElementById('editLootName').value.trim(),
         price: parseInt(document.getElementById('editLootPrice').value)
     };
-    
+
     try {
-        const response = await fetch(`${API_URL}/admin/inventory/${currentEditId}`, {
+        // FIX: endpoint correto é /admin/loot/:id
+        const response = await fetch(`${API_URL}/admin/loot/${currentEditId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -181,13 +180,14 @@ window.deleteLoot = async (itemId) => {
     if (!confirm('Tem certeza que deseja destruir este item?')) return;
 
     try {
-        const response = await fetch(`${API_URL}/admin/inventory/${itemId}`, {
+        // FIX: endpoint correto é /admin/loot/:id
+        const response = await fetch(`${API_URL}/admin/loot/${itemId}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (response.ok) {
-            showToast('Item destruído pelo fogo do dragão!', 'error');
+            showToast('Item destruído!', 'error');
             await renderInventory();
         } else {
             showToast('Erro ao tentar destruir item.', 'error');
@@ -198,22 +198,71 @@ window.deleteLoot = async (itemId) => {
 };
 
 // ==========================================
-// 3. ROSTER E STATUS DOS JOGADORES
+// 3. FORJA DE QUESTS
+// ==========================================
+function setupQuestForm() {
+    const questForm = document.getElementById('questForm');
+    if (!questForm) return;
+
+    questForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const questData = {
+            title:       document.getElementById('questTitle').value.trim(),
+            type:        document.getElementById('questType').value,
+            xp_reward:   parseInt(document.getElementById('questXp').value),
+            coin_reward: parseInt(document.getElementById('questCoins').value),
+            sla_seconds: document.getElementById('slaTime').value
+                            ? parseInt(document.getElementById('slaTime').value)
+                            : null
+        };
+
+        try {
+            // Rota que criamos no backend
+            const res = await fetch(`${API_URL}/admin/quests`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(questData)
+            });
+
+            if (res.ok) {
+                showToast('Quest forjada com sucesso!');
+                questForm.reset();
+                
+                // 🚀 ADICIONE ESTA LINHA AQUI:
+                // Atualiza a tabela na mesma hora que forja!
+                await renderAdminQuests(); 
+                
+            } else {
+                const err = await res.json();
+                showToast(`Erro: ${err.message}`, 'error');
+            }
+        } catch (err) {
+            console.error('Erro ao forjar quest:', err);
+            showToast('Erro de conexão com o servidor.', 'error');
+        }
+    });
+}
+
+// ==========================================
+// 4. ROSTER E STATUS DOS JOGADORES
 // ==========================================
 async function renderUsersTable() {
     const tbody = document.getElementById('usersTableBody');
     if (!tbody) return;
 
     try {
-        // Busca a lista real de jogadores no banco de dados
-        const response = await fetch(`${API_URL}/players`, {
+        // FIX: endpoint correto é /admin/roster
+        const response = await fetch(`${API_URL}/admin/roster`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (response.ok) {
             const players = await response.json();
-            
-            // Atualiza os cards do dashboard com os dados reais
+
             renderDashboardStats(players);
 
             tbody.innerHTML = players.map(p => `
@@ -221,7 +270,7 @@ async function renderUsersTable() {
                     <td><img src="${p.avatar_url || 'assets/imgs/caneca_pixel.jpg'}" style="width:30px; border-radius:4px; object-fit:cover;"></td>
                     <td>${p.nome || p.username}</td>
                     <td>Lv.${p.level || 1} — ${p.xp || 0} XP</td>
-                    <td>${p.coins || 0} 💰</td>
+                    <td>${p.quests_completed || 0}</td>
                     <td><span class="status-badge ${p.is_cursed ? 'cursed' : 'online'}">
                         ${p.is_cursed ? '🚨 Maldição (Bug Aberto)' : '✅ Saudável'}
                     </span></td>
@@ -229,42 +278,34 @@ async function renderUsersTable() {
             `).join('');
         }
     } catch (err) {
-        console.error("Erro ao buscar jogadores:", err);
+        console.error('Erro ao buscar jogadores:', err);
     }
 }
 
-// Captura o submit do formulário de Quests
-const questForm = document.getElementById('questForm');
-
-questForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const questData = {
-        title: document.getElementById('questTitle').value,
-        type: document.getElementById('questType').value,
-        xp_reward: parseInt(document.getElementById('questXp').value),
-        coin_reward: parseInt(document.getElementById('questCoins').value),
-        sla_seconds: document.getElementById('slaTime').value ? parseInt(document.getElementById('slaTime').value) : null
-    };
+async function renderAdminQuests() {
+    const tableBody = document.getElementById('adminQuestsTableBody');
+    if (!tableBody) return;
 
     try {
-        const res = await fetch(`${API_URL}/admin/quests`, { // Note que vamos criar essa rota ainda
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('guild_token')}` 
-            },
-            body: JSON.stringify(questData)
+        const response = await fetch(`${API_URL}/admin/quests`, {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
 
-        if (res.ok) {
-            showToast("Quest forjada com sucesso!");
-            questForm.reset(); // Limpa o formulário
-        } else {
-            showToast("Erro ao forjar quest.");
+        if (response.ok) {
+            const quests = await response.json();
+            tableBody.innerHTML = quests.map(q => `
+                <tr>
+                    <td>${q.title}</td>
+                    <td>${q.type}</td>
+                    <td>${q.xp_reward}</td>
+                    <td>${q.coin_reward}</td>
+                    <td>${q.sla_seconds || 'Sem Limite'}</td>
+                </tr>
+            `).join('');
         }
     } catch (err) {
-        console.error("Erro:", err);
+        console.error('Erro ao buscar quests do admin:', err);
     }
-});
+}
 
+// Lembre-se de adicionar `await renderAdminQuests();` dentro do seu initAdminPanel() e após o form de criar quest dar sucesso!

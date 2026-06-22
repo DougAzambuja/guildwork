@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const LootItem = require('../models/LootItem');
+const Quest = require('../models/Quest');
 
 // GET /api/admin/inventory — Lista todos os itens da loja para a vitrine
 exports.getInventory = async (req, res) => {
@@ -14,14 +15,16 @@ exports.getInventory = async (req, res) => {
 // POST /api/admin/inventory — Cria novo item na forja
 exports.createInventoryItem = async (req, res) => {
     try {
-        // Front-end envia name, price e image
-        const { name, price, image } = req.body; 
+        // 1. Recebemos o 'image_url' do seu admin.js (Front-end)
+        const { name, price, image_url } = req.body; 
         
         const item = await LootItem.create({ 
             name, 
             price, 
-            image: image || 'assets/imgs/caneca_pixel.jpg' // Imagem padrão se falhar
+            // 2. Gravamos na coluna 'image' (que é o que o MongoDB espera)
+            image: image_url || 'assets/imgs/caneca_pixel.jpg' 
         });
+        
         res.status(201).json(item);
     } catch (err) {
         res.status(500).json({ message: 'Erro interno ao forjar.', error: err.message });
@@ -35,7 +38,7 @@ exports.updateInventoryItem = async (req, res) => {
         const item = await LootItem.findByIdAndUpdate(
             req.params.id,
             { name, price },
-            { new: true } // Retorna o documento já atualizado
+            { returnDocument: 'after' } // Retorna o documento já atualizado
         );
         res.json(item);
     } catch (err) {
@@ -73,3 +76,21 @@ exports.createQuest = async (req, res) => {
     }
 };
 
+exports.getRoster = async (req, res) => {
+    try {
+        const users = await User.find().select('-password'); // Busca todos sem a senha
+        res.json(users);
+    } catch (err) {
+        res.status(500).json({ message: 'Erro ao buscar roster.', error: err.message });
+    }
+};
+
+// GET /api/admin/quests — Lista todas as missões forjadas
+exports.getQuests = async (req, res) => {
+    try {
+        const quests = await Quest.find();
+        res.json(quests);
+    } catch (err) {
+        res.status(500).json({ message: 'Erro ao buscar pergaminhos (quests).', error: err.message });
+    }
+};

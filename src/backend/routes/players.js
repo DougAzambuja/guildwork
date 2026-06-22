@@ -1,19 +1,19 @@
 const router = require('express').Router();
 const playerController = require('../controllers/playerController');
-const authMiddleware = require('../middleware/auth'); // Protege as rotas
+const authMiddleware = require('../middleware/auth');
 
-// Todas as rotas abaixo desta linha exigem que o usuário envie o Token JWT válido
+// Barreira Primária: Exige token
 router.use(authMiddleware);
 
 // Roster Geral
 router.get('/', playerController.getAllPlayers);
 
-// Perfil Pessoal
-router.get('/profile', playerController.getProfile);
-router.put('/profile', playerController.updateProfile);
+// Perfil Pessoal (O Front-end chama /me)
+router.get('/me', playerController.getProfile);
+router.put('/me', playerController.updateProfile);
 
-// Gamificação e Ações
-router.put('/gamification', playerController.updateGamification);
+// Gamificação e Ações (O Front-end chama /xp via POST)
+router.post('/xp', playerController.updateGamification);
 router.put('/curse', playerController.updateCurse);
 router.post('/checkout', playerController.checkout);
 

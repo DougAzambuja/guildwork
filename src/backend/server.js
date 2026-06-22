@@ -32,6 +32,7 @@ app.use('/api/auth',    require('./routes/auth'));
 app.use('/api/players', require('./routes/players'));
 app.use('/api/quests',  require('./routes/quests'));
 app.use('/api/admin',   require('./routes/admin'));
+app.use('/api/quests', require('./routes/quests'));
 
 // ==========================================
 // ROTA DE HEALTH CHECK

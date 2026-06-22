@@ -20,7 +20,7 @@ exports.updateProfile = async (req, res) => {
         const user = await User.findByIdAndUpdate(
             req.user.id,
             { nome, avatar_url },
-            { new: true }
+            { returnDocument: 'after' }
         ).select('-password');
         res.json(user);
     } catch (err) {
@@ -64,11 +64,11 @@ exports.updateGamification = async (req, res) => {
 // PUT /api/players/curse — aplica ou remove maldição do SLA
 exports.updateCurse = async (req, res) => {
     try {
-        const { isCursed } = req.body; // Front manda em CamelCase
+        const isCursed = req.body.is_cursed !== undefined ? req.body.is_cursed : req.body.isCursed; // Front manda em CamelCase
         const user = await User.findByIdAndUpdate(
             req.user.id,
             { is_cursed: isCursed }, // Banco salva em Snake_case
-            { new: true }
+            { returnDocument: 'after' }
         ).select('-password');
         res.json(user);
     } catch (err) {
