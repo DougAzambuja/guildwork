@@ -2,7 +2,9 @@ const Quest           = require('../models/Quest');
 const QuestCompletion = require('../models/QuestCompletion');
 const User            = require('../models/User');
 
-// GET /api/quests — lista todas as quests ativas
+const MAX_XP = 10000;
+
+// GET /api/quests — Lista todas as quests ativas para popular o Mural
 exports.getQuests = async (req, res) => {
     try {
         const quests = await Quest.find({ is_active: true });
@@ -12,61 +14,65 @@ exports.getQuests = async (req, res) => {
     }
 };
 
-// POST /api/quests/complete — registra conclusão de uma quest
+// POST /api/quests/complete — Registra conclusão de uma quest de forma segura
 exports.completeQuest = async (req, res) => {
     try {
-        const { quest_id, csat_score } = req.body;
+        const { questId, csatScore } = req.body;
         const user  = await User.findById(req.user.id);
-        const quest = await Quest.findById(quest_id);
+        const quest = await Quest.findById(questId);
 
-        if (!quest) return res.status(404).json({ message: 'Quest não encontrada.' });
-
-        // Calcula XP (com lógica CSAT se for suporte)
-        let xp_gained    = quest.xp_reward;
-        let coins_gained = quest.coin_reward;
-
-        if (quest.type === 'support' && csat_score) {
-            xp_gained = Math.round(quest.xp_reward * (csat_score / 5));
+        if (!quest) {
+            return res.status(404).json({ message: 'Quest não encontrada nos registros da Guilda.' });
         }
 
-        // Registra a conclusão
+        // Calcula XP baseando-se na fonte da verdade (Banco de Dados)
+        let xpGained    = quest.xp_reward;
+        let coinsGained = quest.coin_reward;
+
+        // Regra de negócio: Quests de suporte variam pelo CSAT (1 a 5)
+        if (quest.type === 'support' && csatScore) {
+            xpGained = Math.round(quest.xp_reward * (csatScore / 5));
+        }
+
+        // Registra a conclusão para histórico e auditoria
         await QuestCompletion.create({
             user_id: user._id,
             quest_id: quest._id,
-            xp_gained,
-            coins_gained,
-            csat_score: csat_score || null
+            xp_gained: xpGained,
+            coins_gained: coinsGained,
+            csat_score: csatScore || null
         });
 
-        // Atualiza XP e coins do jogador
-        user.xp    += xp_gained;
-        user.coins += coins_gained;
+        // Atualiza a carteira e experiência do jogador
+        user.quests_completed = (user.quests_completed || 0) + 1;
+        user.xp += xpGained;
+        user.coins += coinsGained;
 
-        // Level Up
-        const MAX_XP  = 10000;
+        // Motor de Level Up
         let leveledUp = false;
         if (user.xp >= MAX_XP) {
-            user.xp   -= MAX_XP;
+            user.xp -= MAX_XP;
             user.level += 1;
-            leveledUp  = true;
+            leveledUp = true;
         }
 
         await user.save();
 
+        // Resposta formatada para o frontend atualizar a UI instantaneamente
         res.json({
-            message:     'Quest concluída!',
-            xp_gained,
-            coins_gained,
+            message: 'Quest concluída e validada pelo servidor!',
+            xpGained,
+            coinsGained,
             leveledUp,
-            newLevel:    user.level,
-            user: {
-                xp:    user.xp,
+            updatedState: {
+                xp: user.xp,
                 coins: user.coins,
-                level: user.level
+                level: user.level,
+                questsCompleted: user.quests_completed
             }
         });
 
     } catch (err) {
         res.status(500).json({ message: 'Erro interno.', error: err.message });
     }
-};
+};  

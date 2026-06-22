@@ -52,7 +52,7 @@
                 <div class="factions-grid" id="factionsGrid"></div>
             </div>
 
-            <div class="dashboard-section" data-cy="dashboard-forge">
+            <!-- <div class="dashboard-section" data-cy="dashboard-forge">
                 <h2 class="section-title">🔨 FORJA DE LOOT (GERENCIAR ITEM)</h2>
                 <form id="lootForm" class="forge-form" data-cy="form-add-loot">
                     <div class="forge-group">
@@ -74,8 +74,46 @@
                         </select>
                     </div>
                     <button type="submit" id="btnSubmitLoot" class="btn-pixel" data-cy="btn-submit-loot" style="background-color: #8e44ad; padding: 15px;">FORJAR ITEM</button>
-                    <button type="button" id="btnCancelEdit" class="btn-pixel" style="background-color: #7f8c8d; padding: 15px; display: none;" onclick="cancelEdit()">CANCELAR</button>
                 </form>
+            </div> -->
+            <div class="dashboard-section" data-cy="dashboard-forge-quests">
+                <h2 class="section-title">⚔️ FORJA DE QUESTS (CRIAR MISSÃO)</h2>
+                <form id="questForm" class="forge-form" data-cy="form-add-quest">
+                    <div class="forge-group">
+                        <label for="questTitle">Título da Missão</label>
+                        <input type="text" id="questTitle" class="pixel-input" placeholder="Ex: Resolver Bug X" required>
+                    </div>
+                    <div class="forge-group">
+                        <label for="questType">Tipo</label>
+                        <select id="questType" class="pixel-input">
+                            <option value="normal">Normal</option>
+                            <option value="urgent">Urgente</option>
+                            <option value="support">Suporte</option>
+                            <option value="jira">Jira</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <div class="forge-group" style="flex: 1;">
+                            <label for="questXp">XP</label>
+                            <input type="number" id="questXp" class="pixel-input" placeholder="300" required>
+                        </div>
+                        <div class="forge-group" style="flex: 1;">
+                            <label for="questCoins">Gold</label>
+                            <input type="number" id="questCoins" class="pixel-input" placeholder="30" required>
+                        </div>
+                    </div>
+                    <div class="forge-group">
+                        <label for="slaTime">SLA (Segundos) - Deixe em branco se não houver tempo</label>
+                        <input type="number" id="slaTime" class="pixel-input" placeholder="Ex: 300">
+                    </div>
+                    <button type="submit" class="btn-pixel" style="background-color: #c0392b; padding: 15px;">FORJAR QUEST</button>
+                </form>
+            </div>
+
+            <div class="dashboard-section" data-cy="dashboard-forge">
+                <h2 class="section-title">🔨 FORJA DE LOOT (GERENCIAR ITEM)</h2>
+                <form id="lootForm" class="forge-form" data-cy="form-add-loot">
+                    </form>
             </div>
 
             <div class="dashboard-section" data-cy="dashboard-inventory">
@@ -92,7 +130,7 @@
                                 <th>Avatar</th>
                                 <th>Aventureiro (Herói)</th>
                                 <th>Nível (XP)</th>
-                                <th>Entregas (Quests)</th>
+                                <th>Gold</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
@@ -103,7 +141,6 @@
         </div>
     </div>
 
-    <!-- Modal de Edição de Loot -->
     <div id="editLootModal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
             <h2 class="section-title">🔨 EDITAR LOOT</h2>

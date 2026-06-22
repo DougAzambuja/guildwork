@@ -1,79 +1,61 @@
 // js/login.js
-
 // ==========================================
-// FUNÇÃO UNIVERSAL DE ALERTAS (TOASTS)
+// MOTOR DE AUTENTICAÇÃO REAL (API BASE)
 // ==========================================
-function showToast(message, type = 'success') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-    
-    const toast = document.createElement('div');
-    toast.className = `pixel-toast ${type === 'error' ? 'error' : ''}`;
-    toast.innerHTML = message;
-    
-    container.appendChild(toast);
-    setTimeout(() => toast.remove(), 4000);
-}
-
-// ==========================================
-// MOTOR DE AUTENTICAÇÃO
-// ==========================================
-document.getElementById('loginForm').addEventListener('submit', function(event) {
+document.getElementById('loginForm').addEventListener('submit', async function(event) {
     event.preventDefault();
 
     const usernameInput = document.getElementById('username').value.trim().toLowerCase();
     const passwordInput = document.getElementById('password').value;
 
-    const mockDB = {
-        'admin': { 
-            senha: 'admin', 
-            role: 'admin', 
-            nome: 'Mestre da Guilda',
-            // Chave única que vai prefixar todos os dados deste usuário
-            // ex: 'player_admin_xp', 'player_admin_level', etc.
-            storageKey: 'player_admin'
-        },
-        'funcionario': { 
-            senha: '123', 
-            role: 'adventurer', 
-            nome: 'Aventureiro QA',
-            storageKey: 'player_funcionario'
-        }
-    };
+    try {
+        // Envia os dados digitados para a API no backend
+        const response = await fetch('http://localhost:3001/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: usernameInput,
+                password: passwordInput
+            })
+        });
 
-    const usuarioLogado = mockDB[usernameInput];
+        const data = await response.json();
 
-    if (usuarioLogado && usuarioLogado.senha === passwordInput) {
+        // Se o backend responder com sucesso (Status 200-299)
+        if (response.ok) {
+            // Guardamos o Token JWT gerado pelo backend para as próximas requisições protegidas
+            localStorage.setItem('guild_token', data.token);
+            
+            // Adaptamos o retorno do banco para manter a compatibilidade com o frontend atual
+            localStorage.setItem('guild_role', data.user.role); // ex: 'admin' ou 'adventurer'
+            localStorage.setItem('guild_user', data.user.name); // Nome de exibição
+            
+            // Armazena identificadores específicos para controle de chaves do usuário ativo
+            localStorage.setItem('guild_active_user', `player_${usernameInput}`);
+            localStorage.setItem(`guild_user_${usernameInput}`, data.user.name);
 
-        // Dados de sessão (igual antes)
-        localStorage.setItem('guild_role', usuarioLogado.role);
-        localStorage.setItem('guild_user', usuarioLogado.nome);
+            // Fluxo de redirecionamento baseado no privilégio do usuário retornado pelo banco
+            if (data.user.role === 'admin') {
+                showToast(`⚔️ Bem-vindo, ${data.user.name}! Abrindo os portões do castelo...`);
+                setTimeout(() => { 
+                    window.location.href = 'admin.html'; 
+                }, 1500);
+            } else {
+                showToast(`🛡️ Login com sucesso! Preparando suas missões...`);
+                setTimeout(() => { 
+                    window.location.href = 'index.html'; 
+                }, 1500);
+            }
 
-        // ← NOVO: grava qual usuário está ativo
-        // É isso que o mural.js vai usar para saber qual chave de dados ler
-        localStorage.setItem('guild_active_user', usuarioLogado.storageKey);
-
-        // ← NOVO: salva o nome do funcionário com chave própria
-        // Assim o admin consegue ler 'guild_user_funcionario' sem confundir
-        // com o 'guild_user' genérico que é sobrescrito a cada login
-        localStorage.setItem(
-            `guild_user_${usernameInput}`,
-            usuarioLogado.nome
-        );
-
-        if (usuarioLogado.role === 'admin') {
-            showToast(`⚔️ Bem-vindo, ${usuarioLogado.nome}! Abrindo os portões do castelo...`);
-            setTimeout(() => { 
-                window.location.href = 'admin.html'; 
-            }, 1500);
         } else {
-            showToast(`🛡️ Login com sucesso! Preparando suas missões...`);
-            setTimeout(() => { 
-                window.location.href = 'index.html'; 
-            }, 1500);
+            // Se o backend retornar erro (Ex: senha incorreta, usuário não existe), exibe a mensagem da API
+            showToast(`❌ Erro: ${data.message || 'Falha na autenticação.'}`, 'error');
         }
 
-    } else {
-        showToast('❌ Falha na autenticação: Usuário ou senha incorretos! Tente "admin" ou "funcionario".', 'error');
+    } catch (error) {
+        console.error('Erro ao conectar com a API:', error);
+        showToast('❌ O servidor da Guilda está inacessível. Verifique se o backend está rodando.', 'error');
     }
 });

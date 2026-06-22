@@ -1,111 +1,141 @@
 // ==========================================
 // 0. PROTEÇÃO E INICIALIZAÇÃO
 // ==========================================
+const API_URL = 'http://localhost:3001/api';
+const token = localStorage.getItem('guild_token');
+
 document.addEventListener('DOMContentLoaded', () => {
-    if (localStorage.getItem('guild_role') !== 'admin') {
+    // Validação dupla: Verifica se é admin E se possui um token válido da API
+    if (!token || localStorage.getItem('guild_role') !== 'admin') {
         window.location.href = 'login.html';
         return;
     }
     initAdminPanel();
 });
 
-function initAdminPanel() {
+async function initAdminPanel() {
     const adminName = localStorage.getItem('guild_user') || 'Mestre da Guilda';
     const nameEl = document.getElementById('playerName');
     if (nameEl) nameEl.innerText = adminName;
     
     setupLootForm();
-    renderDashboard();
-    renderInventory();
-    renderUsersTable();
+    
+    // Carrega os dados reais do banco
+    await renderInventory();
+    await renderUsersTable();
 
-    setInterval(renderUsersTable, 5000);
+    // Atualiza a tabela de usuários a cada 10 segundos buscando do servidor
+    setInterval(renderUsersTable, 10000);
 }
 
 // ==========================================
 // 1. DASHBOARD E RELATÓRIOS
 // ==========================================
-function renderDashboard() {
-    // Lê os dados do funcionário pela chave correta
-    const funcionarioKey = 'player_funcionario';
-    const storedGold = parseInt(localStorage.getItem(`${funcionarioKey}_gold`)) || 0;
-    
+function renderDashboardStats(players) {
+    // Calcula o total de moedas da guilda somando o saldo de todos os jogadores
+    const totalGold = players.reduce((sum, p) => sum + (p.coins || 0), 0);
     const goldEl = document.getElementById('repTotalGold');
-    const slaEl  = document.getElementById('repSlaHealth');
+    if (goldEl) goldEl.innerText = totalGold.toString();
 
-    if (goldEl) goldEl.innerText = (storedGold + 1250).toString();
-    if (slaEl)  slaEl.innerText  = "85%";
+    // Simulação de SLA (Pode ser substituído por uma rota específica da API depois)
+    const slaEl = document.getElementById('repSlaHealth');
+    if (slaEl) slaEl.innerText = "85%";
 
-    const performers = [
-        {
-            name: localStorage.getItem('guild_user_funcionario') || 'Aventureiro QA',
-            xp: parseInt(localStorage.getItem(`${funcionarioKey}_xp`)) || 0
-        },
-        { name: "Dev Sênior", xp: 8200 }
-    ].sort((a, b) => b.xp - a.xp);
-
+    // Ordena os jogadores pelo XP para o Top Performers
+    const performers = [...players].sort((a, b) => (b.xp || 0) - (a.xp || 0)).slice(0, 3);
     const list = document.getElementById('topPerformersList');
+    
     if (list) {
         list.innerHTML = performers.map(p => `
             <div class="top-performer-row">
-                <span>${p.name}</span>
-                <span>${p.xp} XP</span>
+                <span>${p.nome || p.username}</span>
+                <span>${p.xp || 0} XP</span>
             </div>
         `).join('');
     }
 }
+
 // ==========================================
-// 2. GERENCIAMENTO DE LOOT (CRUD COM MODAL)
+// 2. GERENCIAMENTO DE LOOT (CRUD VIA API)
 // ==========================================
+let currentInventory = [];
+
 function setupLootForm() {
     const lootForm = document.getElementById('lootForm');
     if (!lootForm) return;
 
-    lootForm.addEventListener('submit', (e) => {
+    lootForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const item = {
+        
+        const newItem = {
             name: document.getElementById('lootName').value.trim(),
             price: parseInt(document.getElementById('lootPrice').value),
             image: document.getElementById('lootImage').value
         };
 
-        let customLoot = JSON.parse(localStorage.getItem('guild_custom_loot')) || [];
-        customLoot.push(item);
-        localStorage.setItem('guild_custom_loot', JSON.stringify(customLoot));
-        
-        lootForm.reset();
-        showToast(`Item "${item.name}" forjado!`);
-        renderInventory();
+        try {
+            const response = await fetch(`${API_URL}/admin/inventory`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(newItem)
+            });
+
+            if (response.ok) {
+                lootForm.reset();
+                showToast(`Item "${newItem.name}" forjado no Banco de Dados!`);
+                await renderInventory();
+            } else {
+                const error = await response.json();
+                showToast(`Erro: ${error.message}`, 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Erro ao forjar item. Servidor offline?', 'error');
+        }
     });
 }
 
-function renderInventory() {
+async function renderInventory() {
     const inventoryList = document.getElementById('inventoryList');
     if (!inventoryList) return;
-    const customLoot = JSON.parse(localStorage.getItem('guild_custom_loot')) || [];
-    
-    inventoryList.innerHTML = customLoot.map((item, index) => `
-        <div class="inventory-item">
-            <div class="inventory-item-info">
-                <img src="${item.image}" alt="Img" style="width:30px; margin-right:10px;">
-                <div>${item.name} - ${item.price} 💰</div>
-            </div>
-            <div class="inventory-actions">
-                <button class="btn-pixel" onclick="openEditModal(${index})">Editar</button>
-                <button class="btn-pixel" style="background:#e74c3c" onclick="deleteLoot(${index})">Excluir</button>
-            </div>
-        </div>
-    `).join('');
+
+    try {
+        const response = await fetch(`${API_URL}/admin/inventory`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            currentInventory = await response.json();
+            
+            inventoryList.innerHTML = currentInventory.map(item => `
+                <div class="inventory-item">
+                    <div class="inventory-item-info">
+                        <img src="${item.image || 'assets/imgs/caneca_pixel.jpg'}" alt="Img" style="width:30px; margin-right:10px;">
+                        <div>${item.name} - ${item.price} 💰</div>
+                    </div>
+                    <div class="inventory-actions">
+                        <button class="btn-pixel" onclick="openEditModal('${item._id}')">Editar</button>
+                        <button class="btn-pixel" style="background:#e74c3c" onclick="deleteLoot('${item._id}')">Excluir</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+    } catch (err) {
+        console.error("Erro ao buscar inventário:", err);
+    }
 }
 
 // Logica do Modal de Edição
-let currentEditIndex = -1;
+let currentEditId = null;
 
-window.openEditModal = (index) => {
-    const customLoot = JSON.parse(localStorage.getItem('guild_custom_loot')) || [];
-    const item = customLoot[index];
-    currentEditIndex = index;
-    
+window.openEditModal = (itemId) => {
+    const item = currentInventory.find(i => i._id === itemId);
+    if (!item) return;
+
+    currentEditId = itemId;
     document.getElementById('editLootName').value = item.name;
     document.getElementById('editLootPrice').value = item.price;
     document.getElementById('editLootModal').style.display = 'flex';
@@ -113,72 +143,128 @@ window.openEditModal = (index) => {
 
 window.closeEditModal = () => {
     document.getElementById('editLootModal').style.display = 'none';
+    currentEditId = null;
 };
 
-document.getElementById('editLootForm').addEventListener('submit', (e) => {
+document.getElementById('editLootForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    let customLoot = JSON.parse(localStorage.getItem('guild_custom_loot')) || [];
     
-    customLoot[currentEditIndex].name = document.getElementById('editLootName').value;
-    customLoot[currentEditIndex].price = parseInt(document.getElementById('editLootPrice').value);
+    const updatedData = {
+        name: document.getElementById('editLootName').value.trim(),
+        price: parseInt(document.getElementById('editLootPrice').value)
+    };
     
-    localStorage.setItem('guild_custom_loot', JSON.stringify(customLoot));
-    showToast('Item atualizado!');
-    closeEditModal();
-    renderInventory();
+    try {
+        const response = await fetch(`${API_URL}/admin/inventory/${currentEditId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(updatedData)
+        });
+
+        if (response.ok) {
+            showToast('Item atualizado com sucesso!');
+            closeEditModal();
+            await renderInventory();
+        } else {
+            showToast('Falha ao atualizar o item.', 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('Erro ao comunicar com o servidor.', 'error');
+    }
 });
 
-window.deleteLoot = (index) => {
-    let customLoot = JSON.parse(localStorage.getItem('guild_custom_loot')) || [];
-    customLoot.splice(index, 1);
-    localStorage.setItem('guild_custom_loot', JSON.stringify(customLoot));
-    renderInventory();
+window.deleteLoot = async (itemId) => {
+    if (!confirm('Tem certeza que deseja destruir este item?')) return;
+
+    try {
+        const response = await fetch(`${API_URL}/admin/inventory/${itemId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            showToast('Item destruído pelo fogo do dragão!', 'error');
+            await renderInventory();
+        } else {
+            showToast('Erro ao tentar destruir item.', 'error');
+        }
+    } catch (err) {
+        console.error(err);
+    }
 };
 
 // ==========================================
-// 3. ROSTER E STATUS
+// 3. ROSTER E STATUS DOS JOGADORES
 // ==========================================
-function renderUsersTable() {
+async function renderUsersTable() {
     const tbody = document.getElementById('usersTableBody');
     if (!tbody) return;
 
-    // Lê os dados do funcionário com a chave correta — sem misturar com o admin
-    const funcionarioKey  = 'player_funcionario';
-    const isCursed        = localStorage.getItem(`${funcionarioKey}_is_cursed`) === 'true';
-    const funcionarioName = localStorage.getItem('guild_user_funcionario') || 'Aventureiro QA';
-    const funcionarioPic  = localStorage.getItem('guild_avatar_funcionario') || 'assets/imgs/caneca_pixel.jpg';
-    const funcionarioXP   = parseInt(localStorage.getItem(`${funcionarioKey}_xp`))    || 0;
-    const funcionarioLv   = parseInt(localStorage.getItem(`${funcionarioKey}_level`)) || 1;
-    const funcionarioQts  = parseInt(localStorage.getItem(`${funcionarioKey}_tasks`)) || 0;
+    try {
+        // Busca a lista real de jogadores no banco de dados
+        const response = await fetch(`${API_URL}/players`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
 
-    const users = [
-        {
-            name: funcionarioName,
-            pic: funcionarioPic,
-            xp: funcionarioXP,
-            level: funcionarioLv,
-            quests: funcionarioQts,
-            status: isCursed ? 'cursed' : 'online',
-            statusText: isCursed ? '🚨 Maldição (Bug Aberto)' : '✅ Saudável'
-        },
-        {
-            name: "Dev Sênior",
-            pic: "assets/imgs/mouse_pixel.jpg",
-            xp: 8200,
-            level: 5,
-            quests: 12,
-            status: 'online',
-            statusText: '✅ Saudável'
+        if (response.ok) {
+            const players = await response.json();
+            
+            // Atualiza os cards do dashboard com os dados reais
+            renderDashboardStats(players);
+
+            tbody.innerHTML = players.map(p => `
+                <tr>
+                    <td><img src="${p.avatar_url || 'assets/imgs/caneca_pixel.jpg'}" style="width:30px; border-radius:4px; object-fit:cover;"></td>
+                    <td>${p.nome || p.username}</td>
+                    <td>Lv.${p.level || 1} — ${p.xp || 0} XP</td>
+                    <td>${p.coins || 0} 💰</td>
+                    <td><span class="status-badge ${p.is_cursed ? 'cursed' : 'online'}">
+                        ${p.is_cursed ? '🚨 Maldição (Bug Aberto)' : '✅ Saudável'}
+                    </span></td>
+                </tr>
+            `).join('');
         }
-    ];
-
-    tbody.innerHTML = users.map(u => `
-        <tr>
-            <td><img src="${u.pic}" style="width:30px; border-radius:4px; object-fit:cover;"></td>
-            <td>${u.name}</td>
-            <td>Lv.${u.level} — ${u.xp} XP</td>
-            <td>${u.quests}</td>
-            <td><span class="status-badge ${u.status}">${u.statusText}</span></td>
-        </tr>
-    `).join('');
+    } catch (err) {
+        console.error("Erro ao buscar jogadores:", err);
+    }
 }
+
+// Captura o submit do formulário de Quests
+const questForm = document.getElementById('questForm');
+
+questForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const questData = {
+        title: document.getElementById('questTitle').value,
+        type: document.getElementById('questType').value,
+        xp_reward: parseInt(document.getElementById('questXp').value),
+        coin_reward: parseInt(document.getElementById('questCoins').value),
+        sla_seconds: document.getElementById('slaTime').value ? parseInt(document.getElementById('slaTime').value) : null
+    };
+
+    try {
+        const res = await fetch(`${API_URL}/admin/quests`, { // Note que vamos criar essa rota ainda
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('guild_token')}` 
+            },
+            body: JSON.stringify(questData)
+        });
+
+        if (res.ok) {
+            showToast("Quest forjada com sucesso!");
+            questForm.reset(); // Limpa o formulário
+        } else {
+            showToast("Erro ao forjar quest.");
+        }
+    } catch (err) {
+        console.error("Erro:", err);
+    }
+});
+

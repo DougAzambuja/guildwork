@@ -12,7 +12,6 @@
         <div class="login-box">
             <h2 class="login-title">OFFICE QUEST<br><br>ENTRAR NA GUILDA</h2>
             
-            <!-- Formulário mapeado -->
             <form id="loginForm" data-cy="login-form">
                 <div class="form-group">
                     <label for="username">Usuário (Classe)</label>
@@ -28,17 +27,15 @@
             </form>
 
             <div class="login-hint">
-                <strong>DICAS DE ACESSO (MVP):</strong><br><br>
-                👤 Admin:<br>Usuário: admin | Senha: admin<br><br>
-                👤 Funcionário:<br>Usuário: funcionario | Senha: 123
+                <strong>DICAS DE ACESSO (BANCO DE DADOS):</strong><br><br>
+                👤 Mestre da Guilda (Admin):<br>Usuário: admin | Senha: 123<br><br>
+                👤 Aventureiro QA:<br>Usuário: funcionario | Senha: 123
             </div>
         </div>
     </div>
 
-    <!-- Container invisível para os Toasts (Alertas visuais) -->
     <div id="toast-container" data-cy="toast-container"></div>
 
-    <!-- Puxando a lógica de autenticação -->
     <script src="js/utils.js"></script>
     <script src="js/login.js"></script>
 </body>

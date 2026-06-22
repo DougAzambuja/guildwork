@@ -10,8 +10,9 @@ const app = express();
 // ==========================================
 // MIDDLEWARES GLOBAIS
 // ==========================================
+// O CORS permite que o frontend (porta 5500) se comunique com o backend (porta 3001)
 app.use(cors({
-    origin: '*', // Em produção vai restringir para o domínio do frontend
+    origin: '*', 
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));

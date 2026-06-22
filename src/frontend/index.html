@@ -4,17 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OfficeQuest - Mural da Guilda</title>
-    
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div class="main-wrapper">
-        <!-- CABEÇALHO -->
         <div class="top-bar">
             <div class="player-info">
                 <img src="assets/imgs/caneca_pixel.jpg" alt="Avatar" class="avatar" id="playerAvatar" style="cursor: pointer; object-fit: cover;" onclick="openProfileModal()" title="Editar Perfil">
                 <div class="stats">
-                    <h1 id="playerName" data-cy="player-name">Guardião da Qualidade</h1>
+                    <h1 id="playerName" data-cy="player-name">Aventureiro</h1>
                     <div id="levelDisplay" style="font-weight: bold; color: #000000; font-size: 14px;">Lvl: 1</div>
                     <div class="xp-container" id="xpContainer">
                         <div class="xp-bar" id="xpBar" data-cy="xp-bar"></div>
@@ -25,7 +23,6 @@
                 </div>
             </div>
             
-            <!-- AÇÕES MAPEADAS -->
             <div class="actions">
                 <button class="btn-pixel" data-cy="btn-sync-jira" onclick="syncJira()">Sync Jira API</button>
                 <a href="loja.html" class="btn-pixel shop-btn" data-cy="link-loja">Ir para Loja</a>
@@ -35,10 +32,8 @@
 
         <div class="mural-layout">
             
-            <!-- MURAL DE MISSÕES -->
             <div class="board-container" id="questBoard" data-cy="quest-board">
                 
-                <!-- 1. BUG COM CRONÔMETRO DE SLA (O Novo!) -->
                 <div class="quest-paper urgent" id="urgentBugCard" data-cy="quest-card-urgent" onclick="completeUrgentBug(this, 500, 50)">
                     <div class="quest-title" data-cy="quest-title">[SLA CRÍTICO]<br><br>Queda do Servidor de Pagamentos</div>
                     <div class="quest-meta">
@@ -49,7 +44,6 @@
                     <div class="completed-stamp" data-cy="quest-completed-stamp">FEITO</div>
                 </div>
 
-                <!-- 2. BUG CRÍTICO NORMAL (O Antigo) -->
                 <div class="quest-paper urgent" data-cy="quest-card" onclick="completeQuest(this, 350, 35)">
                     <div class="quest-title" data-cy="quest-title">[BUG CRÍTICO]<br><br>Erro de Timeout em Produção</div>
                     <div class="quest-meta">
@@ -59,20 +53,15 @@
                     <div class="completed-stamp" data-cy="quest-completed-stamp">FEITO</div>
                 </div>
 
-                <!-- 3. MISSÃO DE SUPORTE (CSAT) -->
-                <div class="quest-paper" data-cy="quest-support" onclick="completeSupportQuest(this, 400, 40)">
+                <div class="quest-paper" data-cy="quest-support" onclick="completeQuest(this, 400, 40)">
                     <div class="quest-title" data-cy="quest-title">[SUPORTE]<br><br>Resolver chamado VIP do cliente</div>
                     <div class="quest-meta">
-                        <span class="xp-reward">Até +400 XP</span>
+                        <span class="xp-reward">+400 XP</span>
                         <span class="coin-reward">+40 💰</span>
-                    </div>
-                    <div style="font-size: 8px; margin-top: 10px; color: #8e44ad; font-weight: bold;">
-                        * XP varia pela nota CSAT
                     </div>
                     <div class="completed-stamp" data-cy="quest-completed-stamp">FEITO</div>
                 </div>
 
-                <!-- 4. MISSÃO DE TESTE NORMAL -->
                 <div class="quest-paper" data-cy="quest-card" onclick="completeQuest(this, 300, 30)">
                     <div class="quest-title" data-cy="quest-title">[TESTE]<br><br>Validar cenários no fluxo de pagamento</div>
                     <div class="quest-meta">
@@ -84,7 +73,6 @@
                 
             </div>
 
-            <!-- METAS DA SPRINT -->
             <div class="objectives-container" data-cy="objectives-panel">
                 <div class="objectives-title">METAS DA SPRINT</div>
                 
@@ -97,22 +85,10 @@
                         <div class="obj-bar-fill" id="objTaskBar" data-cy="obj-task-bar"></div>
                     </div>
                 </div>
-
-                <div class="objective-item" data-cy="obj-gold-container">
-                    <div class="objective-name">
-                        <span>Acumular Riqueza</span>
-                        <span id="objGoldText" data-cy="obj-gold-text">0/150</span>
-                    </div>
-                    <div class="obj-bar-bg">
-                        <div class="obj-bar-fill gold-bar" id="objGoldBar" data-cy="obj-gold-bar"></div>
-                    </div>
-                </div>
             </div>
-
         </div>
     </div>
 
-    <!-- Modal de Edição de Perfil e Avatar -->
     <div id="profileModal" class="modal-overlay" style="display: none;" data-cy="profile-modal">
         <div class="modal-content">
             <h2 class="section-title" style="text-align: center;">🛡️ SEU HERÓI</h2>
@@ -150,7 +126,6 @@
         </div>
     </div>
 
-    <!-- Container invisível para os Toasts (Alertas visuais) -->
     <div id="toast-container" data-cy="toast-container"></div>
     
     <script src="js/utils.js"></script>
