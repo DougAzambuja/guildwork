@@ -1,15 +1,17 @@
 // ==========================================
 // 0. CONFIGURAÇÃO E PROTEÇÃO DE ROTA
 // ==========================================
-const API_URL = 'http://localhost:3001/api';
-const token   = localStorage.getItem('guild_token');
+const token = localStorage.getItem('guild_token');
 
 if (!token) {
     window.location.href = 'login.html';
 }
 
-let currentCoins  = 0;
-let cart          = [];
+const MAX_XP = 10000;
+
+let currentCoins   = 0;
+let playerData     = {};
+let cart           = [];
 let cartTotalValue = 0;
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -19,11 +21,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// 1. CARREGAR PERFIL DO JOGADOR
+// 1. CARREGAR E RENDERIZAR PERFIL DO JOGADOR
 // ==========================================
 async function loadPlayerProfile() {
     try {
-        // FIX: endpoint correto é /players/me
         const response = await fetch(`${API_URL}/players/me`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -32,14 +33,19 @@ async function loadPlayerProfile() {
             const player = await response.json();
             currentCoins = player.coins || 0;
 
-            const coinEl = document.getElementById('coinCount');
-            if (coinEl) coinEl.innerText = currentCoins;
+            playerData = {
+                nome:             player.nome     || player.username,
+                avatar_url:       player.avatar_url,
+                level:            player.level    || 1,
+                xp:               player.xp       || 0,
+                coins:            currentCoins,
+                faction:          player.faction  || '—',
+                quests_completed: player.quests_completed || 0,
+            };
 
-            const nameEl = document.getElementById('playerName');
-            if (nameEl) nameEl.innerText = player.nome || player.username;
+            renderPlayerProfile();
 
         } else {
-            // Token inválido — força logout
             localStorage.clear();
             window.location.href = 'login.html';
         }
@@ -47,6 +53,53 @@ async function loadPlayerProfile() {
         console.error('Erro ao carregar perfil do jogador:', err);
         showToast('Erro ao sincronizar seu saldo com o servidor.', 'error');
     }
+}
+
+function renderPlayerProfile() {
+    const card = document.getElementById('shopProfile');
+    if (!card) return;
+
+    const { nome, avatar_url, level, xp, coins, faction, quests_completed } = playerData;
+    const xpPct = Math.min(100, Math.round((xp / MAX_XP) * 100));
+
+    const GUILD_ICONS = { Produto: '📦', Suporte: '🎧', 'Customer Service': '📣' };
+    const guildIcon   = GUILD_ICONS[faction] || '🏰';
+
+    card.innerHTML = `
+        <div class="profile-avatar-wrap">
+            <img class="profile-avatar" src="${avatar_url || 'assets/imgs/caneca_pixel.jpg'}" alt="Avatar">
+            <div class="profile-level-badge">Lv.${level}</div>
+        </div>
+
+        <h2 class="profile-name">${nome}</h2>
+
+        <div class="profile-guild-badge">${guildIcon} ${faction}</div>
+
+        <div class="profile-xp-section">
+            <div class="profile-xp-label">
+                <span>XP</span>
+                <span>${xp.toLocaleString('pt-BR')} / ${MAX_XP.toLocaleString('pt-BR')}</span>
+            </div>
+            <div class="profile-xp-track">
+                <div class="profile-xp-fill" style="width: ${xpPct}%"></div>
+            </div>
+        </div>
+
+        <hr class="profile-divider">
+
+        <div class="profile-stat-row">
+            <div class="profile-stat">
+                <span class="profile-stat-icon">💰</span>
+                <span class="profile-stat-value">${coins.toLocaleString('pt-BR')}</span>
+                <span class="profile-stat-label">Gold</span>
+            </div>
+            <div class="profile-stat">
+                <span class="profile-stat-icon">⚔️</span>
+                <span class="profile-stat-value">${quests_completed}</span>
+                <span class="profile-stat-label">Missões</span>
+            </div>
+        </div>
+    `;
 }
 
 // ==========================================
@@ -57,31 +110,33 @@ async function loadCustomLoot() {
     if (!itemsGrid) return;
 
     try {
-        // FIX: endpoint correto é /admin/loot
         const response = await fetch(`${API_URL}/admin/loot`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (response.ok) {
             const customLoot = await response.json();
-
-            // Limpa os itens estáticos do HTML e renderiza os do banco
             itemsGrid.innerHTML = '';
 
             customLoot.forEach((item, index) => {
                 const shopItem = document.createElement('div');
                 shopItem.className = 'shop-item';
-                shopItem.setAttribute('data-cy', `product-custom-${index}`);
+                shopItem.setAttribute('data-cy',    `product-custom-${index}`);
+                shopItem.setAttribute('data-price', item.price);
+                shopItem.setAttribute('data-id',    item._id);
 
                 shopItem.innerHTML = `
                     <div class="item-name" style="color: #f1c40f;">✨ ${item.name}</div>
-                    <img src="${item.image_url || 'assets/imgs/caneca_pixel.jpg'}" alt="Img" class="item-img" style="border-color: #f1c40f;">
+                    <img src="${item.image || 'assets/imgs/caneca_pixel.jpg'}" alt="Img" class="item-img" style="border-color: #f1c40f;">
                     <div class="item-price">${item.price} 💰</div>
-                    <button class="btn-pixel btn-buy" data-cy="btn-add-custom-${index}" onclick="addToCart('${item.name}', ${item.price})">Adicionar</button>
+                    <div class="shop-item-lock-notice"></div>
+                    <button class="btn-pixel btn-buy" data-cy="btn-add-custom-${index}" onclick="addToCart('${item._id}', '${item.name}', ${item.price})">Adicionar</button>
                 `;
 
                 itemsGrid.appendChild(shopItem);
             });
+
+            applyAffordability(currentCoins);
         }
     } catch (err) {
         console.error('Erro ao carregar vitrine:', err);
@@ -90,14 +145,35 @@ async function loadCustomLoot() {
 }
 
 // ==========================================
+// B: AFFORDABILITY — bloqueia itens inacessíveis
+// ==========================================
+function applyAffordability(budget) {
+    document.querySelectorAll('.shop-item').forEach(item => {
+        const price  = parseInt(item.getAttribute('data-price'), 10);
+        const btn    = item.querySelector('.btn-buy');
+        const notice = item.querySelector('.shop-item-lock-notice');
+
+        if (price > budget) {
+            item.classList.add('locked');
+            if (btn)    btn.disabled = true;
+            if (notice) notice.textContent = `Faltam ${(price - budget).toLocaleString('pt-BR')} 💰`;
+        } else {
+            item.classList.remove('locked');
+            if (btn)    btn.disabled = false;
+            if (notice) notice.textContent = '';
+        }
+    });
+}
+
+// ==========================================
 // 3. GERENCIAMENTO DO CARRINHO
 // ==========================================
-function addToCart(itemName, itemPrice) {
-    const existing = cart.find(item => item.name === itemName);
+function addToCart(itemId, itemName, itemPrice) {
+    const existing = cart.find(item => item.id === itemId);
     if (existing) {
         existing.quantity += 1;
     } else {
-        cart.push({ name: itemName, price: itemPrice, quantity: 1 });
+        cart.push({ id: itemId, name: itemName, price: itemPrice, quantity: 1 });
     }
     updateCartUI();
 }
@@ -147,6 +223,29 @@ function updateCartUI() {
     }
 
     cartTotalElement.innerText = cartTotalValue;
+
+    // Preview de saldo pós-compra
+    const remaining = currentCoins - cartTotalValue;
+    let preview = document.getElementById('cartBalancePreview');
+    if (!preview) {
+        preview = document.createElement('div');
+        preview.id = 'cartBalancePreview';
+        preview.className = 'cart-balance-preview';
+        cartTotalElement.closest('.cart-total').insertAdjacentElement('afterend', preview);
+    }
+
+    if (cartTotalValue > 0) {
+        preview.style.display = 'block';
+        preview.className = `cart-balance-preview ${remaining >= 0 ? 'ok' : 'short'}`;
+        preview.textContent = remaining >= 0
+            ? `Saldo restante: ${remaining.toLocaleString('pt-BR')} 💰`
+            : `Faltam ${Math.abs(remaining).toLocaleString('pt-BR')} 💰 para esta compra`;
+    } else {
+        preview.style.display = 'none';
+    }
+
+    // Atualiza affordability com saldo real descontado do carrinho
+    applyAffordability(Math.max(0, remaining));
 }
 
 // ==========================================
@@ -164,7 +263,6 @@ async function checkout() {
     }
 
     try {
-        // FIX: endpoint /players/checkout criado no backend
         const response = await fetch(`${API_URL}/players/checkout`, {
             method: 'POST',
             headers: {
@@ -172,19 +270,19 @@ async function checkout() {
                 'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
-                totalValue: cartTotalValue,
-                items: cart
+                items: cart.map(item => ({ id: item.id, quantity: item.quantity }))
             })
         });
 
         const data = await response.json();
 
         if (response.ok) {
-            currentCoins = data.updatedCoins;
-            const coinEl = document.getElementById('coinCount');
-            if (coinEl) coinEl.innerText = currentCoins;
+            currentCoins     = data.updatedCoins;
+            playerData.coins = currentCoins;
+            renderPlayerProfile();
 
             clearCart();
+            applyAffordability(currentCoins);
             showToast('Compra realizada com sucesso! O RH enviará os itens 🎁');
         } else {
             showToast(`Falha no checkout: ${data.message || 'Erro inesperado'}`, 'error');

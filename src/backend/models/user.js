@@ -15,8 +15,8 @@ const UserSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['admin', 'adventurer'],
-        default: 'adventurer'
+        enum: ['admin', 'funcionario'],
+        default: 'funcionario'
     },
     nome: {
         type: String,
@@ -28,14 +28,15 @@ const UserSchema = new mongoose.Schema({
     },
     faction: {
         type: String,
-        enum: ['QA', 'Dev', 'Suporte', 'Marketing'],
-        default: 'QA'
+        enum: ['Produto', 'Suporte', 'Customer Service'],
+        default: 'Produto'
     },
     // Dados de gamificação
     xp:       { type: Number, default: 0 },
     coins:    { type: Number, default: 100 },
     level:    { type: Number, default: 1 },
-    is_cursed:{ type: Boolean, default: false },
+    is_cursed:        { type: Boolean, default: false },
+    quests_completed: { type: Number,  default: 0 },
 
 }, { timestamps: true });
 

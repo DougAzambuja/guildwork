@@ -10,7 +10,9 @@
     --paper-color: #f4e8c1;
     --danger-color: #e74c3c;
     --header-bg: rgba(255, 255, 255, 0.95);
-    --shop-panel: rgba(20, 20, 20, 0.85); /* Usado caso queira escurecer fundos depois */
+    --shop-panel: rgba(20, 20, 20, 0.85);
+    /* Altura do header sticky (~90px) + margem inferior (30px) */
+    --sticky-top: 120px;
 }
 
 /* =========================================
@@ -75,7 +77,9 @@ body {
     align-items: center;
     color: #111;
     box-shadow: 8px 8px 0px rgba(0,0,0,0.4);
-    z-index: 10;
+    position: sticky;
+    top: 0;
+    z-index: 100;
     margin-bottom: 30px;
 }
 
@@ -293,7 +297,7 @@ body {
     color: #fff;
     box-shadow: 8px 8px 0px rgba(0,0,0,0.6);
     position: sticky;
-    top: 20px;
+    top: var(--sticky-top);
 }
 
 .cart-title { 
@@ -479,7 +483,7 @@ body {
     color: #fff;
     box-shadow: 8px 8px 0px rgba(0,0,0,0.6);
     position: sticky;
-    top: 20px;
+    top: var(--sticky-top);
 }
 
 .objectives-title {
@@ -568,7 +572,7 @@ body {
     color: #fff;
     box-shadow: 8px 8px 0px rgba(0,0,0,0.6);
     position: sticky;
-    top: 20px;
+    top: var(--sticky-top);
 }
 
 .objectives-title {
@@ -615,7 +619,122 @@ body {
 }
 
 /* =========================================
-   9. ALERTAS VISUAIS (TOASTS)
+   9. SIDEBAR — CADERNETA + SAÚDE DA SPRINT
+   ========================================= */
+.objectives-container {
+    overflow-y: auto;
+    max-height: calc(65vh + 10px);
+}
+
+.objectives-container::-webkit-scrollbar { width: 6px; }
+.objectives-container::-webkit-scrollbar-track { background: #1a252f; }
+.objectives-container::-webkit-scrollbar-thumb { background: #f1c40f; }
+
+.sidebar-metric {
+    margin-bottom: 16px;
+}
+
+.sidebar-metric-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: #ecf0f1;
+    margin-bottom: 7px;
+}
+
+.sidebar-stats-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.sidebar-stat-box {
+    flex: 1;
+    background: #1a252f;
+    border: 2px solid #34495e;
+    padding: 10px 6px;
+    text-align: center;
+}
+
+.sidebar-stat-label {
+    font-size: 8px;
+    color: #7f8c8d;
+    margin-bottom: 6px;
+}
+
+.sidebar-stat-value {
+    font-size: 11px;
+}
+
+.wip-slots {
+    display: flex;
+    gap: 8px;
+}
+
+.wip-slot {
+    flex: 1;
+    height: 16px;
+    border: 3px solid #34495e;
+    background: #1a252f;
+    transition: background 0.3s, border-color 0.3s;
+}
+
+.wip-slot.filled {
+    background: #e67e22;
+    border-color: #d35400;
+    box-shadow: 0 0 6px rgba(230, 126, 34, 0.5);
+}
+
+.sidebar-divider {
+    font-size: 9px;
+    color: #7f8c8d;
+    text-align: center;
+    border-top: 2px dashed #34495e;
+    border-bottom: 2px dashed #34495e;
+    padding: 8px 0;
+    margin: 18px 0 14px 0;
+    letter-spacing: 1px;
+}
+
+.sprint-health-grid {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.sprint-health-item {
+    flex: 1;
+    background: #1a252f;
+    border: 2px solid #34495e;
+    padding: 12px 4px 8px 4px;
+    text-align: center;
+}
+
+.sprint-health-count {
+    font-size: 20px;
+    margin-bottom: 8px;
+    line-height: 1;
+}
+
+.sprint-health-label {
+    font-size: 8px;
+    color: #7f8c8d;
+    line-height: 1.5;
+}
+
+.sla-alert-banner {
+    background: rgba(231, 76, 60, 0.12);
+    border: 2px solid #e74c3c;
+    color: #e74c3c;
+    font-size: 9px;
+    padding: 8px 10px;
+    text-align: center;
+    line-height: 1.6;
+    animation: pulse 1.5s infinite;
+}
+
+/* =========================================
+   10. ALERTAS VISUAIS (TOASTS)
    ========================================= */
 #toast-container {
     position: fixed;
@@ -653,7 +772,53 @@ body {
 }
 
 /* =========================================
-   10. PAINEL DO MESTRE DA GUILDA (ADMIN)
+   10. TABS DO PAINEL ADMIN
+   ========================================= */
+.admin-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 4px solid #f1c40f;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.admin-tab {
+    font-family: 'Press Start 2P', cursive;
+    background: #1a252f;
+    color: #7f8c8d;
+    border: 4px solid #34495e;
+    border-bottom: none;
+    padding: 12px 18px;
+    font-size: 9px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    margin-bottom: -4px;
+}
+
+.admin-tab:hover {
+    background: #2c3e50;
+    color: #ecf0f1;
+}
+
+.admin-tab.active {
+    background: #2c3e50;
+    color: #f1c40f;
+    border-color: #f1c40f;
+    border-bottom: 4px solid #2c3e50;
+}
+
+.admin-tab-panel {
+    display: none;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.admin-tab-panel.active {
+    display: flex;
+}
+
+/* =========================================
+   11. PAINEL DO MESTRE DA GUILDA (ADMIN)
    ========================================= */
 .admin-layout {
     display: flex;
@@ -756,6 +921,30 @@ body {
 
 .btn-edit { background-color: #2980b9; font-size: 8px; padding: 6px 12px; }
 .btn-delete { background-color: #c0392b; font-size: 8px; padding: 6px 12px; }
+
+.pagination-controls {
+    margin-top: 16px;
+}
+
+.pagination-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.pagination-info {
+    font-size: 9px;
+    color: #bdc3c7;
+    text-align: center;
+}
+
+.pagination-row .btn-pixel:disabled {
+    background-color: #34495e;
+    color: #7f8c8d;
+    cursor: not-allowed;
+    box-shadow: none;
+}
 
 /* =========================================
    11. MODAIS (PERFIL E CONFIGURAÇÕES)
@@ -938,6 +1127,286 @@ body {
     100% { transform: translate(1px, 0px); }
 }
 
+/* =========================================
+   14. KANBAN BOARD
+   ========================================= */
+.board-container.kanban-mode {
+    display: block;
+    padding: 20px;
+    height: 65vh;
+    min-height: 550px;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.kanban-board {
+    display: flex;
+    gap: 16px;
+    height: 100%;
+    align-items: stretch;
+}
+
+.kanban-column {
+    flex: 1;
+    min-width: 0;
+    background: rgba(0, 0, 0, 0.35);
+    border: 4px solid #3e2312;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.kanban-col-header {
+    background: #3e2312;
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 4px solid #111;
+    flex-shrink: 0;
+}
+
+.kanban-col-title {
+    color: #f1c40f;
+    font-size: 9px;
+    letter-spacing: 1px;
+}
+
+.kanban-col-count {
+    background: #111;
+    color: #f1c40f;
+    font-size: 9px;
+    padding: 2px 8px;
+    border: 2px solid #f1c40f;
+    min-width: 20px;
+    text-align: center;
+}
+
+.kanban-col-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.kanban-col-body::-webkit-scrollbar { width: 8px; }
+.kanban-col-body::-webkit-scrollbar-track { background: #3e2312; }
+.kanban-col-body::-webkit-scrollbar-thumb { background: #f1c40f; border: 2px solid #111; }
+.kanban-col-body::-webkit-scrollbar-thumb:hover { background: #e67e22; }
+
+.kanban-card {
+    background: var(--paper-color);
+    border: 4px solid #111;
+    padding: 14px;
+    box-shadow: 5px 5px 0px rgba(0, 0, 0, 0.5);
+    position: relative;
+    flex-shrink: 0;
+}
+
+.kanban-card.urgent  { border-color: var(--danger-color); background: #ffcccc; }
+.kanban-card.support { border-color: #8e44ad; background: #ede0f5; }
+.kanban-card.done-card { opacity: 0.65; filter: grayscale(0.4); }
+
+.kanban-card-title {
+    font-size: 10px;
+    line-height: 1.6;
+    margin-bottom: 10px;
+    color: #111;
+}
+
+.kanban-card-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    border-top: 3px dotted #888;
+    padding-top: 8px;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.kanban-type-badge {
+    font-size: 8px;
+    padding: 3px 8px;
+    border: 2px solid #111;
+    display: inline-block;
+    margin-bottom: 8px;
+}
+
+.badge-normal  { background: #2980b9; color: #fff; }
+.badge-urgent  { background: #c0392b; color: #fff; }
+.badge-support { background: #8e44ad; color: #fff; }
+.badge-jira    { background: #0052cc; color: #fff; }
+
+.kanban-assignee {
+    font-size: 8px;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.kanban-assignee-avatar {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #111;
+    object-fit: cover;
+    image-rendering: pixelated;
+}
+
+.btn-kanban {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 8px;
+    padding: 8px 10px;
+    border: 3px solid #111;
+    cursor: pointer;
+    box-shadow: 3px 3px 0px #111;
+    width: 100%;
+    display: block;
+    margin-top: 8px;
+}
+
+.btn-kanban:active { transform: translate(3px, 3px); box-shadow: none; }
+.btn-pickup { background: #27ae60; color: #fff; }
+.btn-finish { background: #e67e22; color: #fff; }
+.btn-pickup:hover { background: #2ecc71; }
+.btn-finish:hover { background: #f39c12; }
+.btn-kanban:disabled {
+    background: #7f8c8d;
+    color: #bdc3c7;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.wip-warning {
+    font-size: 8px;
+    color: #e74c3c;
+    text-align: center;
+    padding: 4px;
+    border: 2px dashed #e74c3c;
+    background: rgba(231, 76, 60, 0.1);
+    margin-bottom: 6px;
+}
+
+.kanban-sla-timer {
+    font-size: 8px;
+    color: #c0392b;
+    text-align: center;
+    border: 2px dashed #c0392b;
+    padding: 4px;
+    background: rgba(255, 255, 255, 0.5);
+    margin-bottom: 6px;
+}
+
+/* =========================================
+   15. MODAL DE DETALHES DA QUEST
+   ========================================= */
+.quest-detail-modal {
+    background: #1a252f;
+    color: #ecf0f1;
+    max-width: 500px;
+    border: 6px solid #f1c40f;
+    box-shadow: 16px 16px 0px rgba(0,0,0,0.9);
+}
+
+.quest-modal-title {
+    font-size: 14px;
+    line-height: 1.8;
+    color: #f1c40f;
+    margin: 14px 0;
+    padding-bottom: 14px;
+    border-bottom: 4px dotted #34495e;
+}
+
+.quest-modal-status-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    font-size: 10px;
+    color: #bdc3c7;
+}
+
+.quest-modal-rewards {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    margin: 16px 0;
+    padding: 18px;
+    background: #0d1b24;
+    border: 3px solid #34495e;
+}
+
+.quest-modal-reward-item {
+    text-align: center;
+}
+
+.quest-modal-reward-item .quest-modal-label {
+    margin-bottom: 8px;
+}
+
+.quest-modal-reward-item .xp-reward,
+.quest-modal-reward-item .coin-reward {
+    font-size: 16px;
+}
+
+.quest-modal-reward-divider {
+    width: 3px;
+    height: 50px;
+    background: #34495e;
+}
+
+.quest-modal-section {
+    margin: 10px 0;
+    padding: 12px 14px;
+    background: #0d1b24;
+    border-left: 4px solid #f1c40f;
+}
+
+.quest-modal-label {
+    font-size: 9px;
+    color: #7f8c8d;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+
+.quest-modal-value {
+    font-size: 11px;
+    color: #ecf0f1;
+    line-height: 1.6;
+}
+
+.quest-modal-sla-none {
+    color: #2ecc71;
+    font-size: 11px;
+}
+
+.quest-modal-sla-active {
+    color: #e74c3c;
+    font-size: 11px;
+}
+
+/* Card do kanban fica clicável e dá feedback visual */
+.kanban-card {
+    cursor: pointer;
+}
+
+.kanban-card:hover {
+    box-shadow: 8px 8px 0px rgba(0,0,0,0.7);
+}
+
+.kanban-done-stamp {
+    font-size: 8px;
+    color: #27ae60;
+    text-align: center;
+    padding: 4px;
+    border: 2px solid #27ae60;
+    background: rgba(39, 174, 96, 0.1);
+}
+
 /* HUD de Métricas (Dashboard) */
 .report-grid {
     display: grid;
@@ -973,3 +1442,193 @@ body {
 /* Cores dos valores */
 .gold-text { color: #f1c40f; text-shadow: 1px 1px 0 #000; }
 .sla-text { color: #2ecc71; text-shadow: 1px 1px 0 #000; }
+
+/* =========================================
+   16. LOJA — PERFIL E AFFORDABILITY
+   ========================================= */
+
+/* Layout de 3 colunas: perfil | vitrine | carrinho */
+.shop-layout {
+    display: grid;
+    grid-template-columns: 210px 1fr 260px;
+    gap: 20px;
+    align-items: start;
+}
+
+/* Remove a largura fixa de 70% dentro do novo grid */
+.shop-layout .shop-container {
+    width: auto;
+    flex: none;
+}
+
+/* Remove a largura fixa de 30% dentro do novo grid */
+.shop-layout .cart-container {
+    width: auto;
+}
+
+/* — Card de Perfil — */
+.shop-profile {
+    background-color: #2c3e50;
+    border: 6px solid #111;
+    padding: 20px;
+    box-shadow: 8px 8px 0px rgba(0,0,0,0.6);
+    position: sticky;
+    top: var(--sticky-top);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    color: #fff;
+}
+
+.profile-avatar-wrap {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    flex-shrink: 0;
+}
+
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    border: 4px solid #f1c40f;
+    object-fit: cover;
+    display: block;
+}
+
+.profile-level-badge {
+    position: absolute;
+    bottom: -10px;
+    right: -10px;
+    background: #f1c40f;
+    color: #111;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 7px;
+    padding: 4px 6px;
+    border: 3px solid #111;
+    white-space: nowrap;
+}
+
+.profile-name {
+    font-size: 10px;
+    color: #f1c40f;
+    text-align: center;
+    margin: 0;
+    line-height: 1.6;
+    word-break: break-word;
+}
+
+.profile-guild-badge {
+    font-size: 8px;
+    color: #bdc3c7;
+    background: #1a252f;
+    border: 2px solid #34495e;
+    padding: 6px 10px;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.profile-xp-section {
+    width: 100%;
+}
+
+.profile-xp-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 7px;
+    color: #7f8c8d;
+    margin-bottom: 5px;
+}
+
+.profile-xp-track {
+    width: 100%;
+    height: 10px;
+    background: #111;
+    border: 2px solid #34495e;
+}
+
+.profile-xp-fill {
+    height: 100%;
+    background: #27ae60;
+    transition: width 0.6s ease-in-out;
+    min-width: 2px;
+}
+
+.profile-divider {
+    width: 100%;
+    border: none;
+    border-top: 3px dashed #34495e;
+}
+
+.profile-stat-row {
+    display: flex;
+    width: 100%;
+    gap: 8px;
+}
+
+.profile-stat {
+    flex: 1;
+    background: #1a252f;
+    border: 2px solid #34495e;
+    padding: 10px 4px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: center;
+}
+
+.profile-stat-icon { font-size: 14px; }
+
+.profile-stat-value {
+    font-size: 10px;
+    color: #f1c40f;
+}
+
+.profile-stat-label {
+    font-size: 7px;
+    color: #7f8c8d;
+}
+
+/* — Itens inacessíveis (B: Affordability) — */
+.shop-item.locked {
+    opacity: 0.5;
+    filter: grayscale(0.4);
+    border-color: #7f8c8d !important;
+}
+
+.shop-item.locked .item-price {
+    color: #e74c3c;
+}
+
+.shop-item.locked .btn-buy {
+    background-color: #7f8c8d !important;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none !important;
+}
+
+.shop-item.locked .btn-buy:active {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.shop-item-lock-notice {
+    font-size: 8px;
+    color: #e74c3c;
+    margin-bottom: 6px;
+}
+
+/* — Preview de saldo pós-compra no carrinho — */
+.cart-balance-preview {
+    font-size: 9px;
+    padding: 8px 10px;
+    text-align: right;
+    border-top: 2px dashed #34495e;
+    margin-top: -10px;
+    margin-bottom: 14px;
+}
+
+.cart-balance-preview.ok    { color: #2ecc71; }
+.cart-balance-preview.short { color: #e74c3c; animation: pulse 1s infinite; }

@@ -1,4 +1,5 @@
-const User = require('../models/user');
+const User     = require('../models/user');
+const LootItem = require('../models/lootItem');
 
 const MAX_XP = 10000;
 
@@ -76,20 +77,36 @@ exports.updateCurse = async (req, res) => {
     }
 };
 
-// POST /api/players/checkout — debita moedas com segurança
+// POST /api/players/checkout — debita moedas com segurança (preço recalculado no servidor)
 exports.checkout = async (req, res) => {
     try {
-        const { totalValue, items } = req.body;
-        const user = await User.findById(req.user.id);
+        const { items } = req.body; // [{id, quantity}]
 
-        // Validação back-end: Impede que o jogador burle o front-end
-        if (user.coins < totalValue) {
+        if (!items || !items.length) {
+            return res.status(400).json({ message: 'Carrinho vazio.' });
+        }
+
+        // Busca preços reais no banco — o front-end não é fonte da verdade
+        const ids    = items.map(i => i.id);
+        const dbItems = await LootItem.find({ _id: { $in: ids } });
+
+        let total = 0;
+        for (const cartItem of items) {
+            const dbItem = dbItems.find(i => i._id.toString() === cartItem.id);
+            if (!dbItem) {
+                return res.status(400).json({ message: 'Item inválido detectado. Anomalia na Guilda.' });
+            }
+            total += dbItem.price * cartItem.quantity;
+        }
+
+        const user = await User.findById(req.user.id);
+        if (user.coins < total) {
             return res.status(400).json({ message: 'Gold insuficiente. A guilda detectou uma anomalia.' });
         }
 
-        user.coins -= totalValue;
+        user.coins -= total;
         await user.save();
-        
+
         res.json({ message: 'Compra processada.', updatedCoins: user.coins });
 
     } catch (err) {

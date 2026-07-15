@@ -25,13 +25,32 @@ const QuestSchema = new mongoose.Schema({
         type: Number, 
         default: null 
     }, // null = missão pacífica sem SLA
-    is_active: { 
-        type: Boolean, 
-        default: true 
-    }, // Mantemos o soft delete aqui para manter o histórico da Sprint
-    sprint_id: { 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'Sprint' 
+    status: {
+        type: String,
+        enum: ['todo', 'in_progress', 'done'],
+        default: 'todo'
+    },
+    assigned_to: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
+    started_at: {
+        type: Date,
+        default: null
+    },
+    faction: {
+        type: String,
+        enum: ['Produto', 'Suporte', 'Customer Service'],
+        default: 'Produto'
+    },
+    is_active: {
+        type: Boolean,
+        default: true
+    },
+    sprint_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Sprint'
     }
 
 }, { timestamps: true });

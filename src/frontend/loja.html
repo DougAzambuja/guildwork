@@ -8,14 +8,8 @@
 </head>
 <body>
     <div class="main-wrapper">
-        <div class="top-bar">
-            <div class="player-info">
-                <div class="avatar">QA<br>Master</div>
-                <div class="stats">
-                    <h1 id="playerName" data-cy="player-name">Loja da Guilda</h1>
-                    <div class="coin-display"><span class="coin-icon">💰</span> <span id="coinCount" data-cy="coin-count">0</span> Gold</div>
-                </div>
-            </div>
+        <div class="top-bar" style="justify-content: space-between;">
+            <h1 style="margin:0; font-size:14px; color:#d35400;">🏪 LOJA DA GUILDA</h1>
             <div class="actions">
                 <a href="index.html" class="btn-pixel" data-cy="btn-voltar-mural">Voltar ao Mural</a>
                 <button class="btn-pixel logout-btn" data-cy="btn-logout" onclick="logout()">Sair</button>
@@ -23,7 +17,10 @@
         </div>
 
         <div class="shop-layout">
-            
+
+            <!-- A: Card de perfil do jogador -->
+            <div id="shopProfile" class="shop-profile"></div>
+
             <div class="shop-container">
                 <h2 class="shop-title">LOJA DE LOOT (SWAG)</h2>
                 
@@ -46,6 +43,7 @@
 
     <div id="toast-container" data-cy="toast-container"></div>
 
+    <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/loja.js"></script>
 </body>

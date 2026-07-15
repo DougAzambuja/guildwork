@@ -15,10 +15,7 @@ function showToast(message, type = 'success') {
 }
 
 function logout() {
-    // O comando clear() garante a destruição do 'guild_token', 'guild_role' 
-    // e qualquer outro cache de segurança que o backend tenha enviado.
     localStorage.clear();
-    
-    // Redireciona para os portões do castelo
+    sessionStorage.clear();
     window.location.href = 'login.html';
 }

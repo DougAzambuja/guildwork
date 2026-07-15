@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OfficeQuest - Mural da Guilda</title>
+    <title>GuildWork - Board</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -22,79 +22,168 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="actions">
-                <button class="btn-pixel" data-cy="btn-sync-jira" onclick="syncJira()">Sync Jira API</button>
+                <button class="btn-pixel" onclick="loadBoard()" title="Recarregar board">&#x21BB; Atualizar</button>
                 <a href="loja.html" class="btn-pixel shop-btn" data-cy="link-loja">Ir para Loja</a>
                 <button class="btn-pixel logout-btn" data-cy="btn-logout" onclick="logout()">Sair</button>
             </div>
         </div>
 
         <div class="mural-layout">
-            
-            <div class="board-container" id="questBoard" data-cy="quest-board">
-                
-                <div class="quest-paper urgent" id="urgentBugCard" data-cy="quest-card-urgent" onclick="completeUrgentBug(this, 500, 50)">
-                    <div class="quest-title" data-cy="quest-title">[SLA CRÍTICO]<br><br>Queda do Servidor de Pagamentos</div>
-                    <div class="quest-meta">
-                        <span class="xp-reward" id="bugXpText">+500 XP</span>
-                        <span class="coin-reward" id="bugCoinText">+50 💰</span>
+            <div class="board-container kanban-mode" id="questBoard" data-cy="quest-board">
+                <div class="kanban-board">
+                    <!-- A FAZER -->
+                    <div class="kanban-column">
+                        <div class="kanban-col-header">
+                            <span class="kanban-col-title">A FAZER</span>
+                            <span class="kanban-col-count" id="count-todo">0</span>
+                        </div>
+                        <div class="kanban-col-body" id="col-todo"></div>
                     </div>
-                    <div class="quest-timer" id="bugTimer" data-cy="quest-timer">SLA: 30s</div>
-                    <div class="completed-stamp" data-cy="quest-completed-stamp">FEITO</div>
-                </div>
 
-                <div class="quest-paper urgent" data-cy="quest-card" onclick="completeQuest(this, 350, 35)">
-                    <div class="quest-title" data-cy="quest-title">[BUG CRÍTICO]<br><br>Erro de Timeout em Produção</div>
-                    <div class="quest-meta">
-                        <span class="xp-reward">+350 XP</span>
-                        <span class="coin-reward">+35 💰</span>
+                    <!-- EM PROGRESSO -->
+                    <div class="kanban-column">
+                        <div class="kanban-col-header">
+                            <span class="kanban-col-title">EM PROGRESSO</span>
+                            <span class="kanban-col-count" id="count-in-progress">0</span>
+                        </div>
+                        <div class="kanban-col-body" id="col-in-progress"></div>
                     </div>
-                    <div class="completed-stamp" data-cy="quest-completed-stamp">FEITO</div>
-                </div>
 
-                <div class="quest-paper" data-cy="quest-support" onclick="completeQuest(this, 400, 40)">
-                    <div class="quest-title" data-cy="quest-title">[SUPORTE]<br><br>Resolver chamado VIP do cliente</div>
-                    <div class="quest-meta">
-                        <span class="xp-reward">+400 XP</span>
-                        <span class="coin-reward">+40 💰</span>
+                    <!-- CONCLUÍDO -->
+                    <div class="kanban-column">
+                        <div class="kanban-col-header">
+                            <span class="kanban-col-title">CONCLUÍDO</span>
+                            <span class="kanban-col-count" id="count-done">0</span>
+                        </div>
+                        <div class="kanban-col-body" id="col-done"></div>
                     </div>
-                    <div class="completed-stamp" data-cy="quest-completed-stamp">FEITO</div>
                 </div>
-
-                <div class="quest-paper" data-cy="quest-card" onclick="completeQuest(this, 300, 30)">
-                    <div class="quest-title" data-cy="quest-title">[TESTE]<br><br>Validar cenários no fluxo de pagamento</div>
-                    <div class="quest-meta">
-                        <span class="xp-reward">+300 XP</span>
-                        <span class="coin-reward">+30 💰</span>
-                    </div>
-                    <div class="completed-stamp" data-cy="quest-completed-stamp">FEITO</div>
-                </div>
-                
             </div>
 
             <div class="objectives-container" data-cy="objectives-panel">
-                <div class="objectives-title">METAS DA SPRINT</div>
-                
-                <div class="objective-item" data-cy="obj-task-container">
-                    <div class="objective-name">
-                        <span>Cards Fechados</span>
-                        <span id="objTaskText" data-cy="obj-task-text">0/5</span>
+
+                <!-- ═══ CADERNETA DO HERÓI ═══ -->
+                <div class="objectives-title">CADERNETA DO HERÓI</div>
+
+                <div class="sidebar-metric">
+                    <div class="sidebar-metric-header">
+                        <span>Missões Fechadas</span>
+                        <span id="objTaskText" data-cy="obj-task-text">0 / 5</span>
                     </div>
                     <div class="obj-bar-bg">
                         <div class="obj-bar-fill" id="objTaskBar" data-cy="obj-task-bar"></div>
                     </div>
                 </div>
+
+                <div class="sidebar-stats-row">
+                    <div class="sidebar-stat-box">
+                        <div class="sidebar-stat-label">XP Sessão</div>
+                        <div class="sidebar-stat-value xp-reward" id="sessionXp">+0</div>
+                    </div>
+                    <div class="sidebar-stat-box">
+                        <div class="sidebar-stat-label">Gold Sessão</div>
+                        <div class="sidebar-stat-value coin-reward" id="sessionGold">+0</div>
+                    </div>
+                </div>
+
+                <div class="sidebar-metric">
+                    <div class="sidebar-metric-header">
+                        <span>Meu WIP</span>
+                        <span id="myWipText">0 / 3</span>
+                    </div>
+                    <div class="wip-slots" id="wipSlots">
+                        <div class="wip-slot"></div>
+                        <div class="wip-slot"></div>
+                        <div class="wip-slot"></div>
+                    </div>
+                </div>
+
+                <div class="sidebar-metric">
+                    <div class="sidebar-metric-header">
+                        <span>Próximo Nível</span>
+                        <span id="xpToLevelText">-- XP</span>
+                    </div>
+                    <div class="obj-bar-bg">
+                        <div class="obj-bar-fill" id="xpToLevelBar" style="background:#9b59b6;"></div>
+                    </div>
+                </div>
+
+                <!-- ═══ SAÚDE DA SPRINT ═══ -->
+                <div class="sidebar-divider">SAÚDE DA SPRINT</div>
+
+                <div class="sprint-health-grid">
+                    <div class="sprint-health-item">
+                        <div class="sprint-health-count" id="healthTodo" style="color:#3498db;">0</div>
+                        <div class="sprint-health-label">A Fazer</div>
+                    </div>
+                    <div class="sprint-health-item">
+                        <div class="sprint-health-count" id="healthWip" style="color:#e67e22;">0</div>
+                        <div class="sprint-health-label">Em Progresso</div>
+                    </div>
+                    <div class="sprint-health-item">
+                        <div class="sprint-health-count" id="healthDone" style="color:#27ae60;">0</div>
+                        <div class="sprint-health-label">Concluídas</div>
+                    </div>
+                </div>
+
+                <div id="slaAlertBanner" class="sla-alert-banner" style="display:none;">
+                    ⚠ <span id="slaAlertCount">0</span> quest(s) com SLA crítico
+                </div>
+
             </div>
+        </div>
+    </div>
+
+    <!-- Modal de Detalhes da Quest -->
+    <div id="questDetailModal" class="modal-overlay" style="display: none;" onclick="if(event.target===this)closeQuestModal()">
+        <div class="modal-content quest-detail-modal">
+            <div id="qdm-type-badge"></div>
+            <h2 id="qdm-title" class="quest-modal-title"></h2>
+
+            <div class="quest-modal-status-row">
+                <span class="quest-modal-label">Status</span>
+                <span id="qdm-status"></span>
+            </div>
+
+            <div class="quest-modal-rewards">
+                <div class="quest-modal-reward-item">
+                    <div class="quest-modal-label">XP</div>
+                    <span class="xp-reward" id="qdm-xp"></span>
+                </div>
+                <div class="quest-modal-reward-divider"></div>
+                <div class="quest-modal-reward-item">
+                    <div class="quest-modal-label">Gold</div>
+                    <span class="coin-reward" id="qdm-coins"></span>
+                </div>
+            </div>
+
+            <div class="quest-modal-section">
+                <div class="quest-modal-label">SLA</div>
+                <div id="qdm-sla" class="quest-modal-value"></div>
+            </div>
+
+            <div class="quest-modal-section" id="qdm-assignee-section">
+                <div class="quest-modal-label">Aventureiro</div>
+                <div id="qdm-assignee" class="quest-modal-value kanban-assignee"></div>
+            </div>
+
+            <div class="quest-modal-section" id="qdm-started-section" style="display:none;">
+                <div class="quest-modal-label">Em progresso desde</div>
+                <div id="qdm-started" class="quest-modal-value"></div>
+            </div>
+
+            <button class="btn-pixel" onclick="closeQuestModal()" style="width:100%;margin-top:20px;background:#7f8c8d;">FECHAR</button>
         </div>
     </div>
 
     <div id="profileModal" class="modal-overlay" style="display: none;" data-cy="profile-modal">
         <div class="modal-content">
-            <h2 class="section-title" style="text-align: center;">🛡️ SEU HERÓI</h2>
-            
+            <h2 class="section-title" style="text-align: center;">SEU HERÓI</h2>
+
             <img src="" id="modalAvatarPreview" class="avatar-preview" alt="Preview">
-            
+
             <form id="profileForm" data-cy="profile-form">
                 <div class="form-group">
                     <label>Nome do Aventureiro</label>
@@ -117,7 +206,7 @@
                     <label>Usar Avatar Customizado (URL da Imagem)</label>
                     <input type="text" id="editProfilePic" class="pixel-input" placeholder="Cole o link de uma imagem..." data-cy="input-profile-pic">
                 </div>
-                
+
                 <div class="actions" style="margin-top: 25px; justify-content: space-between;">
                     <button type="button" class="btn-pixel" style="background-color: #7f8c8d;" onclick="closeProfileModal()">CANCELAR</button>
                     <button type="submit" class="btn-pixel" style="background-color: #27ae60;">SALVAR PERFIL</button>
@@ -127,7 +216,8 @@
     </div>
 
     <div id="toast-container" data-cy="toast-container"></div>
-    
+
+    <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/mural.js"></script>
 </body>

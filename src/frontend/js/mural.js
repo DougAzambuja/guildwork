@@ -1,8 +1,7 @@
 // ==========================================
 // 0. PROTEÇÃO DE ROTA E INICIALIZAÇÃO
 // ==========================================
-const API_URL = 'http://localhost:3001/api';
-const token   = localStorage.getItem('guild_token');
+const token = localStorage.getItem('guild_token');
 
 if (!token || !localStorage.getItem('guild_role')) {
     window.location.href = 'login.html';
@@ -11,35 +10,38 @@ if (!token || !localStorage.getItem('guild_role')) {
 // ==========================================
 // 1. VARIÁVEIS DE ESTADO
 // ==========================================
-const maxXP = 10000;
+const maxXP    = 10000;
+const WIP_LIMIT = 3;
 
 let playerData = {
-    id:        null,
-    xp:        0,
-    coins:     0,
-    level:     1,
-    tasks:     0,
-    farmedGold: 0, // rastrea gold ganho na sessão para a barra de objetivos
-    isCursed:  false,
-    name:      'Aventureiro',
-    avatar:    'assets/imgs/caneca_pixel.jpg'
+    id:         null,
+    xp:         0,
+    coins:      0,
+    level:      1,
+    tasks:      0,
+    farmedGold: parseInt(sessionStorage.getItem('session_gold') || '0'),
+    farmedXP:   parseInt(sessionStorage.getItem('session_xp')   || '0'),
+    isCursed:   false,
+    name:       'Aventureiro',
+    avatar:     'assets/imgs/caneca_pixel.jpg'
 };
 
-const targetTasks = 5;
-const targetGold  = 150;
-let bugInterval   = null;
+let currentBoardStats = { todo: 0, inProgress: 0, done: 0, myWip: 0, slaAlerts: 0 };
+
+const targetTasks  = 5;
+const activeTimers = new Map();
+const questCache   = new Map();
 
 document.addEventListener('DOMContentLoaded', async () => {
     await fetchPlayerState();
-    syncJira();
+    await loadBoard();
 });
 
 // ==========================================
-// 2. COMUNICAÇÃO COM A API
+// 2. DADOS DO JOGADOR
 // ==========================================
 async function fetchPlayerState() {
     try {
-        // FIX: endpoint correto é /players/me
         const res = await fetch(`${API_URL}/players/me`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -48,26 +50,22 @@ async function fetchPlayerState() {
             const data = await res.json();
             playerData = {
                 id:         data._id,
-                xp:         data.xp        || 0,
-                coins:      data.coins      || 0,
-                level:      data.level      || 1,
+                xp:         data.xp              || 0,
+                coins:      data.coins            || 0,
+                level:      data.level            || 1,
                 tasks:      data.quests_completed || 0,
-                farmedGold: 0,
-                isCursed:   data.is_cursed  || false,
-                name:       data.nome       || data.username,
-                avatar:     data.avatar_url || 'assets/imgs/caneca_pixel.jpg'
+                farmedGold: parseInt(sessionStorage.getItem('session_gold') || '0'),
+                farmedXP:   parseInt(sessionStorage.getItem('session_xp')   || '0'),
+                isCursed:   data.is_cursed        || false,
+                name:       data.nome             || data.username,
+                avatar:     data.avatar_url       || 'assets/imgs/caneca_pixel.jpg'
             };
 
             updateUI();
 
-            if (playerData.isCursed) {
-                applyCurseVisuals();
-            } else {
-                startBugTimer();
-            }
+            if (playerData.isCursed) applyCurseVisuals();
 
         } else {
-            // Token inválido ou expirado — força logout
             localStorage.clear();
             window.location.href = 'login.html';
         }
@@ -77,40 +75,428 @@ async function fetchPlayerState() {
     }
 }
 
-async function updateServerGamification(xpGained, coinsGained) {
+// ==========================================
+// 3. KANBAN BOARD — CARREGAMENTO
+// ==========================================
+async function loadBoard() {
     try {
-        // FIX: endpoint correto é /players/xp (POST)
-        const res = await fetch(`${API_URL}/players/xp`, {
+        const res = await fetch(`${API_URL}/quests`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+            const quests = await res.json();
+            renderBoard(quests);
+        } else {
+            showToast('Falha ao carregar o board.', 'error');
+        }
+    } catch (err) {
+        console.error('Erro ao carregar board:', err);
+        showToast('Erro de conexão com o servidor.', 'error');
+    }
+}
+
+// ==========================================
+// 4. KANBAN BOARD — RENDERIZAÇÃO
+// ==========================================
+function renderBoard(quests) {
+    activeTimers.forEach(id => clearInterval(id));
+    activeTimers.clear();
+
+    const todo       = quests.filter(q => q.status === 'todo');
+    const inProgress = quests.filter(q => q.status === 'in_progress');
+    const done       = quests.filter(q => q.status === 'done');
+
+    quests.forEach(q => questCache.set(q._id, q));
+
+    const myWipCount = inProgress.filter(q =>
+        q.assigned_to && q.assigned_to._id === playerData.id
+    ).length;
+
+    const slaAlerts = inProgress.filter(q => {
+        if (!q.sla_seconds || !q.started_at) return false;
+        const elapsed = (Date.now() - new Date(q.started_at).getTime()) / 1000;
+        return elapsed > q.sla_seconds * 0.75;
+    }).length;
+
+    currentBoardStats = {
+        todo:       todo.length,
+        inProgress: inProgress.length,
+        done:       done.length,
+        myWip:      myWipCount,
+        slaAlerts
+    };
+
+    renderColumn('col-todo',        todo,       q => renderTodoCard(q, myWipCount));
+    renderColumn('col-in-progress', inProgress, q => renderInProgressCard(q));
+    renderColumn('col-done',        done,       renderDoneCard);
+
+    const countTodo = document.getElementById('count-todo');
+    const countWip  = document.getElementById('count-in-progress');
+    const countDone = document.getElementById('count-done');
+    if (countTodo) countTodo.textContent = todo.length;
+    if (countWip)  countWip.textContent  = inProgress.length;
+    if (countDone) countDone.textContent = done.length;
+
+    updateSidebar();
+}
+
+function renderColumn(colId, quests, cardFn) {
+    const body = document.getElementById(colId);
+    if (!body) return;
+    body.innerHTML = '';
+    if (quests.length === 0) {
+        body.innerHTML = '<div style="font-size:8px;color:#bdc3c7;text-align:center;padding:20px;">Nenhuma missão aqui.</div>';
+        return;
+    }
+    quests.forEach(q => body.appendChild(cardFn(q)));
+}
+
+function renderTodoCard(quest, myWipCount) {
+    const el = document.createElement('div');
+    const typeClass = quest.type === 'urgent' ? 'urgent' : (quest.type === 'support' ? 'support' : '');
+    el.className = `kanban-card ${typeClass}`;
+
+    const overWip = myWipCount >= WIP_LIMIT;
+    const slaInfo = quest.sla_seconds
+        ? `<div style="font-size:8px;color:#888;margin-bottom:8px;">SLA: ${formatSla(quest.sla_seconds)}</div>`
+        : '';
+    const wipWarning = overWip
+        ? '<div class="wip-warning">Limite WIP atingido (max 3)</div>'
+        : '';
+
+    el.innerHTML = `
+        <span class="kanban-type-badge badge-${quest.type || 'normal'}">${(quest.type || 'NORMAL').toUpperCase()}</span>
+        <div class="kanban-card-title">${quest.title}</div>
+        <div class="kanban-card-meta">
+            <span class="xp-reward">+${quest.xp_reward} XP</span>
+            <span class="coin-reward">+${quest.coin_reward} 💰</span>
+        </div>
+        ${slaInfo}
+        ${wipWarning}
+        <button class="btn-kanban btn-pickup" onclick="event.stopPropagation(); pickUpQuest('${quest._id}')" ${overWip ? 'disabled' : ''}>
+            ⚔️ ACEITAR MISSÃO
+        </button>
+    `;
+
+    el.addEventListener('click', () => openQuestModal(quest._id));
+    return el;
+}
+
+function renderInProgressCard(quest) {
+    const el = document.createElement('div');
+    const typeClass = quest.type === 'urgent' ? 'urgent' : (quest.type === 'support' ? 'support' : '');
+    el.className = `kanban-card ${typeClass}`;
+
+    const assignee     = quest.assigned_to;
+    const isMyQuest    = assignee && assignee._id === playerData.id;
+    const assigneeName = assignee ? (assignee.nome || assignee.username) : 'Desconhecido';
+    const assigneeAv   = assignee && assignee.avatar_url
+        ? assignee.avatar_url
+        : 'assets/imgs/caneca_pixel.jpg';
+
+    const slaHtml = quest.sla_seconds
+        ? `<div class="kanban-sla-timer" id="sla-${quest._id}">SLA: calculando...</div>`
+        : '';
+    const finishBtn = isMyQuest
+        ? `<button class="btn-kanban btn-finish" onclick="finishQuest('${quest._id}', '${quest.type}')">✅ CONCLUIR</button>`
+        : '';
+
+    el.innerHTML = `
+        <span class="kanban-type-badge badge-${quest.type || 'normal'}">${(quest.type || 'NORMAL').toUpperCase()}</span>
+        <div class="kanban-card-title">${quest.title}</div>
+        <div class="kanban-card-meta">
+            <span class="xp-reward">+${quest.xp_reward} XP</span>
+            <span class="coin-reward">+${quest.coin_reward} 💰</span>
+        </div>
+        <div class="kanban-assignee">
+            <img class="kanban-assignee-avatar" src="${assigneeAv}" alt="">
+            <span>${assigneeName}</span>
+        </div>
+        ${slaHtml}
+        ${finishBtn.replace('onclick="finishQuest(', 'onclick="event.stopPropagation(); finishQuest(')}
+    `;
+
+    if (quest.sla_seconds && quest.started_at) {
+        startSlaTimer(quest._id, quest.sla_seconds, quest.started_at);
+    }
+
+    el.addEventListener('click', () => openQuestModal(quest._id));
+    return el;
+}
+
+function renderDoneCard(quest) {
+    const el = document.createElement('div');
+    el.className = 'kanban-card done-card';
+
+    const assigneeName = quest.assigned_to
+        ? (quest.assigned_to.nome || quest.assigned_to.username)
+        : '—';
+
+    el.innerHTML = `
+        <span class="kanban-type-badge badge-${quest.type || 'normal'}">${(quest.type || 'NORMAL').toUpperCase()}</span>
+        <div class="kanban-card-title">${quest.title}</div>
+        <div class="kanban-card-meta">
+            <span class="xp-reward">+${quest.xp_reward} XP</span>
+            <span class="coin-reward">+${quest.coin_reward} 💰</span>
+        </div>
+        <div class="kanban-assignee"><span>Por: ${assigneeName}</span></div>
+        <div class="kanban-done-stamp">✅ CONCLUÍDA</div>
+    `;
+
+    el.addEventListener('click', () => openQuestModal(quest._id));
+    return el;
+}
+
+// ==========================================
+// 5. MODAL DE DETALHES DA QUEST
+// ==========================================
+const STATUS_MAP = {
+    todo:        { label: 'A Fazer',      color: '#2980b9' },
+    in_progress: { label: 'Em Progresso', color: '#e67e22' },
+    done:        { label: 'Concluída',    color: '#27ae60' }
+};
+
+function openQuestModal(questId) {
+    const quest = questCache.get(questId);
+    if (!quest) return;
+
+    const st = STATUS_MAP[quest.status] || STATUS_MAP.todo;
+
+    // Tipo
+    const typeEl = document.getElementById('qdm-type-badge');
+    typeEl.innerHTML = `<span class="kanban-type-badge badge-${quest.type || 'normal'}" style="font-size:9px;">${(quest.type || 'NORMAL').toUpperCase()}</span>`;
+
+    // Título
+    document.getElementById('qdm-title').textContent = quest.title;
+
+    // Status
+    document.getElementById('qdm-status').innerHTML =
+        `<span class="status-badge" style="background:${st.color}; padding:4px 10px; font-size:8px;">${st.label}</span>`;
+
+    // Recompensas
+    document.getElementById('qdm-xp').textContent    = `+${quest.xp_reward} XP`;
+    document.getElementById('qdm-coins').textContent = `+${quest.coin_reward} 💰`;
+
+    // SLA
+    const slaEl = document.getElementById('qdm-sla');
+    if (!quest.sla_seconds) {
+        slaEl.innerHTML = '<span class="quest-modal-sla-none">Sem tempo limite</span>';
+    } else if (quest.status === 'in_progress' && quest.started_at) {
+        const elapsed   = (Date.now() - new Date(quest.started_at).getTime()) / 1000;
+        const remaining = Math.max(0, quest.sla_seconds - Math.floor(elapsed));
+        slaEl.innerHTML = remaining > 0
+            ? `<span class="quest-modal-sla-active">Restam ${formatSlaVerbose(remaining)}</span>`
+            : '<span class="quest-modal-sla-active">SLA ESTOURADO</span>';
+    } else {
+        slaEl.innerHTML = `<span class="quest-modal-value">${formatSlaVerbose(quest.sla_seconds)}</span>`;
+    }
+
+    // Atribuído a
+    const assigneeEl  = document.getElementById('qdm-assignee');
+    const assignee    = quest.assigned_to;
+    if (assignee) {
+        const av   = assignee.avatar_url || 'assets/imgs/caneca_pixel.jpg';
+        const name = assignee.nome || assignee.username;
+        assigneeEl.innerHTML = `
+            <img class="kanban-assignee-avatar" src="${av}" alt="" style="border-color:#f1c40f;">
+            <span style="font-size:11px; color:#ecf0f1;">${name}</span>
+        `;
+    } else {
+        assigneeEl.innerHTML = '<span style="font-size:10px; color:#7f8c8d;">Disponível — nenhum aventureiro ainda</span>';
+    }
+
+    // Em progresso desde
+    const startedSection = document.getElementById('qdm-started-section');
+    if (quest.status === 'in_progress' && quest.started_at) {
+        startedSection.style.display = 'block';
+        document.getElementById('qdm-started').textContent = formatDate(quest.started_at);
+    } else {
+        startedSection.style.display = 'none';
+    }
+
+    document.getElementById('questDetailModal').style.display = 'flex';
+}
+
+function closeQuestModal() {
+    document.getElementById('questDetailModal').style.display = 'none';
+}
+
+function formatDate(isoString) {
+    const d = new Date(isoString);
+    const pad = n => String(n).padStart(2, '0');
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} às ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// ==========================================
+// 6. AÇÕES DO KANBAN
+// ==========================================
+async function pickUpQuest(questId) {
+    try {
+        const res = await fetch(`${API_URL}/quests/${questId}/move`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ status: 'in_progress' })
+        });
+
+        if (res.ok) {
+            showToast('Missão aceita! Boa caçada, aventureiro!');
+            await loadBoard();
+        } else {
+            const err = await res.json();
+            showToast(err.message || 'Erro ao aceitar missão.', 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('Erro de conexão com o servidor.', 'error');
+    }
+}
+
+async function finishQuest(questId, questType) {
+    let csatScore = null;
+    if (questType === 'support') {
+        const nota    = prompt('⭐ Qual foi a nota CSAT do cliente? (1 a 5)');
+        const notaNum = parseInt(nota);
+        if (isNaN(notaNum) || notaNum < 1 || notaNum > 5) {
+            showToast('Nota inválida! Digite um número de 1 a 5.', 'error');
+            return;
+        }
+        csatScore = notaNum;
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/quests/complete`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ xp: xpGained, coins: coinsGained })
+            body: JSON.stringify({ questId, csatScore })
         });
 
         if (res.ok) {
-            const updated = await res.json();
+            const data = await res.json();
 
-            if (updated.level > playerData.level) {
-                showToast(`🎉 LEVEL UP! Nível ${updated.level}!`);
-            }
-
-            playerData.xp    = updated.xp;
-            playerData.coins = updated.coins;
-            playerData.level = updated.level;
-            playerData.tasks      += 1;
-            playerData.farmedGold += coinsGained;
+            const wasCursed      = playerData.isCursed;
+            playerData.xp        = data.updatedState.xp;
+            playerData.coins     = data.updatedState.coins;
+            playerData.level     = data.updatedState.level;
+            playerData.tasks     = data.updatedState.questsCompleted;
+            playerData.isCursed  = data.updatedState.isCursed;
+            playerData.farmedGold += data.coinsGained;
+            playerData.farmedXP   += data.xpGained;
+            sessionStorage.setItem('session_gold', playerData.farmedGold);
+            sessionStorage.setItem('session_xp',   playerData.farmedXP);
 
             updateUI();
+
+            if (data.leveledUp) {
+                showToast(`🎉 LEVEL UP! Você alcançou o nível ${data.updatedState.level}!`);
+            } else {
+                showToast(`Quest concluída! +${data.xpGained} XP +${data.coinsGained} 💰`);
+            }
+
+            if (wasCursed && !playerData.isCursed) {
+                removeCurseVisuals();
+                showToast('✨ Maldição quebrada!');
+            } else if (playerData.isCursed) {
+                applyCurseVisuals();
+            }
+
+            await loadBoard();
+        } else {
+            const err = await res.json();
+            showToast(err.message || 'Erro ao concluir quest.', 'error');
         }
     } catch (err) {
-        console.error('Erro ao sincronizar gamificação:', err);
+        console.error(err);
+        showToast('Erro de conexão com o servidor.', 'error');
     }
 }
 
 // ==========================================
-// 3. ATUALIZAÇÃO VISUAL (UI)
+// 7. SLA TIMER (conta a partir de started_at)
+// ==========================================
+function startSlaTimer(questId, slaSeconds, startedAt) {
+    const slaMs  = slaSeconds * 1000;
+    const halfMs = slaMs / 2;
+    const startMs = new Date(startedAt).getTime();
+
+    const tick = async () => {
+        const timerEl   = document.getElementById(`sla-${questId}`);
+        if (!timerEl) {
+            clearInterval(timerId);
+            activeTimers.delete(questId);
+            return;
+        }
+
+        const elapsed   = Date.now() - startMs;
+        const remaining = slaMs - elapsed;
+
+        if (remaining <= 0) {
+            clearInterval(timerId);
+            activeTimers.delete(questId);
+            timerEl.textContent       = '🚨 SLA ESTOURADO!';
+            timerEl.style.color       = '#e74c3c';
+            timerEl.style.borderColor = '#e74c3c';
+            if (!playerData.isCursed) {
+                applyCurseVisuals();
+                await setPlayerCurseState(true);
+                showToast('🚨 SLA estourado! Maldição aplicada!', 'error');
+            }
+            return;
+        }
+
+        const secs = Math.ceil(remaining / 1000);
+        if (remaining > halfMs) {
+            timerEl.textContent       = `SLA: ${formatSla(secs)}`;
+            timerEl.style.color       = '#c0392b';
+            timerEl.style.borderColor = '#c0392b';
+        } else {
+            timerEl.textContent       = `⚠️ CORRE! ${formatSla(secs)}`;
+            timerEl.style.color       = '#e67e22';
+            timerEl.style.borderColor = '#e67e22';
+        }
+    };
+
+    tick();
+    const timerId = setInterval(tick, 1000);
+    activeTimers.set(questId, timerId);
+}
+
+function formatSla(seconds) {
+    if (seconds >= 3600) {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        return `${h}h${m}m`;
+    }
+    if (seconds >= 60) {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}m${String(s).padStart(2, '0')}s`;
+    }
+    return `${seconds}s`;
+}
+
+function formatSlaVerbose(seconds) {
+    if (seconds >= 3600) {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        return m > 0 ? `${h} hora${h > 1 ? 's' : ''} e ${m} min` : `${h} hora${h > 1 ? 's' : ''}`;
+    }
+    if (seconds >= 60) {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return s > 0 ? `${m} min e ${s}s` : `${m} minutos`;
+    }
+    return `${seconds} segundos`;
+}
+
+// ==========================================
+// 8. ATUALIZAÇÃO VISUAL (UI)
 // ==========================================
 function updateUI() {
     const xpPct = Math.min((playerData.xp / maxXP) * 100, 100);
@@ -134,60 +520,72 @@ function updateUI() {
 }
 
 function updateObjectivesUI() {
-    // Barra de tarefas
-    const taskPct = Math.min((playerData.tasks / targetTasks) * 100, 100);
-    const taskBar = document.getElementById('objTaskBar');
-    if (taskBar) taskBar.style.width = taskPct + '%';
+    updateSidebar();
+}
+
+function updateSidebar() {
+    // — Missões Fechadas —
+    const taskPct  = Math.min((playerData.tasks / targetTasks) * 100, 100);
+    const taskBar  = document.getElementById('objTaskBar');
     const taskText = document.getElementById('objTaskText');
-    if (taskText) taskText.innerText = `${playerData.tasks}/${targetTasks}`;
+    if (taskBar)  {
+        taskBar.style.width = taskPct + '%';
+        if (taskPct >= 100) taskBar.classList.add('complete');
+        else taskBar.classList.remove('complete');
+    }
+    if (taskText) taskText.innerText = `${playerData.tasks} / ${targetTasks}`;
 
-    // Barra de gold — restaurada
-    const goldPct = Math.min((playerData.farmedGold / targetGold) * 100, 100);
-    const goldBar = document.getElementById('objGoldBar');
-    if (goldBar) goldBar.style.width = goldPct + '%';
-    const goldText = document.getElementById('objGoldText');
-    if (goldText) goldText.innerText = `${playerData.farmedGold}/${targetGold}`;
-}
+    // — XP e Gold da sessão —
+    const sessionXpEl   = document.getElementById('sessionXp');
+    const sessionGoldEl = document.getElementById('sessionGold');
+    if (sessionXpEl)   sessionXpEl.innerText   = `+${playerData.farmedXP}`;
+    if (sessionGoldEl) sessionGoldEl.innerText = `+${playerData.farmedGold}`;
 
-// ==========================================
-// 4. MECÂNICA DE MALDIÇÃO DE SLA
-// ==========================================
-function startBugTimer() {
-    let bugTimeLeft    = 30;
-    const timerDisplay = document.getElementById('bugTimer');
+    // — WIP slots —
+    const wipText  = document.getElementById('myWipText');
+    const wipSlots = document.querySelectorAll('.wip-slot');
+    if (wipText) wipText.innerText = `${currentBoardStats.myWip} / ${WIP_LIMIT}`;
+    wipSlots.forEach((slot, i) => {
+        slot.classList.toggle('filled', i < currentBoardStats.myWip);
+    });
 
-    if (bugInterval) clearInterval(bugInterval);
+    // — Próximo Nível —
+    const xpToLevel    = Math.max(0, maxXP - playerData.xp);
+    const xpPct        = Math.min((playerData.xp / maxXP) * 100, 100);
+    const xpToLevelBar = document.getElementById('xpToLevelBar');
+    const xpToLevelTxt = document.getElementById('xpToLevelText');
+    if (xpToLevelBar) xpToLevelBar.style.width = xpPct + '%';
+    if (xpToLevelTxt) xpToLevelTxt.innerText   = `${xpToLevel} XP`;
 
-    bugInterval = setInterval(async () => {
-        if (!timerDisplay) return;
-        bugTimeLeft--;
+    // — Saúde da Sprint —
+    const healthTodo = document.getElementById('healthTodo');
+    const healthWip  = document.getElementById('healthWip');
+    const healthDone = document.getElementById('healthDone');
+    if (healthTodo) healthTodo.textContent = currentBoardStats.todo;
+    if (healthWip)  healthWip.textContent  = currentBoardStats.inProgress;
+    if (healthDone) healthDone.textContent = currentBoardStats.done;
 
-        if (bugTimeLeft > 15) {
-            timerDisplay.innerText       = `SLA: ${bugTimeLeft}s`;
-            timerDisplay.style.color     = '';
-            timerDisplay.style.borderColor = '';
-        } else if (bugTimeLeft > 0) {
-            timerDisplay.innerText         = `⚠️ CORRE! ${bugTimeLeft}s`;
-            timerDisplay.style.color       = '#e67e22';
-            timerDisplay.style.borderColor = '#e67e22';
-            const avatarEl = document.getElementById('playerAvatar');
-            if (avatarEl) avatarEl.classList.add('curse-warning');
-            const xpBar = document.getElementById('xpBar');
-            if (xpBar) xpBar.classList.add('curse-warning');
+    // — SLA Alert banner —
+    const banner   = document.getElementById('slaAlertBanner');
+    const alertCnt = document.getElementById('slaAlertCount');
+    if (banner && alertCnt) {
+        if (currentBoardStats.slaAlerts > 0) {
+            alertCnt.textContent  = currentBoardStats.slaAlerts;
+            banner.style.display  = 'block';
         } else {
-            clearInterval(bugInterval);
-            timerDisplay.innerText = '🚨 SLA ESTOURADO!';
-            applyCurseVisuals();
-            await setPlayerCurseState(true);
-            showToast('🚨 MALDIÇÃO DO SLA! Resolva o bug rápido!', 'error');
+            banner.style.display  = 'none';
         }
-    }, 1000);
+    }
 }
 
+// ==========================================
+// 9. MECÂNICA DE MALDIÇÃO
+// ==========================================
 function applyCurseVisuals() {
     playerData.isCursed = true;
-    const avatarEl = document.getElementById('playerAvatar');
-    const xpBar    = document.getElementById('xpBar');
+    const avatarEl    = document.getElementById('playerAvatar');
+    const xpBar       = document.getElementById('xpBar');
+    const xpContainer = document.getElementById('xpContainer');
     if (avatarEl) {
         avatarEl.classList.remove('curse-warning');
         avatarEl.classList.add('curse-critical');
@@ -196,13 +594,21 @@ function applyCurseVisuals() {
         xpBar.classList.remove('curse-warning');
         xpBar.classList.add('curse-critical');
     }
-    const xpContainer = document.getElementById('xpContainer');
     if (xpContainer) xpContainer.classList.add('curse-critical');
+}
+
+function removeCurseVisuals() {
+    playerData.isCursed = false;
+    const avatarEl    = document.getElementById('playerAvatar');
+    const xpBar       = document.getElementById('xpBar');
+    const xpContainer = document.getElementById('xpContainer');
+    if (avatarEl)    avatarEl.classList.remove('curse-warning', 'curse-critical');
+    if (xpBar)       xpBar.classList.remove('curse-warning', 'curse-critical');
+    if (xpContainer) xpContainer.classList.remove('curse-critical');
 }
 
 async function setPlayerCurseState(state) {
     try {
-        // FIX: body usa is_cursed (snake_case) igual ao modelo do banco
         await fetch(`${API_URL}/players/curse`, {
             method: 'PUT',
             headers: {
@@ -217,158 +623,7 @@ async function setPlayerCurseState(state) {
 }
 
 // ==========================================
-// 5. COMPLETAR QUESTS
-// ==========================================
-async function completeQuest(element, xpGained, coinsGained) {
-    if (element.classList.contains('done')) return;
-    element.classList.add('done');
-    await updateServerGamification(xpGained, coinsGained);
-    showToast(`Quest Concluída! +${xpGained} XP`);
-}
-
-async function completeUrgentBug(element, baseXp, baseCoins) {
-    if (element.classList.contains('done')) return;
-
-    clearInterval(bugInterval);
-    element.classList.add('done');
-
-    const finalXp    = playerData.isCursed ? Math.floor(baseXp    / 2) : baseXp;
-    const finalCoins = playerData.isCursed ? Math.floor(baseCoins / 2) : baseCoins;
-
-    if (playerData.isCursed) {
-        const avatarEl    = document.getElementById('playerAvatar');
-        const xpBar       = document.getElementById('xpBar');
-        const xpContainer = document.getElementById('xpContainer');
-        if (avatarEl)    avatarEl.classList.remove('curse-critical');
-        if (xpBar)       xpBar.classList.remove('curse-critical');
-        if (xpContainer) xpContainer.classList.remove('curse-critical');
-
-        playerData.isCursed = false;
-        await setPlayerCurseState(false);
-        showToast('✨ Feitiço Quebrado!', 'error');
-    } else {
-        const avatarEl = document.getElementById('playerAvatar');
-        const xpBar    = document.getElementById('xpBar');
-        if (avatarEl) avatarEl.classList.remove('curse-warning');
-        if (xpBar)    xpBar.classList.remove('curse-warning');
-        showToast('⚔️ Bug esmagado no prazo! Recompensa Máxima!');
-    }
-
-    await updateServerGamification(finalXp, finalCoins);
-    const timerDisplay = document.getElementById('bugTimer');
-    if (timerDisplay) timerDisplay.innerText = 'RESOLVIDO';
-}
-
-// ==========================================
-// 5.5. MISSÃO DE SUPORTE (CSAT) — restaurada
-// ==========================================
-async function completeSupportQuest(element, maxXp, coinsGained) {
-    if (element.classList.contains('done')) return;
-
-    const nota    = prompt('⭐ Qual foi a nota CSAT do cliente? (Digite um número de 1 a 5)');
-    const notaNum = parseInt(nota);
-
-    if (isNaN(notaNum) || notaNum < 1 || notaNum > 5) {
-        showToast('Nota inválida! Digite um número de 1 a 5.', 'error');
-        return;
-    }
-
-    element.classList.add('done');
-
-    // XP proporcional à nota: nota 5 = 100% do XP, nota 1 = 20%
-    const xpGained = Math.round(maxXp * (notaNum / 5));
-
-    await updateServerGamification(xpGained, coinsGained);
-
-    const feedbacks = {
-        5: '⭐⭐⭐⭐⭐ LENDÁRIO! Cliente encantado!',
-        4: '⭐⭐⭐⭐ Ótimo atendimento!',
-        3: '⭐⭐⭐ Missão cumprida.',
-        2: '⭐⭐ Pode melhorar...',
-        1: '⭐ Experiência ruim. Foco no próximo!'
-    };
-    showToast(`${feedbacks[notaNum]} +${xpGained} XP`);
-}
-
-// ==========================================
-// 6. INTEGRAÇÃO JIRA (mantém local pois simula API externa)
-// ==========================================
-async function syncJira() {
-    const board = document.getElementById('questBoard');
-    if (!board) {
-        showToast('Erro: Quadro não encontrado!', 'error');
-        return;
-    }
-
-    try {
-        showToast('Sincronizando com a Forja...', 'info');
-        
-        // Buscando as missões REAIS criadas pelo Admin no banco de dados
-        const response = await fetch(`${API_URL}/quests`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (response.ok) {
-            const quests = await response.json();
-            renderJiraQuests(quests);
-            showToast('Quests Sincronizadas com sucesso!');
-        } else {
-            showToast('Falha ao buscar pergaminhos.', 'error');
-        }
-    } catch (err) {
-        console.error('Erro ao sincronizar quests:', err);
-        showToast('O servidor não está respondendo.', 'error');
-    }
-}
-
-function renderJiraQuests(quests) {
-    const board = document.getElementById('questBoard');
-    if (!board) return;
-
-    // Limpa o quadro atual
-    board.querySelectorAll('.quest-jira').forEach(el => el.remove());
-
-    // Pega as quests que esse usuário já clicou em "Feito" nessa sessão para não repetir
-    const completedIds = JSON.parse(localStorage.getItem('completed_quests')) || [];
-
-    quests.forEach(quest => {
-        const el = document.createElement('div');
-        el.className = 'quest-paper quest-jira';
-        
-        const isDone = completedIds.includes(quest._id);
-        if (isDone) el.classList.add('done');
-
-        // Mapeando os campos exatos do seu banco de dados (xp_reward, coin_reward)
-        el.innerHTML = `
-            <div class="quest-title">[${quest.type || 'MISSÃO'}]<br><br>${quest.title}</div>
-            <div class="quest-meta">
-                <span class="xp-reward">+${quest.xp_reward} XP</span>
-                <span class="coin-reward">+${quest.coin_reward} 💰</span>
-            </div>
-            <div class="completed-stamp">FEITO</div>
-        `;
-
-        el.onclick = async function() {
-            if (this.classList.contains('done')) return;
-            
-            // Chama a sua função de completar quest que vai disparar XP e Gold pro Backend
-            await completeQuest(this, quest.xp_reward, quest.coin_reward);
-            
-            // Marca visualmente
-            this.classList.add('done');
-            
-            // Salva localmente para não renderizar como pendente se ele der F5
-            completedIds.push(quest._id);
-            localStorage.setItem('completed_quests', JSON.stringify(completedIds));
-        };
-
-        // Adiciona no quadro
-        board.insertBefore(el, board.firstChild);
-    });
-}
-
-// ==========================================
-// 7. GESTÃO DE PERFIL (MODAL)
+// 10. GESTÃO DE PERFIL (MODAL)
 // ==========================================
 let tempSelectedAvatar = '';
 
@@ -414,7 +669,6 @@ if (profileForm) {
         const newPic  = document.getElementById('editProfilePic').value.trim() || tempSelectedAvatar;
 
         try {
-            // FIX: endpoint correto é /players/me (PUT)
             const res = await fetch(`${API_URL}/players/me`, {
                 method: 'PUT',
                 headers: {

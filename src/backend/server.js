@@ -13,7 +13,7 @@ const app = express();
 // O CORS permite que o frontend (porta 5500) se comunique com o backend (porta 3001)
 app.use(cors({
     origin: '*', 
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
