@@ -1,83 +1,164 @@
 # ⚔️ GuildWork - The Office Quest
 
-Bem-vindo à GuildWork! Este é um sistema de gestão de tarefas gamificado projetado para transformar o fluxo de trabalho diário (estilo Jira/Trello) em uma experiência de RPG. Os funcionários (Aventureiros) ganham XP, sobem de nível e acumulam Ouro (Gold) para trocar por itens reais na Forja (Loja), enquanto o Mestre da Guilda (Admin) monitora o desempenho e o SLA de cada entrega.
+Bem-vindo à GuildWork! Um sistema de gestão de tarefas gamificado que transforma o fluxo de trabalho diário (estilo Jira/Trello) em uma experiência de RPG. Os funcionários (Aventureiros) ganham XP, sobem de nível e acumulam Ouro (Gold) para trocar por itens reais na Forja (Loja), enquanto o Mestre da Guilda (Admin) monitora o desempenho e o SLA de cada entrega.
 
 ## 🛠️ Stack Tecnológico
 
-A arquitetura foi desenhada para ser leve, rápida e com forte validação de regras no Back-end (orientada a Qualidade e Segurança):
+A arquitetura é leve, stateless e com autoridade no servidor para regras de economia e gamificação:
 
-* **Front-end:** HTML5, CSS3 (variáveis globais e animações customizadas) e Vanilla JavaScript. Estética em Pixel Art servido localmente via lite-server.
-* **Back-end:** Node.js (v24 LTS) com Express. Arquitetura RESTful e stateless.
-* **Banco de Dados:** MongoDB rodando em container Docker utilizando Mongoose (com esquemas estritos para evitar anomalias de dados).
-* **Segurança:** Autenticação via JWT (JSON Web Token) e encriptação de senhas com bcryptjs/bcrypt. O servidor é a única "fonte da verdade" para cálculos de economia e gamificação.
+* **Front-end:** HTML5, CSS3 (variáveis globais e animações customizadas) e Vanilla JavaScript. Estética em Pixel Art servida via `npx serve`.
+* **Back-end:** Node.js (v18+) com Express. Arquitetura RESTful e stateless.
+* **Banco de Dados:** MongoDB via Docker + Mongoose 9.x com schemas estritos.
+* **Segurança:** JWT (8h de expiração), bcryptjs para hash de senha, validação de todas as regras de negócio exclusivamente no servidor.
 
 ## 📂 Arquitetura de Diretórios
 
-A estrutura do projeto está dividida em subprojetos modulares gerenciados de forma independente por seus próprios pacotes npm:
-
+```
 GUILDWORK/
 ├── mongo-init/
-│   └── init-db.js         # Script de carga automática de usuários padrão (Seed)
+│   └── init-db.js         # Seed: cria usuários padrão na primeira inicialização do container
 ├── src/
 │   ├── backend/
 │   │   ├── controllers/   # Lógica de negócio (gamificação, economia, auth)
-│   │   ├── middleware/    # Proteção de rotas (validação JWT e Role-based access)
-│   │   ├── models/        # Schemas do Mongoose (User, Quest, Sprint, LootItem)
+│   │   ├── middleware/    # Proteção de rotas (JWT + Role-based access)
+│   │   ├── models/        # Schemas do Mongoose (User, Quest, QuestCompletion, LootItem)
 │   │   ├── routes/        # Roteamento RESTful da API
-│   │   ├── .env           # Variáveis de ambiente específicas do back-end (NÃO COMITAR)
-│   │   ├── package.json   # Dependências e scripts do servidor Node
-│   │   └── server.js      # Ponto de entrada do servidor Node
+│   │   ├── .env           # Variáveis de ambiente (NÃO COMMITADO — ver abaixo)
+│   │   ├── package.json
+│   │   └── server.js      # Entry point do servidor
 │   └── frontend/
-│       ├── assets/imgs/   # Sprites e texturas
-│       ├── css/           # style.css (Modularizado por componentes)
-│       ├── js/            # Lógica de interface (mural.js, admin.js, login.js)
-│       ├── package.json   # Dependências e scripts do servidor estático lite-server
-│       └── *.html         # Telas (index, admin, loja, login)
-├── .gitignore             # Proteção para não commitar node_modules e arquivos .env
-└── docker-compose.yml     # Orquestração do banco de dados MongoDB
+│       ├── assets/imgs/   # Sprites e texturas pixel art
+│       ├── css/           # style.css modularizado por componente
+│       ├── js/            # mural.js, admin.js, loja.js, login.js, utils.js
+│       ├── package.json
+│       └── *.html         # login, index (board), admin, loja
+├── .gitignore
+└── docker-compose.yml     # MongoDB com autenticação
+```
 
 ## 📜 Regras de Negócio (Core Mechanics)
 
-1. **Economia Blindada (Server-Side Authority):** O Front-end não dita recompensas. Quando uma missão é clicada, o Front envia apenas o questId. O Back-end consulta o valor real da missão, aplica multiplicadores (como a nota CSAT para suporte) e devolve o novo saldo do jogador.
-2. **SLA e A Maldição:** Missões possuem tempo limite dinâmico (sla_seconds). Se o tempo estourar no Front-end, o jogador entra em estado de "Amaldiçoado".
-3. **Penalidade Rigorosa:** A resolução de uma maldição ocorre exclusivamente no Back-end. Entregar uma missão enquanto amaldiçoado corta os ganhos de XP e Gold pela metade.
-4. **Prevenção de Exploit na Loja:** Compras de itens não aceitam "carrinhos" com preços manipulados. O servidor recebe os IDs dos itens, recalcula o total baseando-se no banco de dados e só então debita do saldo do jogador.
+1. **Economia Blindada (Server-Side Authority):** O front-end nunca dita recompensas. Envia apenas o `questId`; o back-end consulta XP e Gold reais, aplica multiplicadores e devolve o novo saldo.
+2. **SLA e A Maldição:** Missões têm tempo limite dinâmico (`sla_seconds`). Estourar o SLA coloca o aventureiro em estado de "Amaldiçoado" (resolvido no servidor).
+3. **Penalidade Rigorosa:** Concluir uma missão enquanto amaldiçoado corta XP e Gold pela metade — calculado e aplicado no back-end.
+4. **Prevenção de Exploit na Loja:** O servidor recebe IDs dos itens, recalcula o total pelo banco e só então debita o saldo.
+5. **WIP Limit:** Máximo de 3 quests `in_progress` por aventureiro — validado no servidor.
 
-## 🚀 Como Rodar o Projeto (Setup Local)
+## 🚀 Como Rodar o Projeto
 
-### 1. Inicializando o Banco de Dados (Docker)
-Na pasta raiz do projeto (onde está o arquivo docker-compose.yml), execute o comando para subir a instância do MongoDB em segundo plano:
+> Você vai precisar de **dois terminais** (ou três, se preferir o MongoDB via Docker).
+
+### Pré-requisitos
+- [Node.js](https://nodejs.org/) v18+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) com WSL2 habilitado (Windows) ou Engine nativa (Linux/Mac)
+
+---
+
+### Terminal 1 — Banco de Dados (MongoDB via Docker)
+
+Na raiz do projeto:
+
+```bash
 docker compose up -d
+```
 
-Nota: Na primeira execução, o script contido em mongo-init/init-db.js criará automaticamente o banco de dados e populará a coleção users com as contas padrão (admin e funcionario, ambas com a senha 123) já criptografadas de forma idêntica ao ecossistema local.
+> Na primeira execução, o script `mongo-init/init-db.js` cria o banco e duas contas padrão:
+> - **admin** / senha `123`
+> - **funcionario** / senha `123` (guilda: Produto)
 
-### 2. Configurando e Inicializando o Back-end
-Navegue até o diretório do back-end, garanta a existência das variáveis de ambiente e suba o servidor:
+---
+
+### Terminal 2 — Back-end (Node.js / Express)
+
+```bash
 cd src/backend
+npm install        # apenas na primeira vez
+npm run dev        # inicia com nodemon (hot-reload)
+```
 
-Crie um arquivo chamado .env nesta pasta com as seguintes chaves:
-PORT=3001
-MONGODB_URI=mongodb://guild_admin:guild_password@localhost:27017/guildwork?authSource=admin
-JWT_SECRET=sua_chave_super_secreta_aqui
+O servidor sobe na porta **3001**.
 
-Instale os pacotes e inicialize o servidor com atualização automática via Nodemon:
-npm install
-npm run dev
+> **Crie o arquivo `src/backend/.env`** com:
+> ```env
+> PORT=3001
+> MONGODB_URI=mongodb://guild_admin:guild_password@localhost:27017/guildwork?authSource=admin
+> JWT_SECRET=sua_chave_super_secreta_aqui
+> ```
 
-O servidor back-end iniciará na porta 3001.
+---
 
-### 3. Configurando e Inicializando o Front-end
-Abra uma nova aba ou janela do seu terminal, navegue até o diretório do front-end e inicialize o servidor de desenvolvimento estático:
+### Terminal 3 — Front-end (servidor estático)
+
+```bash
 cd src/frontend
-npm install
-npm run dev
+npm run dev        # npx serve na porta 3000
+```
 
-O lite-server será inicializado, disponibilizando a aplicação na porta 3000 e abrindo o navegador automaticamente na página de login (http://localhost:3000).
+Acesse **http://localhost:3000/login.html** no navegador.
 
-## 🗺️ Backlog e Próximos Épicos (Onde precisamos de ajuda!)
+---
 
-O "Core" do jogo está estabilizado e seguro. Nosso foco agora é refatoração arquitetural para escalabilidade:
+### Resumo rápido
 
-* **[ÉPICO 1] Quebra do Monolito Front-end:** Fatiar o gigante admin.html e admin.js em telas modulares separadas (admin-roster, admin-quests, admin-loot).
-* **[ÉPICO 2] Separação de Domínios no Back-end:** Extrair as rotas de criação de Quests e Loot que atualmente residem em admin.js e movê-las para seus respectivos controladores de domínio (quests.js e loot.js).
-* **[ÉPICO 3] Sprints Dinâmicas:** Migrar as variáveis fixas de Meta de Sprint do Front-end para serem consumidas dinamicamente do banco de dados, permitindo gestão real de Sprints pelo Admin.
+| O quê | Comando |
+|---|---|
+| MongoDB | `docker compose up -d` (na raiz) |
+| Back-end | `cd src/backend && npm run dev` |
+| Front-end | `cd src/frontend && npm run dev` |
+
+---
+
+### ⚠️ Conflito de porta 27017 (Windows)
+
+Se você tiver o MongoDB instalado localmente no Windows (`mongod.exe`), ele concorre com o container Docker na porta `27017`. Nesse caso, pare o serviço local antes de subir o Docker:
+
+```powershell
+# Opção A — parar o serviço MongoDB local
+net stop MongoDB
+
+# Opção B — parar o processo direto (se não for serviço)
+taskkill /IM mongod.exe /F
+```
+
+Depois suba o Docker normalmente. Se preferir manter os dois rodando, mude a porta do Docker no `docker-compose.yml` para `27018:27017` e ajuste o `MONGODB_URI` no `.env`.
+
+---
+
+## ✨ Funcionalidades Implementadas
+
+| Tela | Feature |
+|---|---|
+| **Board (Kanban)** | 3 colunas (A Fazer / Em Progresso / Concluído) com WIP limit de 3 |
+| **Board** | Auto-refresh a cada 30s com contador regressivo no botão |
+| **Board** | SLA timer por quest, maldição ao estourar, penalidade de 50% nos ganhos |
+| **Board** | Modal de detalhes da quest (clique no card) |
+| **Board** | Animação de Level Up ao subir de nível |
+| **Sidebar** | Missões fechadas na sessão, XP/Gold da sessão, slots WIP, saúde da sprint |
+| **Loja** | Card de perfil do jogador (avatar, nível, XP, guilda, gold, missões) |
+| **Loja** | Itens bloqueados visualmente quando gold insuficiente |
+| **Loja** | Preview de saldo pós-compra no carrinho |
+| **Admin — Dashboard** | Métricas da sprint + desempenho por guilda |
+| **Admin — Missões** | Criação de quests por guilda, SLA restante visível, reset de quest |
+| **Admin — Loot** | CRUD de itens da loja |
+| **Admin — Membros** | Recrutamento por guilda, edição de funcionário |
+| **Guildas** | Quests separadas por guilda — funcionário vê só as da sua guilda |
+
+---
+
+## 🐛 Correções Técnicas Notáveis
+
+| Problema | Causa | Fix |
+|---|---|---|
+| 500 ao concluir quest | `user.save()` dispara validadores Mongoose 9.x em campos com enum desatualizado | Substituído por `User.findByIdAndUpdate()` que bypassa validadores por padrão |
+| 500 ao concluir quest (CSAT) | `min: 1` no schema rejeita `null` no Mongoose 9.x | Substituído por validador customizado `v === null \|\| (v >= 1 && v <= 5)` |
+| Timer SLA travando | `const timerId` declarado após a função `tick()` que o referencia (Temporal Dead Zone) | Movido para `let timerId` antes da função |
+| Seed criava usuário com role errado | `init-db.js` usava `role: 'player'` (não existe no enum) | Corrigido para `role: 'funcionario'` + `faction: 'Produto'` |
+
+---
+
+## 🗺️ Backlog e Próximos Épicos
+
+* **[ÉPICO 1] Histórico de Missões:** Tela com o registro de quests concluídas pelo aventureiro (data, XP, Gold ganho).
+* **[ÉPICO 2] Ranking da Guilda:** Leaderboard de XP dentro de cada guilda.
+* **[ÉPICO 3] Sprints Dinâmicas:** Meta de sprint gerenciada pelo Admin via banco de dados.
+* **[ÉPICO 4] Quebra do Monolito Front-end:** Modularizar `admin.html/js` em telas menores.

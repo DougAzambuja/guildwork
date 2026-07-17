@@ -21,7 +21,8 @@ db.users.insertMany([
     username: 'funcionario',
     nome: 'Aventureiro QA',
     password: '$2a$10$O3VixsFYJL9sWDagKZ4.NuzajA.3oUA68s0zpSRPW7AuZF.SB7wae', // Hash padrão para '123'
-    role: 'player',
+    role: 'funcionario',
+    faction: 'Produto',
     xp: 0,
     coins: 0,
     level: 1,

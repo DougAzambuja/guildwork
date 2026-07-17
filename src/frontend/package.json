@@ -4,9 +4,7 @@
   "description": "Frontend do OfficeQuest",
   "main": "index.html",
   "scripts": {
-    "dev": "lite-server"
+    "dev": "npx serve -l 3000"
   },
-  "dependencies": {
-    "lite-server": "^2.6.1"
-  }
+  "dependencies": {}
 }

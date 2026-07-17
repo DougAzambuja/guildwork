@@ -35,10 +35,39 @@ const questCache   = new Map();
 document.addEventListener('DOMContentLoaded', async () => {
     await fetchPlayerState();
     await loadBoard();
+    startBoardAutoRefresh();
 });
 
 // ==========================================
-// 2. DADOS DO JOGADOR
+// 2. AUTO-REFRESH DO BOARD
+// ==========================================
+const REFRESH_SECONDS = 30;
+
+function startBoardAutoRefresh() {
+    const btn = document.getElementById('btnRefreshBoard');
+    let countdown = REFRESH_SECONDS;
+
+    // Reseta countdown quando o usuário atualiza manualmente
+    if (btn) {
+        btn.addEventListener('click', () => { countdown = REFRESH_SECONDS; });
+    }
+
+    setInterval(() => {
+        countdown--;
+        if (btn) btn.textContent = `↻ ${countdown}s`;
+
+        if (countdown <= 0) {
+            countdown = REFRESH_SECONDS;
+            if (btn) btn.classList.add('refreshing');
+            loadBoard().then(() => {
+                if (btn) btn.classList.remove('refreshing');
+            });
+        }
+    }, 1000);
+}
+
+// ==========================================
+// 3. DADOS DO JOGADOR
 // ==========================================
 async function fetchPlayerState() {
     try {
@@ -76,7 +105,7 @@ async function fetchPlayerState() {
 }
 
 // ==========================================
-// 3. KANBAN BOARD — CARREGAMENTO
+// 4. KANBAN BOARD — CARREGAMENTO
 // ==========================================
 async function loadBoard() {
     try {
@@ -394,7 +423,7 @@ async function finishQuest(questId, questType) {
             updateUI();
 
             if (data.leveledUp) {
-                showToast(`🎉 LEVEL UP! Você alcançou o nível ${data.updatedState.level}!`);
+                showLevelUpAnimation(data.updatedState.level);
             } else {
                 showToast(`Quest concluída! +${data.xpGained} XP +${data.coinsGained} 💰`);
             }
@@ -424,6 +453,8 @@ function startSlaTimer(questId, slaSeconds, startedAt) {
     const slaMs  = slaSeconds * 1000;
     const halfMs = slaMs / 2;
     const startMs = new Date(startedAt).getTime();
+
+    let timerId;
 
     const tick = async () => {
         const timerEl   = document.getElementById(`sla-${questId}`);
@@ -463,7 +494,7 @@ function startSlaTimer(questId, slaSeconds, startedAt) {
     };
 
     tick();
-    const timerId = setInterval(tick, 1000);
+    timerId = setInterval(tick, 1000);
     activeTimers.set(questId, timerId);
 }
 
@@ -623,7 +654,24 @@ async function setPlayerCurseState(state) {
 }
 
 // ==========================================
-// 10. GESTÃO DE PERFIL (MODAL)
+// 10. LEVEL UP ANIMATION
+// ==========================================
+function showLevelUpAnimation(level) {
+    const overlay = document.getElementById('levelUpOverlay');
+    const numEl   = document.getElementById('levelUpNumber');
+    if (!overlay || !numEl) return;
+
+    numEl.textContent      = level;
+    overlay.style.display  = 'flex';
+
+    // Auto-fecha após 4s
+    setTimeout(() => {
+        overlay.style.display = 'none';
+    }, 4000);
+}
+
+// ==========================================
+// 11. GESTÃO DE PERFIL (MODAL)
 // ==========================================
 let tempSelectedAvatar = '';
 

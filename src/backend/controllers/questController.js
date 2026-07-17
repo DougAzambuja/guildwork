@@ -114,18 +114,28 @@ exports.completeQuest = async (req, res) => {
             csat_score:   csatScore || null
         });
 
-        user.quests_completed = (user.quests_completed || 0) + 1;
-        user.xp    += xpGained;
-        user.coins += coinsGained;
-
+        let newXp    = (user.xp    || 0) + xpGained;
+        let newCoins = (user.coins || 0) + coinsGained;
+        let newLevel = user.level  || 1;
         let leveledUp = false;
-        if (user.xp >= MAX_XP) {
-            user.xp -= MAX_XP;
-            user.level += 1;
+
+        if (newXp >= MAX_XP) {
+            newXp -= MAX_XP;
+            newLevel += 1;
             leveledUp = true;
         }
 
-        await user.save();
+        await User.findByIdAndUpdate(user._id, {
+            xp:               newXp,
+            coins:            newCoins,
+            level:            newLevel,
+            is_cursed:        false,
+            quests_completed: (user.quests_completed || 0) + 1
+        });
+
+        user.xp    = newXp;
+        user.coins = newCoins;
+        user.level = newLevel;
 
         quest.status = 'done';
         await quest.save();

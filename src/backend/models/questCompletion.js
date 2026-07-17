@@ -21,11 +21,13 @@ const QuestCompletionSchema = new mongoose.Schema({
         required: true,
         min: 0 
     },
-    csat_score: { 
-        type: Number, 
+    csat_score: {
+        type: Number,
         default: null,
-        min: 1, // QA Touch: Validação estrita do Back-end
-        max: 5  // Garante que a nota nunca fuja da métrica real (1 a 5 estrelas)
+        validate: {
+            validator: function(v) { return v === null || (v >= 1 && v <= 5); },
+            message: 'Nota CSAT deve ser entre 1 e 5.'
+        }
     },
     completed_at: { 
         type: Date, 

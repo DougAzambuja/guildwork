@@ -24,7 +24,7 @@
             </div>
 
             <div class="actions">
-                <button class="btn-pixel" onclick="loadBoard()" title="Recarregar board">&#x21BB; Atualizar</button>
+                <button class="btn-pixel" id="btnRefreshBoard" onclick="loadBoard()" title="Recarregar board">↻ Atualizar</button>
                 <a href="loja.html" class="btn-pixel shop-btn" data-cy="link-loja">Ir para Loja</a>
                 <button class="btn-pixel logout-btn" data-cy="btn-logout" onclick="logout()">Sair</button>
             </div>
@@ -212,6 +212,17 @@
                     <button type="submit" class="btn-pixel" style="background-color: #27ae60;">SALVAR PERFIL</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Overlay de Level Up -->
+    <div id="levelUpOverlay" class="levelup-overlay" style="display:none;" onclick="this.style.display='none'">
+        <div class="levelup-content">
+            <div class="levelup-stars">✦ ✦ ✦</div>
+            <div class="levelup-title">LEVEL UP!</div>
+            <div class="levelup-number" id="levelUpNumber">2</div>
+            <div class="levelup-subtitle">Você ficou mais poderoso!</div>
+            <div class="levelup-hint">Clique para fechar</div>
         </div>
     </div>
 

@@ -559,6 +559,19 @@ function setupRegisterForm() {
 // ==========================================
 // 6. PERGAMINHOS FORJADOS (QUESTS + PAGINAÇÃO)
 // ==========================================
+function formatAdminSla(seconds) {
+    if (seconds >= 3600) {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        return m > 0 ? `${h}h${m}m` : `${h}h`;
+    }
+    if (seconds >= 60) {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return s > 0 ? `${m}m${s}s` : `${m}m`;
+    }
+    return `${seconds}s`;
+}
 const STATUS_LABELS = {
     todo:        { label: 'A Fazer',      color: '#2980b9' },
     in_progress: { label: 'Em Progresso', color: '#e67e22' },
@@ -602,6 +615,19 @@ function renderQuestPage() {
             ? `<button class="btn-pixel btn-delete" style="font-size:8px;padding:4px 8px;" onclick="resetQuest('${q._id}')">Resetar</button>`
             : '—';
 
+        // SLA restante para quests em progresso
+        let slaDisplay = '—';
+        if (q.sla_seconds && q.status === 'in_progress' && q.started_at) {
+            const elapsed   = (Date.now() - new Date(q.started_at).getTime()) / 1000;
+            const remaining = Math.max(0, q.sla_seconds - Math.floor(elapsed));
+            const pct       = remaining / q.sla_seconds;
+            const color     = pct <= 0 ? '#e74c3c' : pct <= 0.25 ? '#e67e22' : '#27ae60';
+            const label     = remaining <= 0 ? '🚨 ESTOURADO' : formatAdminSla(remaining);
+            slaDisplay = `<span style="color:${color}; font-size:9px;">${label}</span>`;
+        } else if (q.sla_seconds) {
+            slaDisplay = `<span style="color:#7f8c8d; font-size:9px;">${formatAdminSla(q.sla_seconds)}</span>`;
+        }
+
         return `
             <tr>
                 <td>${q.title}</td>
@@ -609,7 +635,7 @@ function renderQuestPage() {
                 <td style="font-size:9px;">${factionIcon} ${q.faction || 'Produto'}</td>
                 <td>${q.xp_reward}</td>
                 <td>${q.coin_reward}</td>
-                <td>${q.sla_seconds || '—'}</td>
+                <td>${slaDisplay}</td>
                 <td><span class="status-badge" style="background:${st.color};padding:3px 8px;font-size:8px;">${st.label}</span></td>
                 <td>${assignee}</td>
                 <td>${resetBtn}</td>
