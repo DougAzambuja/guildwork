@@ -46,6 +46,14 @@ exports.moveQuest = async (req, res) => {
                 return res.status(403).json({ message: 'Quest já atribuída a outro aventureiro.' });
             }
 
+            const actor = await User.findById(req.user.id).select('nome username curse_type');
+
+            if (actor?.curse_type === 'csat_low' && quest.type === 'urgent') {
+                return res.status(403).json({
+                    message: '💔 Maldição da Insatisfação ativa: missões urgentes bloqueadas até CSAT ≥ 4★ em suporte.'
+                });
+            }
+
             const inProgressCount = await Quest.countDocuments({
                 assigned_to: req.user.id,
                 status: 'in_progress'
@@ -60,6 +68,7 @@ exports.moveQuest = async (req, res) => {
             quest.status      = 'in_progress';
             quest.assigned_to = req.user.id;
             quest.started_at  = new Date();
+            quest.comments.push({ user_id: req.user.id, text: `${actor?.nome || actor?.username || 'Aventureiro'} aceitou a missão`, type: 'activity' });
             await quest.save();
 
             const populated = await quest.populate('assigned_to', 'nome username avatar_url');
@@ -100,12 +109,50 @@ exports.completeQuest = async (req, res) => {
             xpGained = Math.round(quest.xp_reward * (csatScore / 5));
         }
 
-        // Penalidade de maldição: metade dos ganhos
-        if (user.is_cursed) {
-            xpGained    = Math.floor(xpGained    / 2);
-            coinsGained = Math.floor(coinsGained / 2);
-            user.is_cursed = false;
+        const wasCursed    = user.is_cursed;
+        const wasCurseType = user.curse_type;
+
+        // Passo 1: aplicar penalidade e verificar cura da maldição atual
+        if (user.curse_type) {
+            if (user.curse_type === 'sla_breach') {
+                xpGained = Math.floor(xpGained / 2);
+            } else if (user.curse_type === 'abandoned') {
+                coinsGained = Math.floor(coinsGained / 2);
+            } else if (user.curse_type === 'csat_low') {
+                xpGained    = Math.floor(xpGained    / 2);
+                coinsGained = Math.floor(coinsGained / 2);
+            }
+
+            const cured = user.curse_type === 'csat_low'
+                ? (quest.type === 'support' && csatScore >= 4)
+                : true; // sla_breach e abandoned: qualquer conclusão cura
+
+            if (cured) {
+                user.is_cursed  = false;
+                user.curse_type = null;
+            }
         }
+
+        // Passo 2: verificar se nova maldição deve ser aplicada
+        let newCurseApplied = null;
+        if (!user.is_cursed) {
+            if (quest.sla_seconds && quest.started_at) {
+                const elapsed = (Date.now() - new Date(quest.started_at).getTime()) / 1000;
+                if (elapsed > quest.sla_seconds) {
+                    newCurseApplied = 'sla_breach';
+                    user.curse_type = 'sla_breach';
+                    user.is_cursed  = true;
+                }
+            }
+            // csat_low sobrescreve sla_breach se ambos ocorrerem
+            if (quest.type === 'support' && csatScore && csatScore <= 2) {
+                newCurseApplied = 'csat_low';
+                user.curse_type = 'csat_low';
+                user.is_cursed  = true;
+            }
+        }
+
+        const newQuestsCompleted = (user.quests_completed || 0) + 1;
 
         await QuestCompletion.create({
             user_id:      user._id,
@@ -113,7 +160,7 @@ exports.completeQuest = async (req, res) => {
             xp_gained:    xpGained,
             coins_gained: coinsGained,
             csat_score:   csatScore || null,
-            was_cursed:   user.is_cursed
+            was_cursed:   wasCursed
         });
 
         let newXp    = (user.xp    || 0) + xpGained;
@@ -131,8 +178,9 @@ exports.completeQuest = async (req, res) => {
             xp:               newXp,
             coins:            newCoins,
             level:            newLevel,
-            is_cursed:        false,
-            quests_completed: (user.quests_completed || 0) + 1
+            is_cursed:        user.is_cursed,
+            curse_type:       user.curse_type,
+            quests_completed: newQuestsCompleted
         });
 
         user.xp    = newXp;
@@ -140,10 +188,9 @@ exports.completeQuest = async (req, res) => {
         user.level = newLevel;
 
         quest.status = 'done';
+        quest.comments.push({ user_id: user._id, text: `${user.nome || user.username || 'Aventureiro'} concluiu a missão`, type: 'activity' });
         await quest.save();
 
-        // Dispara notificações em background (não bloqueia a resposta)
-        const newQuestsCompleted = (user.quests_completed || 0) + 1;
         if (leveledUp) {
             notificationService.notifyLevelUp(user._id, newLevel).catch(() => {});
         }
@@ -154,12 +201,14 @@ exports.completeQuest = async (req, res) => {
             xpGained,
             coinsGained,
             leveledUp,
+            newCurseApplied,
             updatedState: {
-                xp:               user.xp,
-                coins:            user.coins,
-                level:            user.level,
-                questsCompleted:  newQuestsCompleted,
-                isCursed:         user.is_cursed
+                xp:              newXp,
+                coins:           newCoins,
+                level:           newLevel,
+                questsCompleted: newQuestsCompleted,
+                isCursed:        user.is_cursed,
+                curseType:       user.curse_type
             }
         });
 
@@ -268,10 +317,21 @@ exports.adminAssignQuest = async (req, res) => {
             quest.assigned_to = userId;
             quest.status      = 'in_progress';
             quest.started_at  = new Date();
+            const assignee = await User.findById(userId).select('nome username');
+            quest.comments.push({ user_id: userId, text: `Missão atribuída a ${assignee?.nome || assignee?.username || 'aventureiro'}`, type: 'activity' });
         } else {
+            const previousAssignee = quest.assigned_to;
             quest.assigned_to = null;
             quest.status      = 'todo';
             quest.started_at  = null;
+            quest.comments.push({ user_id: req.user.id, text: 'Missão resetada para "A Fazer"', type: 'activity' });
+
+            if (previousAssignee) {
+                await User.findByIdAndUpdate(previousAssignee, {
+                    is_cursed:  true,
+                    curse_type: 'abandoned'
+                });
+            }
         }
 
         await quest.save();
@@ -314,6 +374,63 @@ exports.adminTransferQuest = async (req, res) => {
         res.json(quest);
     } catch (err) {
         res.status(500).json({ message: 'Erro ao transferir quest.', error: err.message });
+    }
+};
+
+/**
+ * GET /api/quests/:id — Detalhe completo de uma quest.
+ * Player: acessa se for da mesma facção ou estiver atribuído. Admin: acesso irrestrito.
+ * Popula: assigned_to, sprint_id, comments.user_id, subtasks
+ */
+exports.getQuestDetail = async (req, res) => {
+    try {
+        const quest = await Quest.findById(req.params.id)
+            .populate('assigned_to', 'nome username avatar_url')
+            .populate('sprint_id', 'name status')
+            .populate('comments.user_id', 'nome username avatar_url')
+            .populate('subtasks', 'title status type faction');
+
+        if (!quest) return res.status(404).json({ message: 'Quest não encontrada.' });
+
+        if (req.user.role !== 'admin') {
+            const user = await User.findById(req.user.id).select('faction');
+            const isAssigned   = quest.assigned_to && quest.assigned_to._id.toString() === req.user.id;
+            const sameFaction  = quest.faction === user.faction;
+            if (!isAssigned && !sameFaction) {
+                return res.status(403).json({ message: 'Acesso negado.' });
+            }
+        }
+
+        res.json(quest);
+    } catch (err) {
+        res.status(500).json({ message: 'Erro ao buscar quest.', error: err.message });
+    }
+};
+
+/**
+ * PATCH /api/quests/:id/checklist/:itemId — Toggle done de um item do checklist.
+ * Player: apenas se for o assigned_to. Admin: sempre.
+ */
+exports.toggleChecklistItem = async (req, res) => {
+    try {
+        const quest = await Quest.findById(req.params.id);
+        if (!quest) return res.status(404).json({ message: 'Quest não encontrada.' });
+
+        if (req.user.role !== 'admin') {
+            if (!quest.assigned_to || quest.assigned_to.toString() !== req.user.id) {
+                return res.status(403).json({ message: 'Apenas o aventureiro atribuído pode marcar itens.' });
+            }
+        }
+
+        const item = quest.checklist.id(req.params.itemId);
+        if (!item) return res.status(404).json({ message: 'Item de checklist não encontrado.' });
+
+        item.done = !item.done;
+        await quest.save();
+
+        res.json({ itemId: item._id, done: item.done });
+    } catch (err) {
+        res.status(500).json({ message: 'Erro ao atualizar item.', error: err.message });
     }
 };
 
@@ -424,5 +541,42 @@ exports.adminCopyQuest = async (req, res) => {
         res.status(201).json(copy);
     } catch (err) {
         res.status(500).json({ message: 'Erro ao copiar quest.', error: err.message });
+    }
+};
+
+// PATCH /api/quests/:id — Admin edita campos da quest
+exports.adminUpdateQuest = async (req, res) => {
+    try {
+        const { title, type, faction, xp_reward, coin_reward, sla_seconds, sprint_id, labels } = req.body;
+        const update = {};
+        if (title       !== undefined) update.title       = title;
+        if (type        !== undefined) update.type        = type;
+        if (faction     !== undefined) update.faction     = faction;
+        if (xp_reward   !== undefined) update.xp_reward   = xp_reward;
+        if (coin_reward !== undefined) update.coin_reward = coin_reward;
+        if (sla_seconds !== undefined) update.sla_seconds = sla_seconds || null;
+        if (sprint_id   !== undefined) update.sprint_id   = sprint_id  || null;
+        if (labels      !== undefined) {
+            update.labels = Array.isArray(labels)
+                ? labels.filter(Boolean)
+                : (typeof labels === 'string' ? labels.split(',').map(l => l.trim()).filter(Boolean) : []);
+        }
+
+        const quest = await Quest.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
+        if (!quest) return res.status(404).json({ message: 'Quest não encontrada.' });
+        res.json(quest);
+    } catch (err) {
+        res.status(500).json({ message: 'Erro ao atualizar quest.', error: err.message });
+    }
+};
+
+// DELETE /api/quests/:id — Admin remove uma quest permanentemente
+exports.deleteQuest = async (req, res) => {
+    try {
+        const quest = await Quest.findByIdAndDelete(req.params.id);
+        if (!quest) return res.status(404).json({ message: 'Quest não encontrada.' });
+        res.json({ message: 'Quest removida com sucesso.' });
+    } catch (err) {
+        res.status(500).json({ message: 'Erro ao remover quest.', error: err.message });
     }
 };

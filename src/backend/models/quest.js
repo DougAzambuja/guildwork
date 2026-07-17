@@ -66,10 +66,11 @@ const QuestSchema = new mongoose.Schema({
         created_at: { type: Date,    default: Date.now }
     }],
 
-    // Histórico de interações da missão
+    // Histórico de interações e atividade automática da missão
     comments: [{
-        user_id:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        user_id:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }, // null = entrada automática do sistema
         text:       { type: String, required: true, trim: true },
+        type:       { type: String, enum: ['user', 'activity'], default: 'user' },
         created_at: { type: Date, default: Date.now }
     }],
 

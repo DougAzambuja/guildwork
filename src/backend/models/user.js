@@ -36,6 +36,7 @@ const UserSchema = new mongoose.Schema({
     coins:    { type: Number, default: 100 },
     level:    { type: Number, default: 1 },
     is_cursed:        { type: Boolean, default: false },
+    curse_type:       { type: String, enum: ['sla_breach', 'abandoned', 'csat_low'], default: null },
     quests_completed: { type: Number,  default: 0 },
 
 }, { timestamps: true });

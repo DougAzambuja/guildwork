@@ -79,7 +79,7 @@ function renderCurse(curse) {
 
     const chartData = factionEntries.map(([name, d]) => {
         const tooltip = d.cursed_names && d.cursed_names.length
-            ? `${name} — ${d.cursed}/${d.total} cursados: ${d.cursed_names.join(', ')}`
+            ? `${name} — ${d.cursed}/${d.total} amaldiçoados: ${d.cursed_names.join(', ')}`
             : `${name} — ${d.rate}% (${d.cursed}/${d.total} aventureiros)`;
         return {
             label:   name,
