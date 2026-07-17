@@ -20,5 +20,10 @@ router.post('/',                checkAdmin, questController.adminCreateQuest);
 router.patch('/:id/assign',     checkAdmin, questController.adminAssignQuest);
 router.patch('/:id/transfer',   checkAdmin, questController.adminTransferQuest);
 router.post('/:id/copy',        checkAdmin, questController.adminCopyQuest);
+router.patch('/:id/subtasks',   checkAdmin, questController.updateSubtasks);
+
+// — Comentários (admin + aventureiro autenticado) —
+router.get('/:id/comments',  questController.getComments);
+router.post('/:id/comments', questController.addComment);
 
 module.exports = router;

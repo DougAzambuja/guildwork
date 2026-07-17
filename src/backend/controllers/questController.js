@@ -1,6 +1,7 @@
-const Quest           = require('../models/quest');
-const QuestCompletion = require('../models/questCompletion');
-const User            = require('../models/user');
+const Quest               = require('../models/quest');
+const QuestCompletion     = require('../models/questCompletion');
+const User                = require('../models/user');
+const notificationService = require('../services/notificationService');
 
 const MAX_XP   = 10000;
 const WIP_LIMIT = 3;
@@ -141,6 +142,13 @@ exports.completeQuest = async (req, res) => {
         quest.status = 'done';
         await quest.save();
 
+        // Dispara notificações em background (não bloqueia a resposta)
+        const newQuestsCompleted = (user.quests_completed || 0) + 1;
+        if (leveledUp) {
+            notificationService.notifyLevelUp(user._id, newLevel).catch(() => {});
+        }
+        notificationService.checkAndNotifyAchievement(user._id, newQuestsCompleted).catch(() => {});
+
         res.json({
             message: 'Quest concluída!',
             xpGained,
@@ -150,7 +158,7 @@ exports.completeQuest = async (req, res) => {
                 xp:               user.xp,
                 coins:            user.coins,
                 level:            user.level,
-                questsCompleted:  user.quests_completed,
+                questsCompleted:  newQuestsCompleted,
                 isCursed:         user.is_cursed
             }
         });
@@ -165,15 +173,44 @@ exports.completeQuest = async (req, res) => {
 // ==========================================
 
 /**
- * GET /api/quests/all — Admin lista todas as quests com atribuição populada.
+ * GET /api/quests/all — Admin lista quests com filtros server-side e paginação.
+ * Query params: faction, sprint_id ('backlog' = sem sprint), status, label, search, limit (max 100), page
  */
 exports.adminGetQuests = async (req, res) => {
     try {
-        const quests = await Quest.find()
-            .populate('assigned_to', 'nome username')
-            .populate('sprint_id', 'name status')
-            .sort({ createdAt: -1 });
-        res.json(quests);
+        const { faction, sprint_id, status, label, search, limit: rawLimit, page: rawPage } = req.query;
+
+        const limit = Math.min(parseInt(rawLimit) || 10, 100);
+        const page  = Math.max(parseInt(rawPage)  || 1, 1);
+        const skip  = (page - 1) * limit;
+
+        const filter = {};
+
+        if (faction) filter.faction = faction;
+        if (status)  filter.status  = status;
+        if (label)   filter.labels  = label;
+
+        if (sprint_id === 'backlog') {
+            filter.sprint_id = null;
+        } else if (sprint_id) {
+            filter.sprint_id = sprint_id;
+        }
+
+        if (search) {
+            filter.title = { $regex: search, $options: 'i' };
+        }
+
+        const [quests, total] = await Promise.all([
+            Quest.find(filter)
+                .populate('assigned_to', 'nome username')
+                .populate('sprint_id', 'name status')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit),
+            Quest.countDocuments(filter)
+        ]);
+
+        res.json({ quests, total, page, limit });
     } catch (err) {
         res.status(500).json({ message: 'Erro ao buscar quests.', error: err.message });
     }
@@ -184,11 +221,15 @@ exports.adminGetQuests = async (req, res) => {
  */
 exports.adminCreateQuest = async (req, res) => {
     try {
-        const { title, type, xp_reward, coin_reward, sla_seconds, faction, sprint_id } = req.body;
+        const { title, type, xp_reward, coin_reward, sla_seconds, faction, sprint_id, labels } = req.body;
 
         if (!title || !xp_reward || !coin_reward) {
             return res.status(400).json({ message: 'Título, XP e Gold são obrigatórios.' });
         }
+
+        const parsedLabels = Array.isArray(labels)
+            ? labels.filter(Boolean)
+            : (typeof labels === 'string' ? labels.split(',').map(l => l.trim()).filter(Boolean) : []);
 
         const quest = await Quest.create({
             title,
@@ -197,7 +238,8 @@ exports.adminCreateQuest = async (req, res) => {
             coin_reward,
             sla_seconds: sla_seconds || null,
             faction:     faction     || 'Produto',
-            sprint_id:   sprint_id   || null
+            sprint_id:   sprint_id   || null,
+            labels:      parsedLabels
         });
 
         res.status(201).json(quest);
@@ -234,6 +276,12 @@ exports.adminAssignQuest = async (req, res) => {
 
         await quest.save();
         const populated = await quest.populate('assigned_to', 'nome username');
+
+        // Notifica o aventureiro que recebeu a quest
+        if (userId) {
+            notificationService.notifyQuestAssigned(quest, userId).catch(() => {});
+        }
+
         res.json(populated);
     } catch (err) {
         res.status(500).json({ message: 'Erro ao atribuir quest.', error: err.message });
@@ -266,6 +314,85 @@ exports.adminTransferQuest = async (req, res) => {
         res.json(quest);
     } catch (err) {
         res.status(500).json({ message: 'Erro ao transferir quest.', error: err.message });
+    }
+};
+
+/**
+ * GET /api/quests/:id/comments
+ * Retorna o histórico de comentários de uma quest, populado com autor.
+ */
+exports.getComments = async (req, res) => {
+    try {
+        const quest = await Quest.findById(req.params.id)
+            .select('comments')
+            .populate('comments.user_id', 'nome username');
+
+        if (!quest) return res.status(404).json({ message: 'Quest não encontrada.' });
+
+        res.json(quest.comments);
+    } catch (err) {
+        res.status(500).json({ message: 'Erro ao buscar comentários.', error: err.message });
+    }
+};
+
+/**
+ * POST /api/quests/:id/comments
+ * Adiciona um comentário à quest. Disponível para admin e aventureiro.
+ * Body: { text: string }
+ */
+exports.addComment = async (req, res) => {
+    try {
+        const { text } = req.body;
+        if (!text?.trim()) {
+            return res.status(400).json({ message: 'Comentário não pode ser vazio.' });
+        }
+
+        const quest = await Quest.findByIdAndUpdate(
+            req.params.id,
+            { $push: { comments: { user_id: req.user.id, text: text.trim() } } },
+            { new: true, runValidators: true }
+        ).populate('comments.user_id', 'nome username');
+
+        if (!quest) return res.status(404).json({ message: 'Quest não encontrada.' });
+
+        res.status(201).json(quest.comments[quest.comments.length - 1]);
+    } catch (err) {
+        res.status(500).json({ message: 'Erro ao adicionar comentário.', error: err.message });
+    }
+};
+
+/**
+ * PATCH /api/quests/:id/subtasks — Admin vincula ou desvincula quests relacionadas.
+ * Body: { add?: ObjectId[], remove?: ObjectId[] }
+ * Regras: uma quest não pode ser subtask de si mesma; aceita operações parciais.
+ */
+exports.updateSubtasks = async (req, res) => {
+    try {
+        const { add = [], remove = [] } = req.body;
+
+        if (!add.length && !remove.length) {
+            return res.status(400).json({ message: 'Informe quests para vincular (add) ou desvincular (remove).' });
+        }
+
+        const questId = req.params.id;
+        const allIds  = [...add, ...remove];
+
+        if (allIds.includes(questId)) {
+            return res.status(400).json({ message: 'Uma quest não pode ser subtask de si mesma.' });
+        }
+
+        const update = {};
+        if (add.length)    update.$addToSet = { subtasks: { $each: add } };
+        if (remove.length) update.$pull     = { subtasks: { $in: remove } };
+
+        const quest = await Quest.findByIdAndUpdate(questId, update, { new: true })
+            .populate('subtasks', 'title status type faction');
+
+        if (!quest) return res.status(404).json({ message: 'Quest não encontrada.' });
+
+        res.json({ subtasks: quest.subtasks });
+    } catch (err) {
+        res.status(500).json({ message: 'Erro ao atualizar subtasks.', error: err.message });
     }
 };
 

@@ -51,13 +51,37 @@ const QuestSchema = new mongoose.Schema({
     sprint_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Sprint'
-    }
+    },
+
+    // Categorização e filtragem — ex: ['bug', 'ux', 'p1']
+    labels: {
+        type:    [String],
+        default: []
+    },
+
+    // Subtasks — suporte a checklist interno (#16)
+    checklist: [{
+        text:       { type: String, required: true },
+        done:       { type: Boolean, default: false },
+        created_at: { type: Date,    default: Date.now }
+    }],
+
+    // Histórico de interações da missão
+    comments: [{
+        user_id:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        text:       { type: String, required: true, trim: true },
+        created_at: { type: Date, default: Date.now }
+    }],
+
+    // Referências a outras quests vinculadas (relacionamento recursivo por referência)
+    subtasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Quest' }]
 
 }, { timestamps: true });
 
 // Índices compostos para as queries mais frequentes do sistema
-QuestSchema.index({ sprint_id: 1, status: 1 });      // dashboard de sprint
-QuestSchema.index({ faction: 1, status: 1 });         // kanban por facção
-QuestSchema.index({ assigned_to: 1, status: 1 });     // quests do jogador
+QuestSchema.index({ sprint_id: 1, status: 1 });  // dashboard de sprint / burndown
+QuestSchema.index({ faction: 1, status: 1 });     // kanban por facção
+QuestSchema.index({ assigned_to: 1, status: 1 }); // quests do jogador
+QuestSchema.index({ labels: 1 });                  // filtragem por label (multikey)
 
 module.exports = mongoose.model('Quest', QuestSchema);

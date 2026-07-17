@@ -17,7 +17,7 @@
                 </div>
             </div>
             <div class="actions">
-                <button class="btn-pixel logout-btn" onclick="logout()">Sair</button>
+                <button class="btn-pixel logout-btn" data-cy="btn-logout" onclick="logout()">Sair</button>
             </div>
         </div>
 
@@ -27,6 +27,7 @@
             <a href="admin-loot.html" class="admin-tab">🔨 Loot</a>
             <a href="admin-roster.html" class="admin-tab">🛡️ Membros</a>
             <a href="admin-sprints.html" class="admin-tab">🏃 Sprints</a>
+            <a href="admin-metrics.html" class="admin-tab">📊 Métricas</a>
         </nav>
 
         <div style="display:flex; flex-direction:column; gap:24px;">
@@ -75,12 +76,38 @@
                             <option value="">🗂️ Sem sprint (Backlog)</option>
                         </select>
                     </div>
+                    <div class="forge-group">
+                        <label for="questLabels">Labels (opcional, separadas por vírgula)</label>
+                        <input type="text" id="questLabels" class="pixel-input" data-cy="input-quest-labels" placeholder="Ex: bug, ux, p1">
+                    </div>
                     <button type="submit" class="btn-pixel" data-cy="btn-submit-quest" style="background-color: #c0392b; padding: 15px;">FORJAR QUEST</button>
                 </form>
             </div>
 
             <div class="dashboard-section" data-cy="dashboard-quests">
                 <h2 class="section-title">📜 PERGAMINHOS FORJADOS</h2>
+
+                <div data-cy="container-quest-filters" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center;">
+                    <input type="text" id="filterSearch" class="pixel-input" data-cy="input-filter-search"
+                           placeholder="🔍 Buscar por título..." style="flex:2;min-width:140px;">
+                    <select id="filterFaction" class="pixel-input" data-cy="select-filter-faction" style="flex:1;min-width:110px;">
+                        <option value="">Todas as Guildas</option>
+                        <option value="Produto">📦 Produto</option>
+                        <option value="Suporte">🎧 Suporte</option>
+                        <option value="Customer Service">📣 Customer Service</option>
+                    </select>
+                    <select id="filterStatus" class="pixel-input" data-cy="select-filter-status" style="flex:1;min-width:110px;">
+                        <option value="">Todos os Status</option>
+                        <option value="todo">A Fazer</option>
+                        <option value="in_progress">Em Progresso</option>
+                        <option value="done">Concluída</option>
+                    </select>
+                    <select id="filterSprint" class="pixel-input" data-cy="select-filter-sprint" style="flex:1;min-width:130px;">
+                        <option value="">Todas as Sprints</option>
+                        <option value="backlog">🗂️ Backlog</option>
+                    </select>
+                </div>
+
                 <div class="users-table-wrapper">
                     <table class="users-table">
                         <thead>
@@ -100,7 +127,19 @@
                         <tbody id="adminQuestsTableBody"></tbody>
                     </table>
                 </div>
-                <div id="questPagination" class="pagination-controls"></div>
+                <div id="questPaginationRow" style="display:none; flex-direction:row; align-items:center; justify-content:center; gap:10px; flex-wrap:nowrap; margin-top:8px;">
+                    <button id="btnQuestPrev" class="btn-pixel" style="font-size:8px;padding:8px 12px;flex-shrink:0;" data-cy="btn-quest-prev">← Anterior</button>
+                    <span id="paginationPageInfo" class="pagination-info" style="white-space:nowrap;"></span>
+                    <select id="filterLimit" data-cy="select-filter-limit"
+                            style="font-size:8px;padding:5px 8px;width:85px;flex-shrink:0;background:#1a252f;border:2px solid #2c3e50;color:#f1c40f;cursor:pointer;font-family:inherit;">
+                        <option value="10">10 / pág.</option>
+                        <option value="25">25 / pág.</option>
+                        <option value="50">50 / pág.</option>
+                        <option value="100">100 / pág.</option>
+                    </select>
+                    <span id="paginationCountInfo" class="pagination-info" style="white-space:nowrap;"></span>
+                    <button id="btnQuestNext" class="btn-pixel" style="font-size:8px;padding:8px 12px;flex-shrink:0;" data-cy="btn-quest-next">Próxima →</button>
+                </div>
             </div>
 
         </div>
@@ -110,6 +149,7 @@
 
     <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
+    <script src="js/notifications.js"></script>
     <script src="js/admin-quests.js"></script>
 </body>
 </html>

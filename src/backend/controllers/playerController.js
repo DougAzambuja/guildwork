@@ -1,5 +1,6 @@
-const User     = require('../models/user');
-const LootItem = require('../models/lootItem');
+const User                = require('../models/user');
+const LootItem            = require('../models/lootItem');
+const notificationService = require('../services/notificationService');
 
 const MAX_XP = 10000;
 
@@ -37,8 +38,8 @@ exports.updateGamification = async (req, res) => {
 
         user.xp += xp;
         user.coins += coins;
-        
-        // Se a rota foi chamada, significa que ele concluiu uma task
+
+        const levelBefore = user.level || 1;
         user.quests_completed = (user.quests_completed || 0) + 1;
 
         // Lógica de Level Up
@@ -48,11 +49,17 @@ exports.updateGamification = async (req, res) => {
         }
 
         await user.save();
-        
+
+        // Notificações em background
+        if (user.level > levelBefore) {
+            notificationService.notifyLevelUp(user._id, user.level).catch(() => {});
+        }
+        notificationService.checkAndNotifyAchievement(user._id, user.quests_completed).catch(() => {});
+
         // Devolve o estado exato do banco para o Front-end sincronizar a tela
-        res.json({ 
-            xp: user.xp, 
-            coins: user.coins, 
+        res.json({
+            xp: user.xp,
+            coins: user.coins,
             level: user.level,
             quests_completed: user.quests_completed
         });

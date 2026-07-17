@@ -16,8 +16,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (nameEl) nameEl.innerText = adminName;
 
     setupQuestForm();
-    renderAdminQuests();
+    initFilterBar();
     loadSprintsSelect();
+    renderAdminQuests(1);
 });
 
 // ==========================================
@@ -38,13 +39,20 @@ async function loadSprintsSelect() {
         if (!res.ok) return;
 
         const sprints = await res.json();
-        const select  = document.getElementById('questSprint');
-        if (!select) return;
+        const active  = sprints.filter(s => s.status !== 'cancelled' && s.status !== 'completed');
 
-        const active = sprints.filter(s => s.status !== 'cancelled' && s.status !== 'completed');
-
-        select.innerHTML = '<option value="">🗂️ Sem sprint (Backlog)</option>' +
+        const forgeOpts = '<option value="">🗂️ Sem sprint (Backlog)</option>' +
             active.map(s => `<option value="${s._id}">[${STATUS_SPRINT_LABELS[s.status] || s.status}] ${s.name}</option>`).join('');
+
+        const forgeSelect = document.getElementById('questSprint');
+        if (forgeSelect) forgeSelect.innerHTML = forgeOpts;
+
+        const filterSelect = document.getElementById('filterSprint');
+        if (filterSelect) {
+            filterSelect.innerHTML = '<option value="">Todas as Sprints</option>' +
+                '<option value="backlog">🗂️ Backlog</option>' +
+                sprints.map(s => `<option value="${s._id}">${s.name}</option>`).join('');
+        }
     } catch (err) {
         console.error('Erro ao carregar sprints:', err);
     }
@@ -61,6 +69,7 @@ function setupQuestForm() {
         e.preventDefault();
 
         const sprintVal = document.getElementById('questSprint')?.value;
+        const labelsRaw = document.getElementById('questLabels')?.value || '';
         const questData = {
             title:       document.getElementById('questTitle').value.trim(),
             type:        document.getElementById('questType').value,
@@ -70,7 +79,8 @@ function setupQuestForm() {
             sla_seconds: document.getElementById('slaTime').value
                             ? parseInt(document.getElementById('slaTime').value)
                             : null,
-            sprint_id:   sprintVal || null
+            sprint_id:   sprintVal || null,
+            labels:      labelsRaw.split(',').map(l => l.trim()).filter(Boolean)
         };
 
         try {
@@ -86,7 +96,7 @@ function setupQuestForm() {
             if (res.ok) {
                 showToast('Quest forjada com sucesso!');
                 questForm.reset();
-                await renderAdminQuests();
+                await renderAdminQuests(1);
             } else {
                 const err = await res.json();
                 showToast(`Erro: ${err.message}`, 'error');
@@ -99,7 +109,49 @@ function setupQuestForm() {
 }
 
 // ==========================================
-// 2. TABELA DE QUESTS + PAGINAÇÃO
+// 3. BARRA DE FILTROS
+// ==========================================
+let _searchDebounceTimer = null;
+
+function initFilterBar() {
+    const searchEl  = document.getElementById('filterSearch');
+    const factionEl = document.getElementById('filterFaction');
+    const statusEl  = document.getElementById('filterStatus');
+    const sprintEl  = document.getElementById('filterSprint');
+    const limitEl   = document.getElementById('filterLimit');
+
+    if (searchEl) {
+        searchEl.addEventListener('input', () => {
+            clearTimeout(_searchDebounceTimer);
+            _searchDebounceTimer = setTimeout(() => renderAdminQuests(1), 300);
+        });
+    }
+
+    [factionEl, statusEl, sprintEl, limitEl].forEach(el => {
+        if (el) el.addEventListener('change', () => renderAdminQuests(1));
+    });
+}
+
+function buildQueryParams(page) {
+    const params = new URLSearchParams();
+    params.set('page',  String(page));
+    params.set('limit', document.getElementById('filterLimit')?.value || '10');
+
+    const search  = document.getElementById('filterSearch')?.value.trim();
+    const faction = document.getElementById('filterFaction')?.value;
+    const status  = document.getElementById('filterStatus')?.value;
+    const sprint  = document.getElementById('filterSprint')?.value;
+
+    if (search)  params.set('search',    search);
+    if (faction) params.set('faction',   faction);
+    if (status)  params.set('status',    status);
+    if (sprint)  params.set('sprint_id', sprint);
+
+    return params;
+}
+
+// ==========================================
+// 4. TABELA DE QUESTS + PAGINAÇÃO SERVER-SIDE
 // ==========================================
 const STATUS_LABELS = {
     todo:        { label: 'A Fazer',      color: '#2980b9' },
@@ -107,20 +159,17 @@ const STATUS_LABELS = {
     done:        { label: 'Concluída',    color: '#27ae60' }
 };
 
-let allQuests       = [];
-let questPage       = 0;
-const QUESTS_PER_PAGE = 10;
-
-async function renderAdminQuests() {
+async function renderAdminQuests(page = 1) {
     try {
-        const response = await fetch(`${API_URL}/quests/all`, {
+        const params   = buildQueryParams(page);
+        const response = await fetch(`${API_URL}/quests/all?${params.toString()}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (response.ok) {
-            allQuests = await response.json();
-            questPage = 0;
-            renderQuestPage();
+            const { quests, total, page: currentPage, limit } = await response.json();
+            renderQuestPage(quests);
+            renderPaginationControls(total, limit, currentPage);
         }
     } catch (err) {
         console.error('Erro ao buscar quests:', err);
@@ -141,21 +190,23 @@ function formatAdminSla(seconds) {
     return `${seconds}s`;
 }
 
-function renderQuestPage() {
+function renderQuestPage(quests) {
     const tableBody = document.getElementById('adminQuestsTableBody');
     if (!tableBody) return;
 
-    const start = questPage * QUESTS_PER_PAGE;
-    const slice = allQuests.slice(start, start + QUESTS_PER_PAGE);
+    if (!quests.length) {
+        tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#7f8c8d;padding:20px;">Nenhuma quest encontrada.</td></tr>';
+        return;
+    }
 
     const FACTION_BADGE = { Produto: '📦', Suporte: '🎧', 'Customer Service': '📣' };
 
-    tableBody.innerHTML = slice.map(q => {
+    tableBody.innerHTML = quests.map(q => {
         const st          = STATUS_LABELS[q.status] || STATUS_LABELS.todo;
         const assignee    = q.assigned_to ? (q.assigned_to.nome || q.assigned_to.username) : '—';
         const factionIcon = FACTION_BADGE[q.faction] || '🏰';
         const resetBtn    = (q.status === 'in_progress')
-            ? `<button class="btn-pixel btn-delete" style="font-size:8px;padding:4px 8px;" onclick="resetQuest('${q._id}')">Resetar</button>`
+            ? `<button class="btn-pixel btn-delete" style="font-size:8px;padding:4px 8px;" data-cy="btn-reset-quest" onclick="resetQuest('${q._id}')">Resetar</button>`
             : '—';
 
         let slaDisplay = '—';
@@ -171,13 +222,16 @@ function renderQuestPage() {
         }
 
         const sprintInfo = q.sprint_id
-            ? `<a href="admin-sprint-board.html?id=${q.sprint_id._id}" style="color:#3498db;font-size:8px;text-decoration:none;"
-                 title="${q.sprint_id.name}">🏃 ${truncate(q.sprint_id.name, 14)}</a>`
+            ? `<a href="admin-sprint-board.html?id=${q.sprint_id._id}" style="color:#3498db;font-size:8px;text-decoration:none;" title="${q.sprint_id.name}">🏃 ${truncate(q.sprint_id.name, 14)}</a>`
             : '<span style="color:#4a5568;font-size:8px;">—</span>';
+
+        const labelBadges = (q.labels || []).length
+            ? ' ' + q.labels.map(l => `<span style="background:#2c3e50;color:#bdc3c7;font-size:7px;padding:1px 5px;border-radius:2px;">${l}</span>`).join(' ')
+            : '';
 
         return `
             <tr>
-                <td>${q.title}</td>
+                <td>${q.title}${labelBadges}</td>
                 <td>${q.type || 'normal'}</td>
                 <td style="font-size:9px;">${factionIcon} ${q.faction || 'Produto'}</td>
                 <td>${sprintInfo}</td>
@@ -190,35 +244,42 @@ function renderQuestPage() {
             </tr>
         `;
     }).join('');
-
-    renderPaginationControls();
 }
 
-function renderPaginationControls() {
-    const container  = document.getElementById('questPagination');
-    if (!container) return;
+function renderPaginationControls(total, limit, page) {
+    const row = document.getElementById('questPaginationRow');
+    if (!row) return;
 
-    const totalPages = Math.ceil(allQuests.length / QUESTS_PER_PAGE);
-    if (totalPages <= 1) { container.innerHTML = ''; return; }
+    const totalPages = Math.ceil(total / limit);
 
-    const start = questPage * QUESTS_PER_PAGE + 1;
-    const end   = Math.min(start + QUESTS_PER_PAGE - 1, allQuests.length);
+    if (totalPages <= 1) {
+        row.style.display = 'none';
+        return;
+    }
 
-    container.innerHTML = `
-        <div class="pagination-row">
-            <button class="btn-pixel" style="font-size:8px;padding:8px 12px;" onclick="goQuestPage(${questPage - 1})" ${questPage === 0 ? 'disabled' : ''}>← Anterior</button>
-            <span class="pagination-info">Página ${questPage + 1} de ${totalPages} &nbsp;|&nbsp; ${start}–${end} de ${allQuests.length}</span>
-            <button class="btn-pixel" style="font-size:8px;padding:8px 12px;" onclick="goQuestPage(${questPage + 1})" ${questPage >= totalPages - 1 ? 'disabled' : ''}>Próxima →</button>
-        </div>
-    `;
+    const start = (page - 1) * limit + 1;
+    const end   = Math.min(start + limit - 1, total);
+
+    row.style.display = 'flex';
+
+    const prevBtn   = document.getElementById('btnQuestPrev');
+    const nextBtn   = document.getElementById('btnQuestNext');
+    const pageInfo  = document.getElementById('paginationPageInfo');
+    const countInfo = document.getElementById('paginationCountInfo');
+
+    if (prevBtn) {
+        prevBtn.disabled = page <= 1;
+        prevBtn.onclick  = () => goQuestPage(page - 1);
+    }
+    if (nextBtn) {
+        nextBtn.disabled = page >= totalPages;
+        nextBtn.onclick  = () => goQuestPage(page + 1);
+    }
+    if (pageInfo)  pageInfo.textContent  = `Página ${page} de ${totalPages}`;
+    if (countInfo) countInfo.textContent = `${start}–${end} de ${total}`;
 }
 
-window.goQuestPage = (page) => {
-    const totalPages = Math.ceil(allQuests.length / QUESTS_PER_PAGE);
-    if (page < 0 || page >= totalPages) return;
-    questPage = page;
-    renderQuestPage();
-};
+window.goQuestPage = (page) => renderAdminQuests(page);
 
 window.resetQuest = async (questId) => {
     if (!confirm('Resetar esta quest para "A Fazer" e desatribuir o aventureiro?')) return;
@@ -235,7 +296,7 @@ window.resetQuest = async (questId) => {
 
         if (res.ok) {
             showToast('Quest resetada com sucesso.');
-            await renderAdminQuests();
+            await renderAdminQuests(1);
         } else {
             const err = await res.json();
             showToast(err.message || 'Erro ao resetar quest.', 'error');
