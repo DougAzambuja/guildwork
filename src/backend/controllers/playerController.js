@@ -69,13 +69,14 @@ exports.updateGamification = async (req, res) => {
     }
 };
 
-// PUT /api/players/curse — aplica ou remove maldição do SLA
+// PUT /api/players/curse — aplica ou remove maldição
 exports.updateCurse = async (req, res) => {
     try {
-        const isCursed = req.body.is_cursed !== undefined ? req.body.is_cursed : req.body.isCursed; // Front manda em CamelCase
+        const isCursed  = req.body.is_cursed !== undefined ? req.body.is_cursed : req.body.isCursed;
+        const curseType = req.body.curse_type || null;
         const user = await User.findByIdAndUpdate(
             req.user.id,
-            { is_cursed: isCursed }, // Banco salva em Snake_case
+            { is_cursed: isCursed, curse_type: isCursed ? curseType : null },
             { returnDocument: 'after' }
         ).select('-password');
         res.json(user);

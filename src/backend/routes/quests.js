@@ -21,6 +21,12 @@ router.patch('/:id/assign',     checkAdmin, questController.adminAssignQuest);
 router.patch('/:id/transfer',   checkAdmin, questController.adminTransferQuest);
 router.post('/:id/copy',        checkAdmin, questController.adminCopyQuest);
 router.patch('/:id/subtasks',   checkAdmin, questController.updateSubtasks);
+router.patch('/:id',           checkAdmin, questController.adminUpdateQuest);
+router.delete('/:id',          checkAdmin, questController.deleteQuest);
+
+// — Detalhe completo e checklist (admin + aventureiro autenticado) —
+router.get('/:id',                         questController.getQuestDetail);
+router.patch('/:id/checklist/:itemId',     questController.toggleChecklistItem);
 
 // — Comentários (admin + aventureiro autenticado) —
 router.get('/:id/comments',  questController.getComments);

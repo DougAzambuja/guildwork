@@ -64,6 +64,9 @@
 
             <div class="objectives-container" data-cy="objectives-panel">
 
+                <!-- ═══ MALDIÇÃO ATIVA ═══ -->
+                <div id="curseBanner" style="display:none;" data-cy="curse-banner"></div>
+
                 <!-- ═══ CADERNETA DO HERÓI ═══ -->
                 <div class="objectives-title">CADERNETA DO HERÓI</div>
 
@@ -174,7 +177,32 @@
                 <div id="qdm-started" class="quest-modal-value"></div>
             </div>
 
-            <button class="btn-pixel" onclick="closeQuestModal()" style="width:100%;margin-top:20px;background:#7f8c8d;">FECHAR</button>
+            <!-- Checklist -->
+            <div class="quest-modal-section" id="qdm-checklist-section" style="display:none;">
+                <div class="quest-modal-label">CHECKLIST</div>
+                <div id="qdm-checklist-progress" style="margin:6px 0 10px;"></div>
+                <div id="qdm-checklist-items"></div>
+            </div>
+
+            <div style="border-top:1px solid #2c3e50; margin:14px 0 10px;"></div>
+
+            <!-- Timeline de atividade + comentários -->
+            <div class="quest-modal-section">
+                <div class="quest-modal-label">ATIVIDADE</div>
+                <div id="qdm-comments-list" style="max-height:180px; overflow-y:auto; margin:8px 0;"></div>
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                    <input type="text" id="qdm-comment-input" class="pixel-input"
+                           data-cy="input-quest-comment"
+                           placeholder="Adicionar comentário..."
+                           style="flex:1; font-size:9px; padding:8px;"
+                           onkeydown="if(event.key==='Enter')submitQuestComment()">
+                    <button class="btn-pixel" data-cy="btn-submit-quest-comment"
+                            onclick="submitQuestComment()"
+                            style="font-size:8px;padding:8px 12px;background:#2980b9;flex-shrink:0;">Enviar</button>
+                </div>
+            </div>
+
+            <button class="btn-pixel" onclick="closeQuestModal()" style="width:100%;margin-top:16px;background:#7f8c8d;">FECHAR</button>
         </div>
     </div>
 

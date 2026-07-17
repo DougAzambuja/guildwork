@@ -13,6 +13,30 @@ if (!token || !localStorage.getItem('guild_role')) {
 const maxXP    = 10000;
 const WIP_LIMIT = 3;
 
+const CURSE_CONFIG = {
+    sla_breach: {
+        icon:    '💀',
+        label:   'Maldição do Atraso',
+        color:   '#e74c3c',
+        penalty: 'XP reduzido pela metade nesta entrega.',
+        cure:    'Conclua qualquer missão para quebrar a maldição.'
+    },
+    abandoned: {
+        icon:    '👻',
+        label:   'Maldição do Abandono',
+        color:   '#8e44ad',
+        penalty: 'Gold reduzido pela metade nesta entrega.',
+        cure:    'Conclua qualquer missão para quebrar a maldição.'
+    },
+    csat_low: {
+        icon:    '💔',
+        label:   'Maldição da Insatisfação',
+        color:   '#e67e22',
+        penalty: 'XP e Gold reduzidos. Missões urgentes bloqueadas.',
+        cure:    'Conclua uma quest de Suporte com CSAT ≥ 4★.'
+    }
+};
+
 let playerData = {
     id:         null,
     xp:         0,
@@ -22,6 +46,7 @@ let playerData = {
     farmedGold: parseInt(sessionStorage.getItem('session_gold') || '0'),
     farmedXP:   parseInt(sessionStorage.getItem('session_xp')   || '0'),
     isCursed:   false,
+    curseType:  null,
     name:       'Aventureiro',
     avatar:     'assets/imgs/caneca_pixel.jpg'
 };
@@ -86,13 +111,14 @@ async function fetchPlayerState() {
                 farmedGold: parseInt(sessionStorage.getItem('session_gold') || '0'),
                 farmedXP:   parseInt(sessionStorage.getItem('session_xp')   || '0'),
                 isCursed:   data.is_cursed        || false,
+                curseType:  data.curse_type       || null,
                 name:       data.nome             || data.username,
                 avatar:     data.avatar_url       || 'assets/imgs/caneca_pixel.jpg'
             };
 
             updateUI();
 
-            if (playerData.isCursed) applyCurseVisuals();
+            if (playerData.curseType) applyCurseVisuals(playerData.curseType);
 
         } else {
             localStorage.clear();
@@ -186,13 +212,15 @@ function renderTodoCard(quest, myWipCount) {
     const typeClass = quest.type === 'urgent' ? 'urgent' : (quest.type === 'support' ? 'support' : '');
     el.className = `kanban-card ${typeClass}`;
 
-    const overWip = myWipCount >= WIP_LIMIT;
+    const overWip      = myWipCount >= WIP_LIMIT;
+    const csatBlocked  = playerData.curseType === 'csat_low' && quest.type === 'urgent';
+    const cantPickUp   = overWip || csatBlocked;
     const slaInfo = quest.sla_seconds
         ? `<div style="font-size:8px;color:#888;margin-bottom:8px;">SLA: ${formatSla(quest.sla_seconds)}</div>`
         : '';
-    const wipWarning = overWip
-        ? '<div class="wip-warning">Limite WIP atingido (max 3)</div>'
-        : '';
+    const wipWarning = overWip      ? '<div class="wip-warning">Limite WIP atingido (max 3)</div>'
+                     : csatBlocked  ? '<div class="wip-warning">💔 Maldição: urgentes bloqueadas</div>'
+                     : '';
 
     el.innerHTML = `
         <span class="kanban-type-badge badge-${quest.type || 'normal'}">${(quest.type || 'NORMAL').toUpperCase()}</span>
@@ -203,7 +231,7 @@ function renderTodoCard(quest, myWipCount) {
         </div>
         ${slaInfo}
         ${wipWarning}
-        <button class="btn-kanban btn-pickup" onclick="event.stopPropagation(); pickUpQuest('${quest._id}')" ${overWip ? 'disabled' : ''}>
+        <button class="btn-kanban btn-pickup" onclick="event.stopPropagation(); pickUpQuest('${quest._id}')" ${cantPickUp ? 'disabled' : ''}>
             ⚔️ ACEITAR MISSÃO
         </button>
     `;
@@ -227,8 +255,14 @@ function renderInProgressCard(quest) {
     const slaHtml = quest.sla_seconds
         ? `<div class="kanban-sla-timer" id="sla-${quest._id}">SLA: calculando...</div>`
         : '';
+
+    const slaBreached = quest.sla_seconds && quest.started_at &&
+        (Date.now() - new Date(quest.started_at).getTime()) / 1000 > quest.sla_seconds;
     const finishBtn = isMyQuest
-        ? `<button class="btn-kanban btn-finish" onclick="finishQuest('${quest._id}', '${quest.type}')">✅ CONCLUIR</button>`
+        ? `<button class="btn-kanban btn-finish${slaBreached ? ' btn-finish-cursed' : ''}"
+               onclick="finishQuest('${quest._id}', '${quest.type}')">
+               ${slaBreached ? '💀 CONCLUIR (MALDIÇÃO)' : '✅ CONCLUIR'}
+           </button>`
         : '';
 
     el.innerHTML = `
@@ -247,7 +281,8 @@ function renderInProgressCard(quest) {
     `;
 
     if (quest.sla_seconds && quest.started_at) {
-        startSlaTimer(quest._id, quest.sla_seconds, quest.started_at);
+        const assignedToId = quest.assigned_to ? quest.assigned_to._id : null;
+        startSlaTimer(quest._id, quest.sla_seconds, quest.started_at, assignedToId);
     }
 
     el.addEventListener('click', () => openQuestModal(quest._id));
@@ -286,28 +321,63 @@ const STATUS_MAP = {
     done:        { label: 'Concluída',    color: '#27ae60' }
 };
 
-function openQuestModal(questId) {
-    const quest = questCache.get(questId);
-    if (!quest) return;
+let _modalQuestId = null;
 
+function _esc(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function _timeAgo(iso) {
+    const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+    const h = Math.floor(m / 60);
+    const d = Math.floor(h / 24);
+    if (d > 0) return `${d}d atrás`;
+    if (h > 0) return `${h}h atrás`;
+    if (m > 0) return `${m}min atrás`;
+    return 'agora';
+}
+
+async function openQuestModal(questId) {
+    const cached = questCache.get(questId);
+    if (!cached) return;
+
+    _modalQuestId = questId;
+    _renderModalInfo(cached);
+
+    const checklistSection = document.getElementById('qdm-checklist-section');
+    const commentsList     = document.getElementById('qdm-comments-list');
+    if (checklistSection) checklistSection.style.display = 'none';
+    if (commentsList) commentsList.innerHTML = '<div style="color:#7f8c8d;font-size:9px;text-align:center;padding:10px;">Carregando...</div>';
+
+    document.getElementById('questDetailModal').style.display = 'flex';
+
+    try {
+        const res = await fetch(`${API_URL}/quests/${questId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const full = await res.json();
+        _renderModalChecklist(full);
+        _renderModalComments(full.comments || []);
+    } catch (err) {
+        console.error('Erro ao carregar detalhe da quest:', err);
+    }
+}
+
+function _renderModalInfo(quest) {
     const st = STATUS_MAP[quest.status] || STATUS_MAP.todo;
 
-    // Tipo
-    const typeEl = document.getElementById('qdm-type-badge');
-    typeEl.innerHTML = `<span class="kanban-type-badge badge-${quest.type || 'normal'}" style="font-size:9px;">${(quest.type || 'NORMAL').toUpperCase()}</span>`;
+    document.getElementById('qdm-type-badge').innerHTML =
+        `<span class="kanban-type-badge badge-${quest.type || 'normal'}" style="font-size:9px;">${(quest.type || 'NORMAL').toUpperCase()}</span>`;
 
-    // Título
     document.getElementById('qdm-title').textContent = quest.title;
-
-    // Status
-    document.getElementById('qdm-status').innerHTML =
+    document.getElementById('qdm-status').innerHTML  =
         `<span class="status-badge" style="background:${st.color}; padding:4px 10px; font-size:8px;">${st.label}</span>`;
-
-    // Recompensas
     document.getElementById('qdm-xp').textContent    = `+${quest.xp_reward} XP`;
     document.getElementById('qdm-coins').textContent = `+${quest.coin_reward} 💰`;
 
-    // SLA
     const slaEl = document.getElementById('qdm-sla');
     if (!quest.sla_seconds) {
         slaEl.innerHTML = '<span class="quest-modal-sla-none">Sem tempo limite</span>';
@@ -321,21 +391,19 @@ function openQuestModal(questId) {
         slaEl.innerHTML = `<span class="quest-modal-value">${formatSlaVerbose(quest.sla_seconds)}</span>`;
     }
 
-    // Atribuído a
-    const assigneeEl  = document.getElementById('qdm-assignee');
-    const assignee    = quest.assigned_to;
+    const assigneeEl = document.getElementById('qdm-assignee');
+    const assignee   = quest.assigned_to;
     if (assignee) {
         const av   = assignee.avatar_url || 'assets/imgs/caneca_pixel.jpg';
         const name = assignee.nome || assignee.username;
         assigneeEl.innerHTML = `
             <img class="kanban-assignee-avatar" src="${av}" alt="" style="border-color:#f1c40f;">
-            <span style="font-size:11px; color:#ecf0f1;">${name}</span>
+            <span style="font-size:11px; color:#ecf0f1;">${_esc(name)}</span>
         `;
     } else {
         assigneeEl.innerHTML = '<span style="font-size:10px; color:#7f8c8d;">Disponível — nenhum aventureiro ainda</span>';
     }
 
-    // Em progresso desde
     const startedSection = document.getElementById('qdm-started-section');
     if (quest.status === 'in_progress' && quest.started_at) {
         startedSection.style.display = 'block';
@@ -343,12 +411,139 @@ function openQuestModal(questId) {
     } else {
         startedSection.style.display = 'none';
     }
-
-    document.getElementById('questDetailModal').style.display = 'flex';
 }
+
+function _renderModalChecklist(quest) {
+    const section   = document.getElementById('qdm-checklist-section');
+    const progressEl = document.getElementById('qdm-checklist-progress');
+    const itemsEl   = document.getElementById('qdm-checklist-items');
+    if (!section) return;
+
+    const items = quest.checklist || [];
+    if (!items.length) { section.style.display = 'none'; return; }
+
+    section.style.display = 'block';
+
+    const doneCount = items.filter(i => i.done).length;
+    const pct       = Math.round((doneCount / items.length) * 100);
+
+    if (progressEl) progressEl.innerHTML = `
+        <div style="display:flex;justify-content:space-between;font-size:8px;color:#7f8c8d;margin-bottom:4px;">
+            <span>${doneCount} de ${items.length} itens</span><span>${pct}%</span>
+        </div>
+        <div style="background:#0d1b2a;height:6px;border-radius:2px;overflow:hidden;">
+            <div style="height:100%;background:#27ae60;width:${pct}%;transition:width 0.3s;"></div>
+        </div>
+    `;
+
+    const assignedId = quest.assigned_to ? (quest.assigned_to._id || quest.assigned_to).toString() : null;
+    const canToggle  = assignedId === playerData.id;
+
+    if (itemsEl) itemsEl.innerHTML = items.map(item => `
+        <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #1a252f;">
+            <input type="checkbox" ${item.done ? 'checked' : ''} ${!canToggle ? 'disabled' : ''}
+                   data-cy="checkbox-checklist-item"
+                   onchange="toggleChecklistItem('${quest._id}','${item._id}',this)"
+                   style="cursor:${canToggle ? 'pointer' : 'default'};accent-color:#27ae60;flex-shrink:0;">
+            <span style="font-size:9px;color:${item.done ? '#7f8c8d' : '#ecf0f1'};text-decoration:${item.done ? 'line-through' : 'none'};">
+                ${_esc(item.text)}
+            </span>
+        </div>
+    `).join('');
+}
+
+function _renderModalComments(comments) {
+    const listEl = document.getElementById('qdm-comments-list');
+    if (!listEl) return;
+
+    const sorted = [...comments].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+    if (!sorted.length) {
+        listEl.innerHTML = '<div style="color:#7f8c8d;font-size:9px;text-align:center;padding:8px;">Sem atividade ainda.</div>';
+        return;
+    }
+
+    listEl.innerHTML = sorted.map(c => {
+        const isActivity = c.type === 'activity';
+        const author     = c.user_id ? _esc(c.user_id.nome || c.user_id.username) : 'Sistema';
+        const ago        = _timeAgo(c.created_at);
+
+        if (isActivity) {
+            return `<div style="display:flex;align-items:center;gap:6px;padding:4px 0;color:#7f8c8d;font-size:8px;">
+                <span style="color:#2980b9;flex-shrink:0;">●</span>
+                <span>${_esc(c.text)}</span>
+                <span style="margin-left:auto;white-space:nowrap;font-size:7px;">${ago}</span>
+            </div>`;
+        }
+
+        return `<div style="padding:6px 0;border-bottom:1px solid #1a252f;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+                <span style="font-size:8px;color:#f1c40f;font-weight:bold;">${author}</span>
+                <span style="font-size:7px;color:#7f8c8d;">${ago}</span>
+            </div>
+            <div style="font-size:9px;color:#ecf0f1;">${_esc(c.text)}</div>
+        </div>`;
+    }).join('');
+
+    listEl.scrollTop = listEl.scrollHeight;
+}
+
+window.toggleChecklistItem = async (questId, itemId, checkbox) => {
+    try {
+        const res = await fetch(`${API_URL}/quests/${questId}/checklist/${itemId}`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            checkbox.checked = !checkbox.checked;
+            showToast('Erro ao atualizar item.', 'error');
+            return;
+        }
+        // Recarrega o detalhe para atualizar a barra de progresso
+        const detailRes = await fetch(`${API_URL}/quests/${questId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (detailRes.ok) _renderModalChecklist(await detailRes.json());
+    } catch (err) {
+        checkbox.checked = !checkbox.checked;
+        console.error(err);
+    }
+};
+
+window.submitQuestComment = async () => {
+    if (!_modalQuestId) return;
+    const input = document.getElementById('qdm-comment-input');
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+
+    try {
+        const res = await fetch(`${API_URL}/quests/${_modalQuestId}/comments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ text })
+        });
+        if (res.ok) {
+            input.value = '';
+            const detailRes = await fetch(`${API_URL}/quests/${_modalQuestId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (detailRes.ok) {
+                const full = await detailRes.json();
+                _renderModalComments(full.comments || []);
+            }
+        } else {
+            showToast('Erro ao enviar comentário.', 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('Erro de conexão.', 'error');
+    }
+};
 
 function closeQuestModal() {
     document.getElementById('questDetailModal').style.display = 'none';
+    _modalQuestId = null;
 }
 
 function formatDate(isoString) {
@@ -409,12 +604,13 @@ async function finishQuest(questId, questType) {
         if (res.ok) {
             const data = await res.json();
 
-            const wasCursed      = playerData.isCursed;
-            playerData.xp        = data.updatedState.xp;
-            playerData.coins     = data.updatedState.coins;
-            playerData.level     = data.updatedState.level;
-            playerData.tasks     = data.updatedState.questsCompleted;
-            playerData.isCursed  = data.updatedState.isCursed;
+            const wasCurseType    = playerData.curseType;
+            playerData.xp         = data.updatedState.xp;
+            playerData.coins       = data.updatedState.coins;
+            playerData.level       = data.updatedState.level;
+            playerData.tasks       = data.updatedState.questsCompleted;
+            playerData.isCursed    = data.updatedState.isCursed;
+            playerData.curseType   = data.updatedState.curseType || null;
             playerData.farmedGold += data.coinsGained;
             playerData.farmedXP   += data.xpGained;
             sessionStorage.setItem('session_gold', playerData.farmedGold);
@@ -428,11 +624,15 @@ async function finishQuest(questId, questType) {
                 showToast(`Quest concluída! +${data.xpGained} XP +${data.coinsGained} 💰`);
             }
 
-            if (wasCursed && !playerData.isCursed) {
+            if (wasCurseType && !playerData.curseType) {
                 removeCurseVisuals();
                 showToast('✨ Maldição quebrada!');
-            } else if (playerData.isCursed) {
-                applyCurseVisuals();
+            } else if (playerData.curseType) {
+                applyCurseVisuals(playerData.curseType);
+                if (data.newCurseApplied) {
+                    const cfg = CURSE_CONFIG[playerData.curseType];
+                    showToast(`${cfg.icon} ${cfg.label} aplicada! ${cfg.penalty}`, 'error');
+                }
             }
 
             await loadBoard();
@@ -449,7 +649,7 @@ async function finishQuest(questId, questType) {
 // ==========================================
 // 7. SLA TIMER (conta a partir de started_at)
 // ==========================================
-function startSlaTimer(questId, slaSeconds, startedAt) {
+function startSlaTimer(questId, slaSeconds, startedAt, assignedToId) {
     const slaMs  = slaSeconds * 1000;
     const halfMs = slaMs / 2;
     const startMs = new Date(startedAt).getTime();
@@ -473,10 +673,15 @@ function startSlaTimer(questId, slaSeconds, startedAt) {
             timerEl.textContent       = '🚨 SLA ESTOURADO!';
             timerEl.style.color       = '#e74c3c';
             timerEl.style.borderColor = '#e74c3c';
-            if (!playerData.isCursed) {
-                applyCurseVisuals();
-                await setPlayerCurseState(true);
-                showToast('🚨 SLA estourado! Maldição aplicada!', 'error');
+            const isMyQuest = assignedToId && assignedToId.toString() === playerData.id;
+            if (isMyQuest) {
+                showToast('🚨 SLA estourado! Completar esta missão aplicará a Maldição do Atraso.', 'error');
+                const card    = timerEl.closest('.kanban-card');
+                const finBtn  = card && card.querySelector('.btn-finish');
+                if (finBtn) {
+                    finBtn.classList.add('btn-finish-cursed');
+                    finBtn.textContent = '💀 CONCLUIR (MALDIÇÃO)';
+                }
             }
             return;
         }
@@ -612,30 +817,61 @@ function updateSidebar() {
 // ==========================================
 // 9. MECÂNICA DE MALDIÇÃO
 // ==========================================
-function applyCurseVisuals() {
-    playerData.isCursed = true;
+function applyCurseVisuals(curseType) {
+    const cfg = CURSE_CONFIG[curseType] || CURSE_CONFIG.sla_breach;
+    playerData.isCursed  = true;
+    playerData.curseType = curseType;
+
     const avatarEl    = document.getElementById('playerAvatar');
     const xpBar       = document.getElementById('xpBar');
     const xpContainer = document.getElementById('xpContainer');
     if (avatarEl) {
         avatarEl.classList.remove('curse-warning');
         avatarEl.classList.add('curse-critical');
+        avatarEl.style.outline      = `2px solid ${cfg.color}`;
+        avatarEl.style.outlineOffset = '2px';
     }
     if (xpBar) {
         xpBar.classList.remove('curse-warning');
         xpBar.classList.add('curse-critical');
+        xpBar.style.background = cfg.color;
     }
     if (xpContainer) xpContainer.classList.add('curse-critical');
+
+    const banner = document.getElementById('curseBanner');
+    if (banner) {
+        banner.style.cssText = `display:block; background:#0d1b2a; border:2px solid ${cfg.color}; padding:10px 12px; margin-bottom:10px; border-radius:2px;`;
+        banner.innerHTML = `
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <span style="font-size:18px;line-height:1;">${cfg.icon}</span>
+                <span style="font-size:8px;color:${cfg.color};font-weight:bold;letter-spacing:1px;">${cfg.label.toUpperCase()}</span>
+            </div>
+            <div style="font-size:8px;color:#e67e22;margin-bottom:4px;">⚠ ${cfg.penalty}</div>
+            <div style="font-size:7px;color:#7f8c8d;">✨ Cura: ${cfg.cure}</div>
+        `;
+    }
 }
 
 function removeCurseVisuals() {
-    playerData.isCursed = false;
+    playerData.isCursed  = false;
+    playerData.curseType = null;
+
     const avatarEl    = document.getElementById('playerAvatar');
     const xpBar       = document.getElementById('xpBar');
     const xpContainer = document.getElementById('xpContainer');
-    if (avatarEl)    avatarEl.classList.remove('curse-warning', 'curse-critical');
-    if (xpBar)       xpBar.classList.remove('curse-warning', 'curse-critical');
+    if (avatarEl) {
+        avatarEl.classList.remove('curse-warning', 'curse-critical');
+        avatarEl.style.outline = '';
+        avatarEl.style.outlineOffset = '';
+    }
+    if (xpBar) {
+        xpBar.classList.remove('curse-warning', 'curse-critical');
+        xpBar.style.background = '';
+    }
     if (xpContainer) xpContainer.classList.remove('curse-critical');
+
+    const banner = document.getElementById('curseBanner');
+    if (banner) banner.style.display = 'none';
 }
 
 async function setPlayerCurseState(state) {
