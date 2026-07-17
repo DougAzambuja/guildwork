@@ -158,3 +158,81 @@ exports.completeQuest = async (req, res) => {
         res.status(500).json({ message: 'Erro interno.', error: err.message });
     }
 };
+
+// ==========================================
+// ADMIN — Gestão de Quests
+// ==========================================
+
+/**
+ * GET /api/quests/all — Admin lista todas as quests com atribuição populada.
+ */
+exports.adminGetQuests = async (req, res) => {
+    try {
+        const quests = await Quest.find()
+            .populate('assigned_to', 'nome username')
+            .sort({ createdAt: -1 });
+        res.json(quests);
+    } catch (err) {
+        res.status(500).json({ message: 'Erro ao buscar quests.', error: err.message });
+    }
+};
+
+/**
+ * POST /api/quests — Admin cria nova quest.
+ */
+exports.adminCreateQuest = async (req, res) => {
+    try {
+        const { title, type, xp_reward, coin_reward, sla_seconds, faction } = req.body;
+
+        if (!title || !xp_reward || !coin_reward) {
+            return res.status(400).json({ message: 'Título, XP e Gold são obrigatórios.' });
+        }
+
+        const quest = await Quest.create({
+            title,
+            type:        type        || 'normal',
+            xp_reward,
+            coin_reward,
+            sla_seconds: sla_seconds || null,
+            faction:     faction     || 'Produto'
+        });
+
+        res.status(201).json(quest);
+    } catch (err) {
+        res.status(500).json({ message: 'Erro ao criar quest.', error: err.message });
+    }
+};
+
+/**
+ * PATCH /api/quests/:id/assign — Admin atribui ou reseta uma quest.
+ * Body: { userId: ObjectId | null }
+ * userId = null → reset para todo, desatribui aventureiro.
+ */
+exports.adminAssignQuest = async (req, res) => {
+    try {
+        const { userId } = req.body;
+        const quest = await Quest.findById(req.params.id);
+
+        if (!quest) return res.status(404).json({ message: 'Quest não encontrada.' });
+
+        if (userId && quest.status !== 'todo') {
+            return res.status(400).json({ message: 'Só é possível atribuir quests com status "todo".' });
+        }
+
+        if (userId) {
+            quest.assigned_to = userId;
+            quest.status      = 'in_progress';
+            quest.started_at  = new Date();
+        } else {
+            quest.assigned_to = null;
+            quest.status      = 'todo';
+            quest.started_at  = null;
+        }
+
+        await quest.save();
+        const populated = await quest.populate('assigned_to', 'nome username');
+        res.json(populated);
+    } catch (err) {
+        res.status(500).json({ message: 'Erro ao atribuir quest.', error: err.message });
+    }
+};

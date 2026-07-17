@@ -110,7 +110,7 @@ async function loadCustomLoot() {
     if (!itemsGrid) return;
 
     try {
-        const response = await fetch(`${API_URL}/admin/loot`, {
+        const response = await fetch(`${API_URL}/loot`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 

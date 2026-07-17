@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GuildWork - Missões</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="main-wrapper">
+        <div class="top-bar">
+            <div class="player-info">
+                <div class="avatar" style="background-color: #f1c40f; display:flex; align-items:center; justify-content:center; font-size:8px; text-align:center;">DM</div>
+                <div class="stats">
+                    <h1 id="playerName">Mestre da Guilda</h1>
+                    <div style="font-size: 10px; color: #7f8c8d;">Centro de Comando</div>
+                </div>
+            </div>
+            <div class="actions">
+                <button class="btn-pixel logout-btn" onclick="logout()">Sair</button>
+            </div>
+        </div>
+
+        <nav class="admin-tabs">
+            <a href="admin.html" class="admin-tab">📈 Dashboard</a>
+            <a href="admin-quests.html" class="admin-tab active">⚔️ Missões</a>
+            <a href="admin-loot.html" class="admin-tab">🔨 Loot</a>
+            <a href="admin-roster.html" class="admin-tab">🛡️ Membros</a>
+        </nav>
+
+        <div style="display:flex; flex-direction:column; gap:24px;">
+
+            <div class="dashboard-section" data-cy="dashboard-forge-quests">
+                <h2 class="section-title">⚔️ FORJA DE QUESTS (CRIAR MISSÃO)</h2>
+                <form id="questForm" class="forge-form" data-cy="form-add-quest">
+                    <div class="forge-group">
+                        <label for="questTitle">Título da Missão</label>
+                        <input type="text" id="questTitle" class="pixel-input" data-cy="input-quest-title" placeholder="Ex: Resolver Bug X" required autocomplete="off">
+                    </div>
+                    <div class="forge-group">
+                        <label for="questType">Tipo</label>
+                        <select id="questType" class="pixel-input" data-cy="select-quest-type">
+                            <option value="normal">Normal</option>
+                            <option value="urgent">Urgente</option>
+                            <option value="support">Suporte</option>
+                            <option value="jira">Jira</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <div class="forge-group" style="flex: 1;">
+                            <label for="questXp">XP</label>
+                            <input type="number" id="questXp" class="pixel-input" data-cy="input-quest-xp" placeholder="300" required min="1">
+                        </div>
+                        <div class="forge-group" style="flex: 1;">
+                            <label for="questCoins">Gold</label>
+                            <input type="number" id="questCoins" class="pixel-input" data-cy="input-quest-gold" placeholder="30" required min="1">
+                        </div>
+                    </div>
+                    <div class="forge-group">
+                        <label for="slaTime">SLA (Segundos) — deixe vazio para sem tempo limite</label>
+                        <input type="number" id="slaTime" class="pixel-input" data-cy="input-quest-sla" placeholder="Ex: 300" min="1">
+                    </div>
+                    <div class="forge-group">
+                        <label for="questFaction">Guilda Responsável</label>
+                        <select id="questFaction" class="pixel-input" data-cy="select-quest-faction">
+                            <option value="Produto">📦 Produto</option>
+                            <option value="Suporte">🎧 Suporte</option>
+                            <option value="Customer Service">📣 Customer Service</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-pixel" data-cy="btn-submit-quest" style="background-color: #c0392b; padding: 15px;">FORJAR QUEST</button>
+                </form>
+            </div>
+
+            <div class="dashboard-section" data-cy="dashboard-quests">
+                <h2 class="section-title">📜 PERGAMINHOS FORJADOS</h2>
+                <div class="users-table-wrapper">
+                    <table class="users-table">
+                        <thead>
+                            <tr>
+                                <th>Título</th>
+                                <th>Tipo</th>
+                                <th>Guilda</th>
+                                <th>XP</th>
+                                <th>Gold</th>
+                                <th>SLA</th>
+                                <th>Status</th>
+                                <th>Atribuído a</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminQuestsTableBody"></tbody>
+                    </table>
+                </div>
+                <div id="questPagination" class="pagination-controls"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/admin-quests.js"></script>
+</body>
+</html>
