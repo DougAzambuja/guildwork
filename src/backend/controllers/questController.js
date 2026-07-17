@@ -111,7 +111,8 @@ exports.completeQuest = async (req, res) => {
             quest_id:     quest._id,
             xp_gained:    xpGained,
             coins_gained: coinsGained,
-            csat_score:   csatScore || null
+            csat_score:   csatScore || null,
+            was_cursed:   user.is_cursed
         });
 
         let newXp    = (user.xp    || 0) + xpGained;
@@ -170,6 +171,7 @@ exports.adminGetQuests = async (req, res) => {
     try {
         const quests = await Quest.find()
             .populate('assigned_to', 'nome username')
+            .populate('sprint_id', 'name status')
             .sort({ createdAt: -1 });
         res.json(quests);
     } catch (err) {
@@ -182,7 +184,7 @@ exports.adminGetQuests = async (req, res) => {
  */
 exports.adminCreateQuest = async (req, res) => {
     try {
-        const { title, type, xp_reward, coin_reward, sla_seconds, faction } = req.body;
+        const { title, type, xp_reward, coin_reward, sla_seconds, faction, sprint_id } = req.body;
 
         if (!title || !xp_reward || !coin_reward) {
             return res.status(400).json({ message: 'Título, XP e Gold são obrigatórios.' });
@@ -194,7 +196,8 @@ exports.adminCreateQuest = async (req, res) => {
             xp_reward,
             coin_reward,
             sla_seconds: sla_seconds || null,
-            faction:     faction     || 'Produto'
+            faction:     faction     || 'Produto',
+            sprint_id:   sprint_id   || null
         });
 
         res.status(201).json(quest);
@@ -234,5 +237,65 @@ exports.adminAssignQuest = async (req, res) => {
         res.json(populated);
     } catch (err) {
         res.status(500).json({ message: 'Erro ao atribuir quest.', error: err.message });
+    }
+};
+
+/**
+ * PATCH /api/quests/:id/transfer
+ * Admin move uma quest entre sprints e/ou facções.
+ * Body: { sprint_id?: ObjectId|null, faction?: string }
+ * sprint_id = null → remove quest da sprint atual (backlog)
+ */
+exports.adminTransferQuest = async (req, res) => {
+    try {
+        const { sprint_id, faction } = req.body;
+        const update = {};
+
+        if (sprint_id !== undefined) update.sprint_id = sprint_id || null;
+        if (faction)                 update.faction   = faction;
+
+        if (!Object.keys(update).length) {
+            return res.status(400).json({ message: 'Informe sprint_id e/ou faction para transferir.' });
+        }
+
+        const quest = await Quest.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true })
+            .populate('assigned_to', 'nome username');
+
+        if (!quest) return res.status(404).json({ message: 'Quest não encontrada.' });
+
+        res.json(quest);
+    } catch (err) {
+        res.status(500).json({ message: 'Erro ao transferir quest.', error: err.message });
+    }
+};
+
+/**
+ * POST /api/quests/:id/copy
+ * Admin duplica uma quest, opcionalmente para outra sprint e/ou facção.
+ * A cópia sempre começa como todo, sem atribuição.
+ * Body: { sprint_id?: ObjectId|null, faction?: string }
+ */
+exports.adminCopyQuest = async (req, res) => {
+    try {
+        const { sprint_id, faction } = req.body;
+        const source = await Quest.findById(req.params.id).lean();
+
+        if (!source) return res.status(404).json({ message: 'Quest de origem não encontrada.' });
+
+        const copy = await Quest.create({
+            title:       `[Cópia] ${source.title}`,
+            type:        source.type,
+            xp_reward:   source.xp_reward,
+            coin_reward: source.coin_reward,
+            sla_seconds: source.sla_seconds,
+            faction:     faction   || source.faction,
+            sprint_id:   sprint_id !== undefined ? (sprint_id || null) : source.sprint_id,
+            status:      'todo',
+            is_active:   true
+        });
+
+        res.status(201).json(copy);
+    } catch (err) {
+        res.status(500).json({ message: 'Erro ao copiar quest.', error: err.message });
     }
 };

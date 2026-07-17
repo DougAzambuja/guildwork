@@ -3,6 +3,8 @@
 // ==========================================
 const token = localStorage.getItem('guild_token');
 
+const truncate = (str, max) => str && str.length > max ? str.slice(0, max) + '…' : (str || '');
+
 document.addEventListener('DOMContentLoaded', () => {
     if (!token || localStorage.getItem('guild_role') !== 'admin') {
         window.location.href = 'login.html';
@@ -15,10 +17,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupQuestForm();
     renderAdminQuests();
+    loadSprintsSelect();
 });
 
 // ==========================================
-// 1. FORJA DE QUESTS
+// 1. FORJA DE QUESTS — SELECT DE SPRINTS
+// ==========================================
+const STATUS_SPRINT_LABELS = {
+    planning:  'Planning',
+    active:    '⚡ Ativa',
+    completed: 'Concluída',
+    cancelled: 'Cancelada'
+};
+
+async function loadSprintsSelect() {
+    try {
+        const res = await fetch(`${API_URL}/sprints`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+
+        const sprints = await res.json();
+        const select  = document.getElementById('questSprint');
+        if (!select) return;
+
+        const active = sprints.filter(s => s.status !== 'cancelled' && s.status !== 'completed');
+
+        select.innerHTML = '<option value="">🗂️ Sem sprint (Backlog)</option>' +
+            active.map(s => `<option value="${s._id}">[${STATUS_SPRINT_LABELS[s.status] || s.status}] ${s.name}</option>`).join('');
+    } catch (err) {
+        console.error('Erro ao carregar sprints:', err);
+    }
+}
+
+// ==========================================
+// 2. FORJA DE QUESTS
 // ==========================================
 function setupQuestForm() {
     const questForm = document.getElementById('questForm');
@@ -27,6 +60,7 @@ function setupQuestForm() {
     questForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        const sprintVal = document.getElementById('questSprint')?.value;
         const questData = {
             title:       document.getElementById('questTitle').value.trim(),
             type:        document.getElementById('questType').value,
@@ -35,7 +69,8 @@ function setupQuestForm() {
             coin_reward: parseInt(document.getElementById('questCoins').value),
             sla_seconds: document.getElementById('slaTime').value
                             ? parseInt(document.getElementById('slaTime').value)
-                            : null
+                            : null,
+            sprint_id:   sprintVal || null
         };
 
         try {
@@ -135,11 +170,17 @@ function renderQuestPage() {
             slaDisplay = `<span style="color:#7f8c8d; font-size:9px;">${formatAdminSla(q.sla_seconds)}</span>`;
         }
 
+        const sprintInfo = q.sprint_id
+            ? `<a href="admin-sprint-board.html?id=${q.sprint_id._id}" style="color:#3498db;font-size:8px;text-decoration:none;"
+                 title="${q.sprint_id.name}">🏃 ${truncate(q.sprint_id.name, 14)}</a>`
+            : '<span style="color:#4a5568;font-size:8px;">—</span>';
+
         return `
             <tr>
                 <td>${q.title}</td>
                 <td>${q.type || 'normal'}</td>
                 <td style="font-size:9px;">${factionIcon} ${q.faction || 'Produto'}</td>
+                <td>${sprintInfo}</td>
                 <td>${q.xp_reward}</td>
                 <td>${q.coin_reward}</td>
                 <td>${slaDisplay}</td>

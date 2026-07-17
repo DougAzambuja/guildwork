@@ -15,8 +15,10 @@ router.patch('/:id/move', questController.moveQuest);
 router.post('/complete',  questController.completeQuest);
 
 // — Rotas Admin —
-router.get('/all',           checkAdmin, questController.adminGetQuests);
-router.post('/',             checkAdmin, questController.adminCreateQuest);
-router.patch('/:id/assign',  checkAdmin, questController.adminAssignQuest);
+router.get('/all',              checkAdmin, questController.adminGetQuests);
+router.post('/',                checkAdmin, questController.adminCreateQuest);
+router.patch('/:id/assign',     checkAdmin, questController.adminAssignQuest);
+router.patch('/:id/transfer',   checkAdmin, questController.adminTransferQuest);
+router.post('/:id/copy',        checkAdmin, questController.adminCopyQuest);
 
 module.exports = router;

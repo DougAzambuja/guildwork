@@ -1,24 +1,47 @@
 const mongoose = require('mongoose');
 
 const SprintSchema = new mongoose.Schema({
-    name: { 
-        type: String, 
+    name: {
+        type: String,
         required: true,
-        trim: true // QA Touch: Evita sprints salvas como " Sprint 1 " (com espaços)
+        trim: true
     },
-    is_active: { 
-        type: Boolean, 
-        default: true 
+    goal: {
+        type: String,
+        trim: true,
+        default: null
     },
-    started_at: { 
-        type: Date, 
-        default: Date.now 
+    status: {
+        type: String,
+        enum: ['planning', 'active', 'completed', 'cancelled'],
+        default: 'planning'
     },
-    ended_at: { 
-        type: Date, 
-        default: null 
+    factions: [{
+        type: String,
+        enum: ['Produto', 'Suporte', 'Customer Service']
+    }],
+    start_date: {
+        type: Date,
+        required: true
+    },
+    end_date: {
+        type: Date,
+        required: true
+    },
+    duration_days: {
+        type: Number,
+        required: true,
+        min: 1
+    },
+    created_by: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
     }
 
 }, { timestamps: true });
+
+// Índice para listagem por status (dashboard sempre filtra sprints ativas)
+SprintSchema.index({ status: 1, start_date: -1 });
 
 module.exports = mongoose.model('Sprint', SprintSchema);

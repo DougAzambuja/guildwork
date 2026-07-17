@@ -32,6 +32,7 @@ app.use('/api/auth',    require('./routes/auth'));
 app.use('/api/players', require('./routes/players'));
 app.use('/api/quests',  require('./routes/quests'));
 app.use('/api/loot',    require('./routes/loot'));
+app.use('/api/sprints', require('./routes/sprint'));
 app.use('/api/admin',   require('./routes/admin'));
 
 // ==========================================

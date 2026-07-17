@@ -26,6 +26,7 @@
             <a href="admin-quests.html" class="admin-tab">⚔️ Missões</a>
             <a href="admin-loot.html" class="admin-tab">🔨 Loot</a>
             <a href="admin-roster.html" class="admin-tab">🛡️ Membros</a>
+            <a href="admin-sprints.html" class="admin-tab">🏃 Sprints</a>
         </nav>
 
         <div style="display:flex; flex-direction:column; gap:24px;">
@@ -51,6 +52,55 @@
                         <h3 class="section-title" style="font-size: 10px; border-bottom: none;">🏆 TOP PERFORMERS (XP)</h3>
                         <div id="topPerformersList"></div>
                     </div>
+                </div>
+            </div>
+
+            <!-- SPRINT ATIVA -->
+            <div class="dashboard-section" data-cy="dashboard-active-sprint" id="dashSprintSection" style="display:none;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+                    <h2 class="section-title" style="margin:0; border:none;">🏃 SPRINT EM ANDAMENTO</h2>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <span id="dashSprintHealth" class="status-badge" style="font-size:8px; padding:3px 10px;"></span>
+                        <a id="dashSprintBoardLink" href="#" class="btn-pixel" data-cy="btn-open-board-dashboard"
+                           style="font-size:7px; padding:5px 9px; background:#2980b9; text-decoration:none; display:inline-block;">
+                            📋 Abrir Board
+                        </a>
+                    </div>
+                </div>
+
+                <div style="background:#1a252f; border:2px solid #2c3e50; padding:14px;">
+                    <div style="display:flex; flex-wrap:wrap; gap:16px; justify-content:space-between; margin-bottom:12px;">
+                        <div>
+                            <div style="font-size:8px; color:#7f8c8d;">NOME</div>
+                            <div id="dashSprintName" style="font-size:10px; color:#f1c40f; margin-top:3px;"></div>
+                        </div>
+                        <div>
+                            <div style="font-size:8px; color:#7f8c8d;">PERÍODO</div>
+                            <div id="dashSprintPeriod" style="font-size:9px; color:#bdc3c7; margin-top:3px;"></div>
+                        </div>
+                        <div>
+                            <div style="font-size:8px; color:#7f8c8d;">DIAS RESTANTES</div>
+                            <div id="dashSprintDaysLeft" style="font-size:14px; color:#2ecc71; margin-top:3px;"></div>
+                        </div>
+                        <div>
+                            <div style="font-size:8px; color:#7f8c8d;">QUESTS</div>
+                            <div id="dashSprintQuests" style="font-size:9px; color:#3498db; margin-top:3px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Barra de conclusão -->
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:7px; color:#7f8c8d; margin-bottom:3px;">
+                            <span>Conclusão de quests</span>
+                            <span id="dashSprintPct"></span>
+                        </div>
+                        <div style="background:#0d1b2a; height:8px; border-radius:2px; overflow:hidden;">
+                            <div id="dashSprintBar" style="height:100%; background:#27ae60; transition:width 0.4s;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Breakdown por facção compacto -->
+                    <div id="dashSprintFactions" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;"></div>
                 </div>
             </div>
 

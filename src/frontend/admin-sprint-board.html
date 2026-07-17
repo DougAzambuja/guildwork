@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GuildWork - Board da Sprint</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* ---- KANBAN BOARD ---- */
+        .board-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .board-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            font-size: 8px;
+            color: #bdc3c7;
+            margin-top: 4px;
+        }
+        .board-meta span { color: #7f8c8d; }
+        .board-meta strong { color: #f1c40f; }
+
+        .faction-filters {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .faction-filter-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 7px;
+            padding: 6px 10px;
+            border: 2px solid #2c3e50;
+            background: #1a252f;
+            color: #bdc3c7;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .faction-filter-btn.active,
+        .faction-filter-btn:hover {
+            background: #2c3e50;
+            color: #f1c40f;
+            border-color: #f1c40f;
+        }
+
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        @media (max-width: 800px) {
+            .kanban-board { grid-template-columns: 1fr; }
+        }
+
+        .kanban-col {
+            background: #1a252f;
+            border: 2px solid #2c3e50;
+            border-radius: 2px;
+            padding: 10px;
+            min-height: 200px;
+        }
+        .kanban-col-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #2c3e50;
+        }
+        .kanban-col-title {
+            font-size: 8px;
+            font-weight: bold;
+        }
+        .kanban-count {
+            font-size: 7px;
+            color: #7f8c8d;
+            background: #2c3e50;
+            padding: 2px 6px;
+            border-radius: 2px;
+        }
+
+        .quest-card {
+            background: #0d1b2a;
+            border: 2px solid #2c3e50;
+            border-left: 4px solid #3498db;
+            padding: 8px 10px;
+            margin-bottom: 8px;
+            cursor: default;
+        }
+        .quest-card[data-status="done"] { border-left-color: #27ae60; opacity: 0.75; }
+        .quest-card[data-status="in_progress"] { border-left-color: #e67e22; }
+        .quest-card[data-status="todo"] { border-left-color: #3498db; }
+
+        .quest-card-title {
+            font-size: 8px;
+            color: #ecf0f1;
+            margin-bottom: 6px;
+            line-height: 1.5;
+        }
+        .quest-card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+        .quest-tag {
+            font-size: 6px;
+            padding: 2px 5px;
+            border: 1px solid #2c3e50;
+            color: #7f8c8d;
+        }
+        .quest-tag.xp { color: #2ecc71; border-color: #27ae60; }
+        .quest-tag.gold { color: #f1c40f; border-color: #d4ac0d; }
+        .quest-tag.assignee { color: #9b59b6; border-color: #8e44ad; }
+        .quest-tag.faction { color: #3498db; border-color: #2980b9; }
+
+        .quest-card-actions {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+        .quest-action-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 6px;
+            padding: 4px 6px;
+            border: 1px solid #2c3e50;
+            background: #1a252f;
+            color: #bdc3c7;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .quest-action-btn:hover { background: #2c3e50; color: #f1c40f; }
+        .quest-action-btn.copy { border-color: #8e44ad; color: #9b59b6; }
+        .quest-action-btn.copy:hover { background: #6c3483; color: #f1c40f; }
+        .quest-action-btn.remove { border-color: #e74c3c; color: #e74c3c; }
+        .quest-action-btn.remove:hover { background: #922b21; color: #fff; }
+
+        /* ---- BURNDOWN CHART ---- */
+        .burndown-section {
+            margin-top: 24px;
+        }
+        .burndown-canvas-wrapper {
+            background: #1a252f;
+            border: 2px solid #2c3e50;
+            padding: 16px;
+            position: relative;
+        }
+        #burndownCanvas {
+            display: block;
+            max-width: 100%;
+        }
+        .burndown-legend {
+            display: flex;
+            gap: 16px;
+            margin-top: 10px;
+            font-size: 7px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .legend-dot {
+            width: 12px;
+            height: 3px;
+            display: inline-block;
+        }
+
+        /* ---- MODAIS ---- */
+        .modal-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .modal-hint {
+            font-size: 7px;
+            color: #7f8c8d;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-wrapper">
+
+        <!-- TOP BAR -->
+        <div class="top-bar">
+            <div class="player-info">
+                <div class="avatar" style="background-color: #f1c40f; display:flex; align-items:center; justify-content:center; font-size:8px; text-align:center;">DM</div>
+                <div class="stats">
+                    <h1 id="playerName">Mestre da Guilda</h1>
+                    <div style="font-size: 10px; color: #7f8c8d;">Centro de Comando</div>
+                </div>
+            </div>
+            <div class="actions">
+                <button class="btn-pixel logout-btn" onclick="logout()">Sair</button>
+            </div>
+        </div>
+
+        <!-- NAV -->
+        <nav class="admin-tabs">
+            <a href="admin.html" class="admin-tab">📈 Dashboard</a>
+            <a href="admin-quests.html" class="admin-tab">⚔️ Missões</a>
+            <a href="admin-loot.html" class="admin-tab">🔨 Loot</a>
+            <a href="admin-roster.html" class="admin-tab">🛡️ Membros</a>
+            <a href="admin-sprints.html" class="admin-tab active">🏃 Sprints</a>
+        </nav>
+
+        <!-- BACK + TITLE -->
+        <div class="dashboard-section" data-cy="board-header-section">
+            <div class="board-header">
+                <div>
+                    <a href="admin-sprints.html" class="btn-pixel" style="font-size:7px; padding:6px 10px; text-decoration:none; background:#2c3e50;" data-cy="btn-back-sprints">← VOLTAR</a>
+                    <h2 class="section-title" id="sprintTitle" style="margin-top:12px; margin-bottom:4px;">Carregando sprint...</h2>
+                    <div class="board-meta" id="sprintMeta" data-cy="sprint-board-meta"></div>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span id="sprintHealthBadge" class="status-badge" style="font-size:8px; padding:4px 10px;"></span>
+                    <span id="sprintStatusBadge" class="status-badge" style="font-size:7px; padding:4px 8px; background:#2c3e50;"></span>
+                </div>
+            </div>
+
+            <!-- Barras de progresso compactas -->
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+                <div style="flex:1; min-width:140px;">
+                    <div style="display:flex; justify-content:space-between; font-size:7px; color:#7f8c8d; margin-bottom:3px;">
+                        <span>Tempo</span><span id="timePctLabel">—</span>
+                    </div>
+                    <div style="background:#2c3e50; height:5px; border-radius:2px; overflow:hidden;">
+                        <div id="timeBar" style="height:100%; background:#3498db;"></div>
+                    </div>
+                </div>
+                <div style="flex:1; min-width:140px;">
+                    <div style="display:flex; justify-content:space-between; font-size:7px; color:#7f8c8d; margin-bottom:3px;">
+                        <span>Conclusão</span><span id="completionPctLabel">—</span>
+                    </div>
+                    <div style="background:#2c3e50; height:5px; border-radius:2px; overflow:hidden;">
+                        <div id="completionBar" style="height:100%; background:#27ae60;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KANBAN BOARD -->
+        <div class="dashboard-section" data-cy="board-kanban-section">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+                <h2 class="section-title" style="margin:0; border:none;">⚔️ BOARD DE MISSÕES</h2>
+                <div class="faction-filters" data-cy="faction-filters" id="factionFilters">
+                    <button class="faction-filter-btn active" data-cy="filter-all" onclick="setFactionFilter(null, this)">🏰 Todas</button>
+                    <button class="faction-filter-btn" data-cy="filter-produto" onclick="setFactionFilter('Produto', this)">📦 Produto</button>
+                    <button class="faction-filter-btn" data-cy="filter-suporte" onclick="setFactionFilter('Suporte', this)">🎧 Suporte</button>
+                    <button class="faction-filter-btn" data-cy="filter-cs" onclick="setFactionFilter('Customer Service', this)">📣 CS</button>
+                </div>
+            </div>
+
+            <div class="kanban-board" id="kanbanBoard" data-cy="kanban-board">
+                <!-- Todo -->
+                <div class="kanban-col" id="col-todo" data-cy="kanban-col-todo">
+                    <div class="kanban-col-header">
+                        <span class="kanban-col-title" style="color:#3498db;">📋 A FAZER</span>
+                        <span class="kanban-count" id="count-todo" data-cy="count-todo">0</span>
+                    </div>
+                    <div id="cards-todo" data-cy="cards-todo"></div>
+                </div>
+                <!-- In Progress -->
+                <div class="kanban-col" id="col-in_progress" data-cy="kanban-col-in-progress">
+                    <div class="kanban-col-header">
+                        <span class="kanban-col-title" style="color:#e67e22;">⚡ EM PROGRESSO</span>
+                        <span class="kanban-count" id="count-in_progress" data-cy="count-in-progress">0</span>
+                    </div>
+                    <div id="cards-in_progress" data-cy="cards-in-progress"></div>
+                </div>
+                <!-- Done -->
+                <div class="kanban-col" id="col-done" data-cy="kanban-col-done">
+                    <div class="kanban-col-header">
+                        <span class="kanban-col-title" style="color:#27ae60;">✅ CONCLUÍDAS</span>
+                        <span class="kanban-count" id="count-done" data-cy="count-done">0</span>
+                    </div>
+                    <div id="cards-done" data-cy="cards-done"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BURNDOWN CHART -->
+        <div class="dashboard-section burndown-section" data-cy="burndown-section">
+            <h2 class="section-title">📉 BURNDOWN DA SPRINT</h2>
+            <div class="burndown-canvas-wrapper">
+                <canvas id="burndownCanvas" height="220" data-cy="burndown-canvas"></canvas>
+                <div class="burndown-legend">
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background:#3498db;"></span>
+                        <span style="font-size:7px; color:#3498db;">Linha Ideal</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background:#e74c3c;"></span>
+                        <span style="font-size:7px; color:#e74c3c;">Andamento Real</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- =================== MODAL: MOVER SPRINT =================== -->
+    <div id="modalTransferSprint" class="modal-overlay" style="display:none;" data-cy="modal-transfer-sprint"
+         onclick="if(event.target===this)closeModal('modalTransferSprint')">
+        <div class="modal-content">
+            <h2 class="section-title">🔀 MOVER PARA SPRINT</h2>
+            <input type="hidden" id="transferQuestId">
+            <div class="modal-grid">
+                <div class="forge-group">
+                    <label>Sprint de Destino</label>
+                    <select id="transferSprintSelect" class="pixel-input" data-cy="select-transfer-sprint">
+                        <option value="">🗂️ Backlog (sem sprint)</option>
+                    </select>
+                    <div class="modal-hint">Selecione uma sprint ou deixe em branco para mover ao backlog.</div>
+                </div>
+                <div style="display:flex; gap:8px; margin-top:6px;">
+                    <button class="btn-pixel" data-cy="btn-confirm-transfer-sprint" onclick="confirmTransferSprint()" style="background:#27ae60;">MOVER</button>
+                    <button class="btn-pixel" style="background:#7f8c8d;" onclick="closeModal('modalTransferSprint')">CANCELAR</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================== MODAL: TRANSFERIR GUILDA =================== -->
+    <div id="modalTransferFaction" class="modal-overlay" style="display:none;" data-cy="modal-transfer-faction"
+         onclick="if(event.target===this)closeModal('modalTransferFaction')">
+        <div class="modal-content">
+            <h2 class="section-title">🏰 TRANSFERIR GUILDA</h2>
+            <input type="hidden" id="transferFactionQuestId">
+            <div class="modal-grid">
+                <div class="forge-group">
+                    <label>Guilda de Destino</label>
+                    <select id="transferFactionSelect" class="pixel-input" data-cy="select-transfer-faction">
+                        <option value="Produto">📦 Produto</option>
+                        <option value="Suporte">🎧 Suporte</option>
+                        <option value="Customer Service">📣 Customer Service</option>
+                    </select>
+                </div>
+                <div style="display:flex; gap:8px; margin-top:6px;">
+                    <button class="btn-pixel" data-cy="btn-confirm-transfer-faction" onclick="confirmTransferFaction()" style="background:#2980b9;">TRANSFERIR</button>
+                    <button class="btn-pixel" style="background:#7f8c8d;" onclick="closeModal('modalTransferFaction')">CANCELAR</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================== MODAL: COPIAR QUEST =================== -->
+    <div id="modalCopyQuest" class="modal-overlay" style="display:none;" data-cy="modal-copy-quest"
+         onclick="if(event.target===this)closeModal('modalCopyQuest')">
+        <div class="modal-content">
+            <h2 class="section-title">📋 COPIAR QUEST</h2>
+            <input type="hidden" id="copyQuestId">
+            <div class="modal-grid">
+                <div class="forge-group">
+                    <label>Sprint de Destino (opcional)</label>
+                    <select id="copySprintSelect" class="pixel-input" data-cy="select-copy-sprint">
+                        <option value="">🗂️ Backlog (sem sprint)</option>
+                    </select>
+                </div>
+                <div class="forge-group">
+                    <label>Guilda de Destino (opcional)</label>
+                    <select id="copyFactionSelect" class="pixel-input" data-cy="select-copy-faction">
+                        <option value="">— Manter original —</option>
+                        <option value="Produto">📦 Produto</option>
+                        <option value="Suporte">🎧 Suporte</option>
+                        <option value="Customer Service">📣 Customer Service</option>
+                    </select>
+                    <div class="modal-hint">A cópia sempre começa como "A Fazer" sem atribuição.</div>
+                </div>
+                <div style="display:flex; gap:8px; margin-top:6px;">
+                    <button class="btn-pixel" data-cy="btn-confirm-copy-quest" onclick="confirmCopyQuest()" style="background:#8e44ad;">COPIAR</button>
+                    <button class="btn-pixel" style="background:#7f8c8d;" onclick="closeModal('modalCopyQuest')">CANCELAR</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================== MODAL: REMOVER DA SPRINT =================== -->
+    <div id="modalRemoveQuest" class="modal-overlay" style="display:none;" data-cy="modal-remove-quest"
+         onclick="if(event.target===this)closeModal('modalRemoveQuest')">
+        <div class="modal-content">
+            <h2 class="section-title">🗑️ REMOVER DA SPRINT</h2>
+            <input type="hidden" id="removeQuestId">
+            <p style="font-size:8px; color:#bdc3c7; line-height:1.8; margin:12px 0;">
+                A quest será movida para o backlog. O status e atribuição não serão alterados.
+            </p>
+            <div style="display:flex; gap:8px;">
+                <button class="btn-pixel" data-cy="btn-confirm-remove-quest" onclick="confirmRemoveQuest()" style="background:#e74c3c;">REMOVER</button>
+                <button class="btn-pixel" style="background:#7f8c8d;" onclick="closeModal('modalRemoveQuest')">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" data-cy="toast-container"></div>
+
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/admin-sprint-board.js"></script>
+</body>
+</html>

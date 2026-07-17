@@ -22,19 +22,79 @@ async function initDashboard() {
 
 async function loadDashboard() {
     try {
-        const response = await fetch(`${API_URL}/admin/roster`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            renderDashboardStats(await response.json());
-        }
+        const [rosterRes, sprintRes] = await Promise.all([
+            fetch(`${API_URL}/admin/roster`, { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch(`${API_URL}/sprints/active`, { headers: { 'Authorization': `Bearer ${token}` } })
+        ]);
+
+        if (rosterRes.ok) renderDashboardStats(await rosterRes.json());
+        if (sprintRes.ok) renderActiveSprint(await sprintRes.json());
     } catch (err) {
         console.error('Erro ao carregar dashboard:', err);
     }
 }
 
 // ==========================================
-// 1. DASHBOARD — MÉTRICAS E FACÇÕES
+// 1. DASHBOARD — SPRINT ATIVA
+// ==========================================
+const HEALTH_LABELS = {
+    on_track: { label: '✅ NO RITMO',  color: '#27ae60' },
+    at_risk:  { label: '⚠️ EM RISCO',  color: '#e67e22' },
+    behind:   { label: '🚨 ATRASADA',  color: '#e74c3c' }
+};
+const FACTION_ICONS_DASH = { Produto: '📦', Suporte: '🎧', 'Customer Service': '📣' };
+
+function renderActiveSprint(data) {
+    const section = document.getElementById('dashSprintSection');
+    if (!section) return;
+
+    if (!data || !data.sprint) {
+        section.style.display = 'none';
+        return;
+    }
+
+    const { sprint, metrics, by_faction } = data;
+
+    section.style.display = 'block';
+
+    const health = HEALTH_LABELS[metrics.health_score] || HEALTH_LABELS.on_track;
+    const badge  = document.getElementById('dashSprintHealth');
+    badge.textContent      = health.label;
+    badge.style.background = health.color;
+
+    const link = document.getElementById('dashSprintBoardLink');
+    if (link) link.href = `admin-sprint-board.html?id=${sprint._id}`;
+
+    const fmt = d => new Date(d).toLocaleDateString('pt-BR');
+    document.getElementById('dashSprintName').textContent   = sprint.name;
+    document.getElementById('dashSprintPeriod').textContent = `${fmt(sprint.start_date)} → ${fmt(sprint.end_date)}`;
+    document.getElementById('dashSprintDaysLeft').textContent = `${metrics.days_remaining}d`;
+    document.getElementById('dashSprintQuests').textContent = `${metrics.done_quests}/${metrics.total_quests} concluídas`;
+    document.getElementById('dashSprintPct').textContent   = `${metrics.completion_pct}%`;
+    document.getElementById('dashSprintBar').style.width   = `${metrics.completion_pct}%`;
+
+    const factionsEl = document.getElementById('dashSprintFactions');
+    if (factionsEl) {
+        const entries = Object.entries(by_faction || {});
+        factionsEl.innerHTML = entries.length
+            ? entries.map(([name, d]) => {
+                const pct = d.total > 0 ? Math.round((d.done / d.total) * 100) : 0;
+                return `
+                    <div style="background:#0d1b2a; border:1px solid #2c3e50; padding:8px 10px; min-width:120px; flex:1;">
+                        <div style="font-size:8px; color:#f1c40f; margin-bottom:4px;">${FACTION_ICONS_DASH[name] || '🏰'} ${name}</div>
+                        <div style="font-size:8px; color:#bdc3c7;">${d.done}/${d.total} quests</div>
+                        <div style="background:#1a252f; height:4px; margin-top:5px; border-radius:2px; overflow:hidden;">
+                            <div style="height:100%; width:${pct}%; background:${pct === 100 ? '#27ae60' : pct >= 50 ? '#e67e22' : '#e74c3c'};"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('')
+            : '<div style="font-size:7px;color:#7f8c8d;">Sem facções mapeadas.</div>';
+    }
+}
+
+// ==========================================
+// 2. DASHBOARD — MÉTRICAS E FACÇÕES
 // ==========================================
 function renderDashboardStats(players) {
     const totalGold = players.reduce((sum, p) => sum + (p.coins || 0), 0);

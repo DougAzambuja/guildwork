@@ -26,6 +26,7 @@
             <a href="admin-quests.html" class="admin-tab active">⚔️ Missões</a>
             <a href="admin-loot.html" class="admin-tab">🔨 Loot</a>
             <a href="admin-roster.html" class="admin-tab">🛡️ Membros</a>
+            <a href="admin-sprints.html" class="admin-tab">🏃 Sprints</a>
         </nav>
 
         <div style="display:flex; flex-direction:column; gap:24px;">
@@ -68,6 +69,12 @@
                             <option value="Customer Service">📣 Customer Service</option>
                         </select>
                     </div>
+                    <div class="forge-group">
+                        <label for="questSprint">Sprint (opcional)</label>
+                        <select id="questSprint" class="pixel-input" data-cy="select-quest-sprint">
+                            <option value="">🗂️ Sem sprint (Backlog)</option>
+                        </select>
+                    </div>
                     <button type="submit" class="btn-pixel" data-cy="btn-submit-quest" style="background-color: #c0392b; padding: 15px;">FORJAR QUEST</button>
                 </form>
             </div>
@@ -81,6 +88,7 @@
                                 <th>Título</th>
                                 <th>Tipo</th>
                                 <th>Guilda</th>
+                                <th>Sprint</th>
                                 <th>XP</th>
                                 <th>Gold</th>
                                 <th>SLA</th>

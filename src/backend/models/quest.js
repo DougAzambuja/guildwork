@@ -55,4 +55,9 @@ const QuestSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
+// Índices compostos para as queries mais frequentes do sistema
+QuestSchema.index({ sprint_id: 1, status: 1 });      // dashboard de sprint
+QuestSchema.index({ faction: 1, status: 1 });         // kanban por facção
+QuestSchema.index({ assigned_to: 1, status: 1 });     // quests do jogador
+
 module.exports = mongoose.model('Quest', QuestSchema);

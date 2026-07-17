@@ -29,9 +29,13 @@ const QuestCompletionSchema = new mongoose.Schema({
             message: 'Nota CSAT deve ser entre 1 e 5.'
         }
     },
-    completed_at: { 
-        type: Date, 
-        default: Date.now 
+    was_cursed: {
+        type: Boolean,
+        default: false
+    },
+    completed_at: {
+        type: Date,
+        default: Date.now
     }
 
 }, { timestamps: true }); // O timestamps já cria o createdAt, mas manter o completed_at é ótimo para clareza na leitura!

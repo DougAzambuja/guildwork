@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GuildWork - Sprints</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="main-wrapper">
+        <div class="top-bar">
+            <div class="player-info">
+                <div class="avatar" style="background-color: #f1c40f; display:flex; align-items:center; justify-content:center; font-size:8px; text-align:center;">DM</div>
+                <div class="stats">
+                    <h1 id="playerName">Mestre da Guilda</h1>
+                    <div style="font-size: 10px; color: #7f8c8d;">Centro de Comando</div>
+                </div>
+            </div>
+            <div class="actions">
+                <button class="btn-pixel logout-btn" onclick="logout()">Sair</button>
+            </div>
+        </div>
+
+        <nav class="admin-tabs">
+            <a href="admin.html" class="admin-tab">📈 Dashboard</a>
+            <a href="admin-quests.html" class="admin-tab">⚔️ Missões</a>
+            <a href="admin-loot.html" class="admin-tab">🔨 Loot</a>
+            <a href="admin-roster.html" class="admin-tab">🛡️ Membros</a>
+            <a href="admin-sprints.html" class="admin-tab active">🏃 Sprints</a>
+        </nav>
+
+        <div style="display:flex; flex-direction:column; gap:24px;">
+
+            <!-- CRIAR SPRINT -->
+            <div class="dashboard-section" data-cy="panel-create-sprint">
+                <h2 class="section-title">🏃 FORJAR SPRINT</h2>
+                <form id="sprintForm" class="forge-form" data-cy="form-create-sprint">
+                    <div style="display:flex; gap:10px;">
+                        <div class="forge-group" style="flex:2;">
+                            <label for="sprintName">Nome da Sprint</label>
+                            <input type="text" id="sprintName" class="pixel-input" data-cy="input-sprint-name" placeholder="Ex: Sprint Julho — Estabilidade" required autocomplete="off">
+                        </div>
+                        <div class="forge-group" style="flex:1;">
+                            <label for="sprintDuration">Duração (dias)</label>
+                            <input type="number" id="sprintDuration" class="pixel-input" data-cy="input-sprint-duration" placeholder="14" required min="1" max="90">
+                        </div>
+                    </div>
+                    <div class="forge-group">
+                        <label for="sprintGoal">Meta da Sprint (opcional)</label>
+                        <input type="text" id="sprintGoal" class="pixel-input" data-cy="input-sprint-goal" placeholder="Ex: Reduzir bugs críticos em 80%" autocomplete="off">
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <div class="forge-group" style="flex:1;">
+                            <label for="sprintStart">Data de Início</label>
+                            <input type="date" id="sprintStart" class="pixel-input" data-cy="input-sprint-start" required>
+                        </div>
+                        <div class="forge-group" style="flex:1;">
+                            <label>Equipes Participantes</label>
+                            <div style="display:flex; gap:8px; padding-top:4px;" data-cy="checkboxes-factions">
+                                <label style="font-size:8px; display:flex; align-items:center; gap:4px; cursor:pointer;">
+                                    <input type="checkbox" id="factionProduto" value="Produto" data-cy="checkbox-faction-produto"> 📦 Produto
+                                </label>
+                                <label style="font-size:8px; display:flex; align-items:center; gap:4px; cursor:pointer;">
+                                    <input type="checkbox" id="factionSuporte" value="Suporte" data-cy="checkbox-faction-suporte"> 🎧 Suporte
+                                </label>
+                                <label style="font-size:8px; display:flex; align-items:center; gap:4px; cursor:pointer;">
+                                    <input type="checkbox" id="factionCS" value="Customer Service" data-cy="checkbox-faction-cs"> 📣 CS
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-pixel" data-cy="btn-submit-sprint" style="background-color:#8e44ad; padding:15px;">⚡ INICIAR FORJA DA SPRINT</button>
+                </form>
+            </div>
+
+            <!-- DASHBOARD DA SPRINT ATIVA -->
+            <div class="dashboard-section" data-cy="panel-active-sprint" id="activeSprint" style="display:none;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                    <h2 class="section-title" style="border:none; margin:0;">⚡ SPRINT ATIVA</h2>
+                    <span id="sprintHealthBadge" class="status-badge" style="font-size:8px; padding:4px 10px;"></span>
+                </div>
+
+                <div id="sprintInfoCard" style="margin-top:12px; padding:12px; background:#1a252f; border:2px solid #2c3e50; border-radius:2px;">
+                    <div style="display:flex; flex-wrap:wrap; gap:16px; justify-content:space-between;">
+                        <div>
+                            <div style="font-size:8px; color:#7f8c8d;">NOME</div>
+                            <div id="activeSprintName" style="font-size:10px; color:#f1c40f; margin-top:4px;"></div>
+                        </div>
+                        <div>
+                            <div style="font-size:8px; color:#7f8c8d;">META</div>
+                            <div id="activeSprintGoal" style="font-size:9px; color:#bdc3c7; margin-top:4px;"></div>
+                        </div>
+                        <div>
+                            <div style="font-size:8px; color:#7f8c8d;">PERÍODO</div>
+                            <div id="activeSprintPeriod" style="font-size:9px; color:#bdc3c7; margin-top:4px;"></div>
+                        </div>
+                        <div>
+                            <div style="font-size:8px; color:#7f8c8d;">DIAS RESTANTES</div>
+                            <div id="activeSprintDaysLeft" style="font-size:14px; color:#2ecc71; margin-top:4px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Barra de tempo decorrido -->
+                    <div style="margin-top:12px;">
+                        <div style="display:flex; justify-content:space-between; font-size:8px; color:#7f8c8d; margin-bottom:4px;">
+                            <span>Tempo decorrido</span>
+                            <span id="sprintTimePct"></span>
+                        </div>
+                        <div style="background:#2c3e50; height:6px; border-radius:2px; overflow:hidden;">
+                            <div id="sprintTimeBar" style="height:100%; background:#3498db; transition:width 0.3s;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Barra de conclusão de quests -->
+                    <div style="margin-top:8px;">
+                        <div style="display:flex; justify-content:space-between; font-size:8px; color:#7f8c8d; margin-bottom:4px;">
+                            <span>Quests concluídas</span>
+                            <span id="sprintCompletionPct"></span>
+                        </div>
+                        <div style="background:#2c3e50; height:6px; border-radius:2px; overflow:hidden;">
+                            <div id="sprintCompletionBar" style="height:100%; background:#27ae60; transition:width 0.3s;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Métricas da sprint ativa -->
+                <div class="report-grid" style="margin-top:16px;" data-cy="sprint-metrics">
+                    <div class="report-card">
+                        <div class="report-label">Total de Quests</div>
+                        <div class="report-value" id="mTotal" style="color:#3498db;">0</div>
+                    </div>
+                    <div class="report-card">
+                        <div class="report-label">Concluídas</div>
+                        <div class="report-value" id="mDone" style="color:#27ae60;">0</div>
+                    </div>
+                    <div class="report-card">
+                        <div class="report-label">Em Progresso</div>
+                        <div class="report-value" id="mInProgress" style="color:#e67e22;">0</div>
+                    </div>
+                    <div class="report-card">
+                        <div class="report-label">XP Gerado</div>
+                        <div class="report-value" id="mXp" style="color:#2ecc71;">0</div>
+                    </div>
+                    <div class="report-card">
+                        <div class="report-label">Gold Gerado</div>
+                        <div class="report-value gold-text" id="mCoins">💰 0</div>
+                    </div>
+                </div>
+
+                <!-- Desempenho por facção -->
+                <h3 class="section-title" style="font-size:9px; margin-top:20px;">📊 DESEMPENHO POR GUILDA</h3>
+                <div class="factions-grid" id="sprintFactionGrid" data-cy="sprint-faction-grid"></div>
+
+                <!-- Top performers da sprint -->
+                <h3 class="section-title" style="font-size:9px; margin-top:20px;">🏆 TOP PERFORMERS DA SPRINT</h3>
+                <div id="sprintTopPerformers" data-cy="sprint-top-performers"></div>
+
+                <!-- Adicionar quests à sprint ativa -->
+                <h3 class="section-title" style="font-size:9px; margin-top:20px;">➕ ADICIONAR QUESTS À SPRINT</h3>
+                <div style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
+                    <div class="forge-group" style="flex:1; min-width:200px; margin-bottom:0;">
+                        <label for="questsToAdd">Selecionar Quests disponíveis</label>
+                        <select id="questsToAdd" class="pixel-input" data-cy="select-quests-to-add" multiple style="height:80px; font-size:8px;"></select>
+                    </div>
+                    <button class="btn-pixel" data-cy="btn-add-quests-sprint" onclick="addQuestsToActiveSprint()" style="background:#27ae60; padding:10px 14px; height:fit-content;">ADICIONAR</button>
+                </div>
+            </div>
+
+            <!-- HISTÓRICO DE SPRINTS -->
+            <div class="dashboard-section" data-cy="panel-sprint-history">
+                <h2 class="section-title">📜 HISTÓRICO DE SPRINTS</h2>
+                <div id="sprintsList" data-cy="sprints-list"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal de Edição de Sprint -->
+    <div id="editSprintModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeEditSprintModal()">
+        <div class="modal-content" data-cy="modal-edit-sprint">
+            <h2 class="section-title">✏️ EDITAR SPRINT</h2>
+            <form id="editSprintForm" class="forge-form">
+                <input type="hidden" id="editSprintId">
+                <div class="forge-group">
+                    <label>Nome</label>
+                    <input type="text" id="editSprintName" class="pixel-input" data-cy="input-edit-sprint-name" required>
+                </div>
+                <div class="forge-group">
+                    <label>Meta</label>
+                    <input type="text" id="editSprintGoal" class="pixel-input" data-cy="input-edit-sprint-goal">
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <div class="forge-group" style="flex:1;">
+                        <label>Data de Início</label>
+                        <input type="date" id="editSprintStart" class="pixel-input" data-cy="input-edit-sprint-start">
+                    </div>
+                    <div class="forge-group" style="flex:1;">
+                        <label>Duração (dias)</label>
+                        <input type="number" id="editSprintDuration" class="pixel-input" data-cy="input-edit-sprint-duration" min="1">
+                    </div>
+                </div>
+                <div class="forge-group">
+                    <label>Status</label>
+                    <select id="editSprintStatus" class="pixel-input" data-cy="select-edit-sprint-status">
+                        <option value="planning">📋 Planning</option>
+                        <option value="active">⚡ Active</option>
+                        <option value="completed">✅ Completed</option>
+                        <option value="cancelled">❌ Cancelled</option>
+                    </select>
+                </div>
+                <div class="actions" style="display:flex; gap:10px; margin-top:10px;">
+                    <button type="submit" class="btn-pixel" data-cy="btn-save-edit-sprint" style="background:#27ae60;">SALVAR</button>
+                    <button type="button" class="btn-pixel" style="background:#7f8c8d;" onclick="closeEditSprintModal()">CANCELAR</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast-container" data-cy="toast-container"></div>
+
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/admin-sprints.js"></script>
+</body>
+</html>
