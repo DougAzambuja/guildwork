@@ -41,17 +41,19 @@ const CURSE_CONFIG = {
 };
 
 let playerData = {
-    id:         null,
-    xp:         0,
-    coins:      0,
-    level:      1,
-    tasks:      0,
-    farmedGold: parseInt(sessionStorage.getItem('session_gold') || '0'),
-    farmedXP:   parseInt(sessionStorage.getItem('session_xp')   || '0'),
-    isCursed:   false,
-    curseType:  null,
-    name:       'Aventureiro',
-    avatar:     'assets/imgs/caneca_pixel.jpg'
+    id:          null,
+    xp:          0,
+    coins:       0,
+    level:       1,
+    tasks:       0,
+    farmedGold:  parseInt(sessionStorage.getItem('session_gold') || '0'),
+    farmedXP:    parseInt(sessionStorage.getItem('session_xp')   || '0'),
+    isCursed:    false,
+    curseType:   null,
+    name:        'Aventureiro',
+    avatar:      'assets/imgs/caneca_pixel.jpg',
+    activeBuff:  null,
+    csatStreak:  0
 };
 
 let currentBoardStats = { todo: 0, inProgress: 0, done: 0, myWip: 0, slaAlerts: 0 };
@@ -116,10 +118,17 @@ async function fetchPlayerState() {
                 isCursed:   data.is_cursed        || false,
                 curseType:  data.curse_type       || null,
                 name:       data.nome             || data.username,
-                avatar:     data.avatar_url       || 'assets/imgs/caneca_pixel.jpg'
+                avatar:     data.avatar_url       || 'assets/imgs/caneca_pixel.jpg',
+                activeBuff: data.buff_type ? {
+                    type:      data.buff_type,
+                    expiresAt: data.buff_expires_at       || null,
+                    quests:    data.buff_quests_remaining || null
+                } : null,
+                csatStreak: data.csat_streak || 0
             };
 
             updateUI();
+            updateBuffUI();
 
             if (playerData.curseType) applyCurseVisuals(playerData.curseType);
 
@@ -614,12 +623,15 @@ async function finishQuest(questId, questType) {
             playerData.tasks       = data.updatedState.questsCompleted;
             playerData.isCursed    = data.updatedState.isCursed;
             playerData.curseType   = data.updatedState.curseType || null;
+            playerData.activeBuff  = data.updatedState.activeBuff || null;
+            playerData.csatStreak  = data.updatedState.csatStreak || 0;
             playerData.farmedGold += data.coinsGained;
             playerData.farmedXP   += data.xpGained;
             sessionStorage.setItem('session_gold', playerData.farmedGold);
             sessionStorage.setItem('session_xp',   playerData.farmedXP);
 
             updateUI();
+            updateBuffUI();
 
             if (data.leveledUp) {
                 showLevelUpAnimation(data.updatedState.level);
@@ -639,6 +651,15 @@ async function finishQuest(questId, questType) {
                     const cfg = CURSE_CONFIG[playerData.curseType];
                     showToast(`${cfg.icon} ${cfg.label} aplicada! ${cfg.penalty}`, 'error');
                 }
+            }
+
+            if (data.buffGranted === 'xp_double_activity') {
+                showToast('⚡ CSAT STREAK x3! XP duplo nas próximas 2 missões!');
+            } else if (data.buffGranted === 'xp_double_time') {
+                showToast('⚡ CSAT STREAK MÁXIMO! XP duplo por 24 horas!');
+            } else if (data.buffApplied) {
+                const buffLabel = data.buffApplied === 'xp_double_time' ? '(tempo)' : '(atividade)';
+                showToast(`⚡ Buff XP Duplo ${buffLabel} aplicado!`);
             }
 
             await loadBoard();
@@ -764,6 +785,51 @@ function updateUI() {
 
 function updateObjectivesUI() {
     updateSidebar();
+}
+
+function updateBuffUI() {
+    const banner = document.getElementById('buffBanner');
+    if (!banner) return;
+
+    const buff = playerData.activeBuff;
+
+    if (!buff || !buff.type) {
+        // Sem buff — mostrar streak se > 0
+        if (playerData.csatStreak > 0) {
+            const next    = playerData.csatStreak < 3 ? 3 : 5;
+            const current = playerData.csatStreak;
+            banner.style.cssText = 'display:block; background:#0d1520; border:1px solid #f1c40f55; padding:8px 12px; margin-bottom:10px; border-radius:2px;';
+            banner.innerHTML = `
+                <div style="font-size:8px;color:#f1c40f;letter-spacing:1px;">⭐ CSAT STREAK: ${current}/${next}</div>
+                <div style="background:#1e2f3f;height:3px;border-radius:2px;margin-top:6px;overflow:hidden;">
+                    <div style="height:100%;background:#f1c40f;width:${Math.round((current / next) * 100)}%;transition:width 0.3s;"></div>
+                </div>
+                <div style="font-size:7px;color:#7f8c8d;margin-top:4px;">Streak 3: XP duplo × 2 quests · Streak 5: XP duplo × 24h</div>
+            `;
+        } else {
+            banner.style.display = 'none';
+        }
+        return;
+    }
+
+    let detail = '';
+    if (buff.type === 'xp_double_time') {
+        const remaining = buff.expiresAt ? Math.max(0, new Date(buff.expiresAt) - Date.now()) : 0;
+        const h = Math.floor(remaining / 3600000);
+        const m = Math.floor((remaining % 3600000) / 60000);
+        detail = remaining > 0 ? `Expira em ${h}h${m}m` : 'Expirando...';
+    } else if (buff.type === 'xp_double_activity') {
+        detail = `${buff.quests} quest${buff.quests === 1 ? '' : 's'} restante${buff.quests === 1 ? '' : 's'}`;
+    }
+
+    banner.style.cssText = 'display:block; background:#0d1b12; border:2px solid #f1c40f; padding:10px 12px; margin-bottom:10px; border-radius:2px;';
+    banner.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span style="font-size:16px;line-height:1;">⚡</span>
+            <span style="font-size:8px;color:#f1c40f;font-weight:bold;letter-spacing:1px;">XP DUPLO ATIVO</span>
+        </div>
+        <div style="font-size:8px;color:#f39c12;">${detail}</div>
+    `;
 }
 
 function updateSidebar() {

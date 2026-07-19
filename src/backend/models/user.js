@@ -37,7 +37,13 @@ const UserSchema = new mongoose.Schema({
     level:    { type: Number, default: 1 },
     is_cursed:        { type: Boolean, default: false },
     curse_type:       { type: String, enum: ['sla_breach', 'abandoned', 'csat_low'], default: null },
-    quests_completed: { type: Number,  default: 0 },
+    quests_completed:      { type: Number,  default: 0 },
+
+    // Buff temporário via streak de CSAT
+    csat_streak:           { type: Number, default: 0 },
+    buff_type:             { type: String, enum: ['xp_double_activity', 'xp_double_time'], default: null },
+    buff_expires_at:       { type: Date,   default: null },
+    buff_quests_remaining: { type: Number, default: null },
 
 }, { timestamps: true });
 

@@ -1,12 +1,27 @@
-const User = require('../models/user');
+const User  = require('../models/user');
+const Guild = require('../models/guild');
 
 /**
- * GET /api/admin/roster — Lista todos os usuários (sem senha).
+ * GET /api/admin/roster — Lista todos os usuários (sem senha) + flag is_guild_leader.
  */
 exports.getRoster = async (req, res) => {
     try {
-        const users = await User.find().select('-password').sort({ createdAt: 1 });
-        res.json(users);
+        const [users, guilds] = await Promise.all([
+            User.find().select('-password').sort({ createdAt: 1 }),
+            Guild.find().select('leader_id').lean()
+        ]);
+
+        const leaderIds = new Set(
+            guilds.map(g => g.leader_id?.toString()).filter(Boolean)
+        );
+
+        const result = users.map(u => {
+            const obj = u.toObject();
+            obj.is_guild_leader = leaderIds.has(u._id.toString());
+            return obj;
+        });
+
+        res.json(result);
     } catch (err) {
         res.status(500).json({ message: 'Erro ao buscar roster.', error: err.message });
     }

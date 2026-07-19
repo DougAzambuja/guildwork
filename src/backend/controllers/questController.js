@@ -115,6 +115,32 @@ exports.completeQuest = async (req, res) => {
             xpGained = Math.round(quest.xp_reward * (csatScore / 5));
         }
 
+        // Verificar e aplicar buff ativo (XP Duplo)
+        const now = new Date();
+        let newBuffType             = user.buff_type             || null;
+        let newBuffExpiresAt        = user.buff_expires_at       || null;
+        let newBuffQuestsRemaining  = user.buff_quests_remaining || null;
+        let buffApplied = null;
+
+        if (newBuffType === 'xp_double_time' && newBuffExpiresAt && new Date(newBuffExpiresAt) > now) {
+            xpGained = Math.round(xpGained * 2);
+            buffApplied = 'xp_double_time';
+        } else if (newBuffType === 'xp_double_activity' && newBuffQuestsRemaining > 0) {
+            xpGained = Math.round(xpGained * 2);
+            buffApplied = 'xp_double_activity';
+            newBuffQuestsRemaining--;
+            if (newBuffQuestsRemaining <= 0) {
+                newBuffType            = null;
+                newBuffExpiresAt       = null;
+                newBuffQuestsRemaining = null;
+            }
+        } else if (newBuffType) {
+            // Buff expirado — limpar
+            newBuffType            = null;
+            newBuffExpiresAt       = null;
+            newBuffQuestsRemaining = null;
+        }
+
         const wasCursed    = user.is_cursed;
         const wasCurseType = user.curse_type;
 
@@ -158,6 +184,30 @@ exports.completeQuest = async (req, res) => {
             }
         }
 
+        // Atualizar streak de CSAT e conceder buff ao atingir threshold
+        let newCsatStreak = user.csat_streak || 0;
+        let buffGranted   = null;
+
+        if (quest.type === 'support' && csatScore) {
+            if (csatScore === 5) {
+                newCsatStreak++;
+                if (newCsatStreak === 5) {
+                    newBuffType            = 'xp_double_time';
+                    newBuffExpiresAt       = new Date(Date.now() + 24 * 60 * 60 * 1000);
+                    newBuffQuestsRemaining = null;
+                    newCsatStreak          = 0;
+                    buffGranted            = 'xp_double_time';
+                } else if (newCsatStreak === 3) {
+                    newBuffType            = 'xp_double_activity';
+                    newBuffExpiresAt       = null;
+                    newBuffQuestsRemaining = 2;
+                    buffGranted            = 'xp_double_activity';
+                }
+            } else {
+                newCsatStreak = 0;
+            }
+        }
+
         const newQuestsCompleted = (user.quests_completed || 0) + 1;
 
         await QuestCompletion.create({
@@ -181,12 +231,16 @@ exports.completeQuest = async (req, res) => {
         }
 
         await User.findByIdAndUpdate(user._id, {
-            xp:               newXp,
-            coins:            newCoins,
-            level:            newLevel,
-            is_cursed:        user.is_cursed,
-            curse_type:       user.curse_type,
-            quests_completed: newQuestsCompleted
+            xp:                    newXp,
+            coins:                 newCoins,
+            level:                 newLevel,
+            is_cursed:             user.is_cursed,
+            curse_type:            user.curse_type,
+            quests_completed:      newQuestsCompleted,
+            csat_streak:           newCsatStreak,
+            buff_type:             newBuffType,
+            buff_expires_at:       newBuffExpiresAt,
+            buff_quests_remaining: newBuffQuestsRemaining
         });
 
         user.xp    = newXp;
@@ -216,6 +270,8 @@ exports.completeQuest = async (req, res) => {
             coinsGained,
             leveledUp,
             newCurseApplied,
+            buffApplied,
+            buffGranted,
             treasuryContribution,
             updatedState: {
                 xp:              newXp,
@@ -224,7 +280,13 @@ exports.completeQuest = async (req, res) => {
                 questsCompleted: newQuestsCompleted,
                 isCursed:        user.is_cursed,
                 curseType:       user.curse_type,
-                xpNextLevel:     xpParaProximoNivel(newLevel)
+                xpNextLevel:     xpParaProximoNivel(newLevel),
+                csatStreak:      newCsatStreak,
+                activeBuff:      newBuffType ? {
+                    type:      newBuffType,
+                    expiresAt: newBuffExpiresAt,
+                    quests:    newBuffQuestsRemaining
+                } : null
             }
         });
 
