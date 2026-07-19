@@ -68,6 +68,25 @@ function renderGuildHeader() {
     document.getElementById('guildFaction').textContent = `FACÇÃO: ${guildData.faction_key.toUpperCase()}`;
     document.getElementById('treasuryBalance').textContent = guildData.treasury_balance.toLocaleString('pt-BR');
     document.getElementById('treasuryTax').textContent  = `${Math.round(guildData.tax_rate * 100)}% de cada missão concluída`;
+
+    const count    = membersData.length;
+    const avgLevel = count ? (membersData.reduce((s, m) => s + m.level, 0) / count).toFixed(1) : '—';
+    const totalXP  = membersData.reduce((s, m) => s + m.xp, 0);
+
+    document.getElementById('guildStats').innerHTML = `
+        <div class="guild-stat-chip">
+            <span class="guild-stat-label">Aventureiros</span>
+            <span class="guild-stat-value">👥 ${count}</span>
+        </div>
+        <div class="guild-stat-chip">
+            <span class="guild-stat-label">Nível Médio</span>
+            <span class="guild-stat-value">⚔️ ${avgLevel}</span>
+        </div>
+        <div class="guild-stat-chip">
+            <span class="guild-stat-label">XP Total</span>
+            <span class="guild-stat-value">✨ ${totalXP.toLocaleString('pt-BR')}</span>
+        </div>
+    `;
 }
 
 function renderRanking() {

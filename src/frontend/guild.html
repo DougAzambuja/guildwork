@@ -7,7 +7,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏰</text></svg>">
     <link rel="stylesheet" href="css/style.css">
     <style>
-        .guild-wrapper { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+        .guild-wrapper { padding: 0; }
 
         .guild-header {
             display: flex; align-items: center; gap: 16px;
@@ -17,7 +17,20 @@
         .guild-icon  { font-size: 48px; line-height: 1; }
         .guild-info  { flex: 1; }
         .guild-name  { font-size: 20px; color: #f39c12; letter-spacing: 2px; margin-bottom: 4px; }
-        .guild-faction { font-size: 9px; color: #7f8c8d; letter-spacing: 1px; }
+        .guild-faction { font-size: 9px; color: #7f8c8d; letter-spacing: 1px; margin-bottom: 12px; }
+        .guild-stats { display: flex; gap: 10px; flex-wrap: wrap; }
+        .guild-stat-chip {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid #2c3e50;
+            border-radius: 3px;
+            padding: 8px 16px;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .guild-stat-label { font-size: 8px; color: #7f8c8d; letter-spacing: 1px; text-transform: uppercase; }
+        .guild-stat-value {
+            font-size: 15px; color: #ecf0f1; line-height: 1;
+            display: flex; align-items: center; gap: 6px;
+        }
 
         .treasury-box {
             background: #0d1b12; border: 2px solid #27ae60;
@@ -28,25 +41,45 @@
         .treasury-value { font-size: 22px; color: #2ecc71; }
         .treasury-tax   { font-size: 8px; color: #7f8c8d; margin-top: 4px; }
 
-        .guild-grid { display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+        .guild-grid { display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start; }
 
-        .section-title { font-size: 10px; color: #f39c12; letter-spacing: 2px; margin-bottom: 12px; border-bottom: 1px solid #2c3e50; padding-bottom: 8px; }
+        /* Cabeçalho de painel — usado em ambos os cards */
+        .panel-header {
+            background: #0d1520;
+            border-bottom: 2px solid #2c3e50;
+            padding: 12px 16px;
+            font-size: 12px;
+            color: #f39c12;
+            letter-spacing: 2px;
+            border-left: 3px solid #f39c12;
+        }
+        .panel-subheader {
+            font-size: 10px;
+            color: #f39c12;
+            letter-spacing: 2px;
+            padding: 12px 0 8px;
+            border-top: 1px solid #2c3e50;
+            margin-top: 4px;
+        }
 
         /* Ranking */
         .ranking-wrapper {
             background: #111c27; border: 2px solid #2c3e50;
             border-radius: 4px; overflow: hidden;
+            min-width: 0; /* impede o grid de expandir além do 1fr */
         }
         .ranking-table { width: 100%; border-collapse: collapse; }
         .ranking-table thead { background: #0d1520; }
         .ranking-table th {
             font-size: 9px; color: #7f8c8d; text-align: left;
-            padding: 10px 14px; letter-spacing: 1px;
+            padding: 10px 10px; letter-spacing: 1px;
             border-bottom: 2px solid #2c3e50;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
         .ranking-table td {
             font-size: 11px; color: #ecf0f1;
-            padding: 10px 14px; border-bottom: 1px solid #1e2f3f;
+            padding: 8px 10px; border-bottom: 1px solid #1e2f3f;
+            overflow: hidden; text-overflow: ellipsis;
         }
         .ranking-table tr:last-child td { border-bottom: none; }
         .ranking-table tbody tr:nth-child(odd)  { background: rgba(255,255,255,0.02); }
@@ -57,10 +90,10 @@
         .rank-pos-3 { color: #e67e22; }
         .rank-avatar { width: 32px; height: 32px; border-radius: 3px; object-fit: cover; vertical-align: middle; margin-right: 8px; border: 1px solid #2c3e50; }
         .rank-name { display: flex; align-items: center; gap: 2px; }
-        .rank-name-text { white-space: nowrap; }
+        .rank-name-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .rank-badge-cursed { font-size: 12px; margin-left: 4px; }
         .rank-leader-crown { font-size: 12px; margin-left: 4px; }
-        .rank-xp-cell { min-width: 110px; }
+        .rank-xp-cell { min-width: 90px; }
         .rank-xp-num  { font-size: 10px; color: #a679d6; font-variant-numeric: tabular-nums; margin-bottom: 4px; }
         .rank-xp-bar-track { background: #1e2f3f; height: 5px; border-radius: 2px; overflow: hidden; }
         .rank-xp-bar-fill  { height: 100%; background: linear-gradient(90deg, #7d3c98, #a679d6); border-radius: 2px; transition: width 0.4s ease; }
@@ -72,9 +105,10 @@
         /* Painel do Líder */
         .leader-panel {
             background: #1a2634; border: 2px solid #2c3e50;
-            border-radius: 4px; padding: 16px;
+            border-radius: 4px; overflow: hidden;
         }
-        .leader-info { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #2c3e50; }
+        .leader-body { padding: 16px; }
+        .leader-info { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #2c3e50; }
         .leader-avatar { width: 40px; height: 40px; flex-shrink: 0; border-radius: 2px; object-fit: cover; border: 2px solid #f39c12; }
         .leader-text   { display: flex; flex-direction: column; gap: 4px; }
         .leader-label  { font-size: 8px; color: #7f8c8d; letter-spacing: 1px; line-height: 1; }
@@ -121,6 +155,7 @@
                 <div class="guild-info">
                     <div class="guild-name"  id="guildName">GUILDA</div>
                     <div class="guild-faction" id="guildFaction">FACÇÃO</div>
+                    <div class="guild-stats" id="guildStats"></div>
                 </div>
                 <div class="treasury-box">
                     <div class="treasury-label">TESOURO COMUM</div>
@@ -131,57 +166,57 @@
 
             <div class="guild-grid">
                 <!-- Ranking de membros -->
-                <div>
-                    <div class="section-title">RANKING DE MEMBROS</div>
-                    <div class="ranking-wrapper">
-                        <table class="ranking-table" data-cy="ranking-table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>HERÓI</th>
-                                    <th>NÍV</th>
-                                    <th>XP</th>
-                                    <th>MISSÕES</th>
-                                    <th>GOLD</th>
-                                </tr>
-                            </thead>
-                            <tbody id="rankingBody"></tbody>
-                        </table>
-                    </div>
+                <div class="ranking-wrapper">
+                    <div class="panel-header">⚔️ RANKING DE MEMBROS</div>
+                    <table class="ranking-table" data-cy="ranking-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>HERÓI</th>
+                                <th>NÍV</th>
+                                <th>XP</th>
+                                <th>MISSÕES</th>
+                                <th>GOLD</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rankingBody"></tbody>
+                    </table>
                 </div>
 
                 <!-- Painel do Líder -->
                 <div class="leader-panel" data-cy="leader-panel">
-                    <div class="section-title">LÍDER DA GUILDA</div>
-                    <div class="leader-info">
-                        <img src="assets/imgs/caneca_pixel.jpg" class="leader-avatar" id="leaderAvatar" alt="">
-                        <div class="leader-text">
-                            <div class="leader-label">COMANDANTE</div>
-                            <div class="leader-name" id="leaderName">—</div>
+                    <div class="panel-header">👑 LÍDER DA GUILDA</div>
+                    <div class="leader-body">
+                        <div class="leader-info">
+                            <img src="assets/imgs/caneca_pixel.jpg" class="leader-avatar" id="leaderAvatar" alt="">
+                            <div class="leader-text">
+                                <div class="leader-label">COMANDANTE</div>
+                                <div class="leader-name" id="leaderName">—</div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div id="spendSection">
-                        <div class="section-title">DISTRIBUIR TESOURO</div>
-                        <div class="spend-form" id="spendForm" data-cy="spend-form">
-                            <div>
-                                <label>AVENTUREIRO</label>
-                                <select id="spendTarget" class="pixel-input" data-cy="select-spend-target"></select>
+                        <div id="spendSection">
+                            <div class="panel-subheader">💰 DISTRIBUIR TESOURO</div>
+                            <div class="spend-form" id="spendForm" data-cy="spend-form">
+                                <div>
+                                    <label>AVENTUREIRO</label>
+                                    <select id="spendTarget" class="pixel-input" data-cy="select-spend-target"></select>
+                                </div>
+                                <div>
+                                    <label>QUANTIDADE (GOLD)</label>
+                                    <input type="number" id="spendAmount" class="pixel-input" min="1" placeholder="Ex: 50" data-cy="input-spend-amount">
+                                </div>
+                                <button class="btn-pixel spend-btn" id="spendBtn" onclick="spendTreasury()" data-cy="btn-spend-treasury">
+                                    💰 ENVIAR GOLD
+                                </button>
                             </div>
-                            <div>
-                                <label>QUANTIDADE (GOLD)</label>
-                                <input type="number" id="spendAmount" class="pixel-input" min="1" placeholder="Ex: 50" data-cy="input-spend-amount">
+                            <div class="locked-msg" id="lockedMsg" style="display:none;">
+                                Apenas o líder da guilda pode distribuir o tesouro.
                             </div>
-                            <button class="btn-pixel spend-btn" id="spendBtn" onclick="spendTreasury()" data-cy="btn-spend-treasury">
-                                💰 ENVIAR GOLD
-                            </button>
                         </div>
-                        <div class="locked-msg" id="lockedMsg" style="display:none;">
-                            Apenas o líder da guilda pode distribuir o tesouro.
-                        </div>
-                    </div>
-                </div>
-            </div>
+                    </div><!-- /leader-body -->
+                </div><!-- /leader-panel -->
+            </div><!-- /guild-grid -->
         </div>
     </div>
 
