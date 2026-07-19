@@ -102,7 +102,7 @@ function renderRanking() {
             <td>
                 <div class="rank-name">
                     <img src="${m.avatar_url || 'assets/imgs/caneca_pixel.jpg'}" class="rank-avatar" alt="">
-                    <span class="rank-name-text">${m.nome || m.username}</span>${crownMark}${curseMark}
+                    <a href="perfil.html#${m._id}" class="rank-name-text rank-name-link" data-cy="link-perfil-${m._id}">${m.nome || m.username}</a>${crownMark}${curseMark}
                 </div>
             </td>
             <td class="rank-level">${m.level}</td>

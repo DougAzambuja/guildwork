@@ -1,5 +1,6 @@
 const User                = require('../models/user');
 const LootItem            = require('../models/lootItem');
+const QuestCompletion     = require('../models/questCompletion');
 const notificationService = require('../services/notificationService');
 
 function xpParaProximoNivel(level) {
@@ -12,6 +13,47 @@ exports.getProfile = async (req, res) => {
         const user = await User.findById(req.user.id).select('-password');
         if (!user) return res.status(404).json({ message: 'Usuário não encontrado.' });
         res.json(user);
+    } catch (err) {
+        res.status(500).json({ message: 'Erro interno.', error: err.message });
+    }
+};
+
+// GET /api/players/:id/public — perfil público de outro jogador (sem dados sensíveis)
+exports.getPublicProfile = async (req, res) => {
+    try {
+        const [user, agg] = await Promise.all([
+            User.findById(req.params.id).select(
+                'nome username avatar_url level xp coins faction quests_completed achievements delivery_streak is_cursed curse_type'
+            ),
+            QuestCompletion.aggregate([
+                { $match: { user_id: require('mongoose').Types.ObjectId.createFromHexString(req.params.id) } },
+                { $group: {
+                    _id:          null,
+                    total_xp:     { $sum: '$xp_gained'    },
+                    total_gold:   { $sum: '$coins_gained' },
+                    total:        { $sum: 1               },
+                    cursed_count: { $sum: { $cond: ['$was_cursed', 1, 0] } },
+                    avg_csat:     { $avg: '$csat_score'   },
+                }}
+            ])
+        ]);
+
+        if (!user) return res.status(404).json({ message: 'Jogador não encontrado.' });
+
+        const s = agg[0] || {};
+        const cleanRate = s.total > 0
+            ? Math.round(((s.total - s.cursed_count) / s.total) * 100)
+            : null;
+
+        res.json({
+            ...user.toObject(),
+            stats: {
+                total_xp_earned: s.total_xp    || 0,
+                total_gold_earned: s.total_gold || 0,
+                avg_csat:   s.avg_csat != null ? Math.round(s.avg_csat * 10) / 10 : null,
+                clean_rate: cleanRate,
+            }
+        });
     } catch (err) {
         res.status(500).json({ message: 'Erro interno.', error: err.message });
     }
