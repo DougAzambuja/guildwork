@@ -9,6 +9,42 @@ if (!token) {
 
 function xpParaProximoNivel(level) { return 200 * (level + 1) + 300; }
 
+const ALL_ACHIEVEMENTS = [
+    { key: 'first_quest', title: '🎖️ Aventureiro Estreante', desc: '1 missão' },
+    { key: 'quests_5',   title: '⚔️ Guerreiro Dedicado',    desc: '5 missões' },
+    { key: 'quests_10',  title: '🛡️ Veterano da Guilda',    desc: '10 missões' },
+    { key: 'quests_25',  title: '👑 Herói Lendário',         desc: '25 missões' },
+    { key: 'quests_50',  title: '🌟 Mestre das Missões',     desc: '50 missões' },
+];
+
+function renderAchievementsBadgesHtml(achievements = []) {
+    const unlockedKeys = new Set(achievements.map(a => a.key));
+    const badges = ALL_ACHIEVEMENTS.map(a => {
+        const unlocked = unlockedKeys.has(a.key);
+        const icon     = a.title.split(' ')[0];
+        const name     = a.title.split(' ').slice(1).join(' ');
+        return `
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;
+                        background:${unlocked ? 'rgba(243,156,18,0.08)' : 'rgba(255,255,255,0.02)'};
+                        border:1px solid ${unlocked ? '#f39c12' : '#2c3e50'};
+                        border-radius:3px;opacity:${unlocked ? '1' : '0.4'};">
+                <span style="font-size:16px;line-height:1;">${unlocked ? icon : '🔒'}</span>
+                <div style="flex:1;">
+                    <div style="font-size:8px;color:${unlocked ? '#f1c40f' : '#7f8c8d'};font-weight:bold;letter-spacing:1px;">${name}</div>
+                    <div style="font-size:7px;color:#7f8c8d;">${a.desc}</div>
+                </div>
+                ${unlocked ? '<span style="font-size:9px;color:#27ae60;">✓</span>' : ''}
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <hr class="profile-divider">
+        <div style="font-size:7px;color:#7f8c8d;letter-spacing:2px;margin-bottom:8px;">CONQUISTAS</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">${badges}</div>
+    `;
+}
+
 let currentCoins   = 0;
 let playerData     = {};
 let cart           = [];
@@ -41,6 +77,7 @@ async function loadPlayerProfile() {
                 coins:            currentCoins,
                 faction:          player.faction  || '—',
                 quests_completed: player.quests_completed || 0,
+                achievements:     player.achievements     || [],
             };
 
             renderPlayerProfile();
@@ -100,6 +137,8 @@ function renderPlayerProfile() {
                 <span class="profile-stat-label">Missões</span>
             </div>
         </div>
+
+        ${renderAchievementsBadgesHtml(playerData.achievements)}
     `;
 }
 
