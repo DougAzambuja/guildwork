@@ -52,9 +52,10 @@ let playerData = {
     curseType:   null,
     name:        'Aventureiro',
     avatar:      'assets/imgs/caneca_pixel.jpg',
-    activeBuff:   null,
-    csatStreak:   0,
-    achievements: []
+    activeBuff:     null,
+    csatStreak:     0,
+    achievements:   [],
+    deliveryStreak: 0,
 };
 
 let currentBoardStats = { todo: 0, inProgress: 0, done: 0, myWip: 0, slaAlerts: 0 };
@@ -125,12 +126,14 @@ async function fetchPlayerState() {
                     expiresAt: data.buff_expires_at       || null,
                     quests:    data.buff_quests_remaining || null
                 } : null,
-                csatStreak:   data.csat_streak    || 0,
-                achievements: data.achievements   || []
+                csatStreak:     data.csat_streak      || 0,
+                achievements:   data.achievements     || [],
+                deliveryStreak: data.delivery_streak  || 0,
             };
 
             updateUI();
             updateBuffUI();
+            updateStreakUI();
 
             if (playerData.curseType) applyCurseVisuals(playerData.curseType);
 
@@ -625,15 +628,17 @@ async function finishQuest(questId, questType) {
             playerData.tasks       = data.updatedState.questsCompleted;
             playerData.isCursed    = data.updatedState.isCursed;
             playerData.curseType   = data.updatedState.curseType || null;
-            playerData.activeBuff  = data.updatedState.activeBuff || null;
-            playerData.csatStreak  = data.updatedState.csatStreak || 0;
-            playerData.farmedGold += data.coinsGained;
-            playerData.farmedXP   += data.xpGained;
+            playerData.activeBuff     = data.updatedState.activeBuff    || null;
+            playerData.csatStreak     = data.updatedState.csatStreak    || 0;
+            playerData.deliveryStreak = data.updatedState.deliveryStreak || 0;
+            playerData.farmedGold    += data.coinsGained;
+            playerData.farmedXP      += data.xpGained;
             sessionStorage.setItem('session_gold', playerData.farmedGold);
             sessionStorage.setItem('session_xp',   playerData.farmedXP);
 
             updateUI();
             updateBuffUI();
+            updateStreakUI();
 
             if (data.leveledUp) {
                 showLevelUpAnimation(data.updatedState.level);
@@ -662,6 +667,11 @@ async function finishQuest(questId, questType) {
             } else if (data.buffApplied) {
                 const buffLabel = data.buffApplied === 'xp_double_time' ? '(tempo)' : '(atividade)';
                 showToast(`⚡ Buff XP Duplo ${buffLabel} aplicado!`);
+            }
+
+            if (data.updatedState.streakBonusXP > 0) {
+                const days = data.updatedState.deliveryStreak;
+                showToast(`🔥 STREAK ${days} DIAS! Bônus de +${data.updatedState.streakBonusXP} XP!`);
             }
 
             await loadBoard();
@@ -831,6 +841,48 @@ function updateBuffUI() {
             <span style="font-size:8px;color:#f1c40f;font-weight:bold;letter-spacing:1px;">XP DUPLO ATIVO</span>
         </div>
         <div style="font-size:8px;color:#f39c12;">${detail}</div>
+    `;
+}
+
+const STREAK_MILESTONES_DISPLAY = [3, 7, 14, 30];
+
+function updateStreakUI() {
+    const banner = document.getElementById('streakBanner');
+    if (!banner) return;
+
+    const streak = playerData.deliveryStreak || 0;
+
+    if (streak === 0) {
+        banner.style.display = 'none';
+        return;
+    }
+
+    const nextMilestone = STREAK_MILESTONES_DISPLAY.find(m => m > streak) || null;
+    const prevMilestone = [...STREAK_MILESTONES_DISPLAY].reverse().find(m => m <= streak) || 0;
+
+    let progressHtml = '';
+    if (nextMilestone) {
+        const range   = nextMilestone - prevMilestone;
+        const current = streak - prevMilestone;
+        const pct     = Math.round((current / range) * 100);
+        progressHtml = `
+            <div style="background:#1e2f3f;height:3px;border-radius:2px;margin-top:6px;overflow:hidden;">
+                <div style="height:100%;background:#e67e22;width:${pct}%;transition:width 0.3s;"></div>
+            </div>
+            <div style="font-size:7px;color:#7f8c8d;margin-top:4px;">${streak}/${nextMilestone} dias para bônus</div>
+        `;
+    } else {
+        progressHtml = `<div style="font-size:7px;color:#e67e22;margin-top:4px;">🏆 Streak máximo atingido!</div>`;
+    }
+
+    const isMilestone = STREAK_MILESTONES_DISPLAY.includes(streak);
+    const borderColor = isMilestone ? '#e67e22' : '#e67e2255';
+    const bgColor     = isMilestone ? '#1a0f00'  : '#0d1520';
+
+    banner.style.cssText = `display:block; background:${bgColor}; border:${isMilestone ? '2px' : '1px'} solid ${borderColor}; padding:8px 12px; margin-bottom:10px; border-radius:2px;`;
+    banner.innerHTML = `
+        <div style="font-size:8px;color:#e67e22;letter-spacing:1px;font-weight:bold;">🔥 STREAK: ${streak} DIA${streak !== 1 ? 'S' : ''}</div>
+        ${progressHtml}
     `;
 }
 

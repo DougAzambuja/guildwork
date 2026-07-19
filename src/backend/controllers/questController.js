@@ -208,6 +208,36 @@ exports.completeQuest = async (req, res) => {
             }
         }
 
+        // Streak de entregas diárias
+        const todayStr     = new Date().toISOString().slice(0, 10);
+        const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+        const lastDelivery = user.last_delivery_at
+            ? new Date(user.last_delivery_at).toISOString().slice(0, 10)
+            : null;
+
+        let newDeliveryStreak = user.delivery_streak || 0;
+        let streakBonusXP     = 0;
+
+        if (!lastDelivery || lastDelivery < yesterdayStr) {
+            newDeliveryStreak = 1;
+        } else if (lastDelivery === yesterdayStr) {
+            newDeliveryStreak++;
+        }
+        // lastDelivery === todayStr → já contou hoje, não muda
+
+        const STREAK_MILESTONES = [
+            { at: 3,  bonus: 50  },
+            { at: 7,  bonus: 150 },
+            { at: 14, bonus: 300 },
+            { at: 30, bonus: 500 },
+        ];
+        const streakMilestone = STREAK_MILESTONES.find(m => m.at === newDeliveryStreak);
+        if (streakMilestone) streakBonusXP = streakMilestone.bonus;
+
+        const newLastDeliveryAt = (lastDelivery === todayStr) ? user.last_delivery_at : new Date();
+
+        xpGained += streakBonusXP;
+
         const newQuestsCompleted = (user.quests_completed || 0) + 1;
 
         await QuestCompletion.create({
@@ -240,7 +270,9 @@ exports.completeQuest = async (req, res) => {
             csat_streak:           newCsatStreak,
             buff_type:             newBuffType,
             buff_expires_at:       newBuffExpiresAt,
-            buff_quests_remaining: newBuffQuestsRemaining
+            buff_quests_remaining: newBuffQuestsRemaining,
+            delivery_streak:       newDeliveryStreak,
+            last_delivery_at:      newLastDeliveryAt,
         });
 
         user.xp    = newXp;
@@ -286,7 +318,9 @@ exports.completeQuest = async (req, res) => {
                     type:      newBuffType,
                     expiresAt: newBuffExpiresAt,
                     quests:    newBuffQuestsRemaining
-                } : null
+                } : null,
+                deliveryStreak:  newDeliveryStreak,
+                streakBonusXP:   streakBonusXP,
             }
         });
 
