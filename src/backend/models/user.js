@@ -46,6 +46,10 @@ const UserSchema = new mongoose.Schema({
         unlocked_at: { type: Date, default: Date.now }
     }],
 
+    // Streak de entregas diárias
+    delivery_streak:  { type: Number, default: 0 },
+    last_delivery_at: { type: Date,   default: null },
+
     // Buff temporário via streak de CSAT
     csat_streak:           { type: Number, default: 0 },
     buff_type:             { type: String, enum: ['xp_double_activity', 'xp_double_time'], default: null },
