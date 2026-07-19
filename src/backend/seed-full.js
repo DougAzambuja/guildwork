@@ -10,6 +10,7 @@ const Quest           = require('./models/quest');
 const QuestCompletion = require('./models/questCompletion');
 const Sprint          = require('./models/sprint');
 const LootItem        = require('./models/lootItem');
+const Guild           = require('./models/guild');
 
 async function run() {
     await mongoose.connect(process.env.MONGODB_URI);
@@ -21,7 +22,8 @@ async function run() {
         Quest.deleteMany({}),
         QuestCompletion.deleteMany({}),
         Sprint.deleteMany({}),
-        LootItem.deleteMany({})
+        LootItem.deleteMany({}),
+        Guild.deleteMany({})
     ]);
     console.log('🗑️  Coleções limpas');
 
@@ -95,6 +97,14 @@ async function run() {
     const ana        = users.find(u => u.username === 'ana_cs');
     const lucas      = users.find(u => u.username === 'lucas_suporte');
     console.log(`👥 ${users.length} usuários criados`);
+
+    // ===================== GUILDAS =====================
+    await Guild.create([
+        { name: 'Guilda do Produto',          faction_key: 'Produto',          icon: '📦', leader_id: joao._id,   tax_rate: 0.10 },
+        { name: 'Guilda do Suporte',          faction_key: 'Suporte',          icon: '🎧', leader_id: carlos._id, tax_rate: 0.10 },
+        { name: 'Guilda de Customer Service', faction_key: 'Customer Service', icon: '📣', leader_id: ana._id,    tax_rate: 0.10 }
+    ]);
+    console.log('🏰 3 guildas criadas');
 
     // ===================== SPRINT ATIVA =====================
     const today     = new Date();

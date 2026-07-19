@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GuildWork - Guilda</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏰</text></svg>">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .guild-wrapper { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+
+        .guild-header {
+            display: flex; align-items: center; gap: 16px;
+            background: var(--card-bg, #1a2634); border: 2px solid #2c3e50;
+            border-radius: 4px; padding: 20px 24px; margin-bottom: 24px;
+        }
+        .guild-icon  { font-size: 48px; line-height: 1; }
+        .guild-info  { flex: 1; }
+        .guild-name  { font-size: 20px; color: #f39c12; letter-spacing: 2px; margin-bottom: 4px; }
+        .guild-faction { font-size: 9px; color: #7f8c8d; letter-spacing: 1px; }
+
+        .treasury-box {
+            background: #0d1b12; border: 2px solid #27ae60;
+            border-radius: 4px; padding: 16px 20px; text-align: right;
+            min-width: 160px;
+        }
+        .treasury-label { font-size: 8px; color: #7f8c8d; letter-spacing: 1px; margin-bottom: 4px; }
+        .treasury-value { font-size: 22px; color: #2ecc71; }
+        .treasury-tax   { font-size: 8px; color: #7f8c8d; margin-top: 4px; }
+
+        .guild-grid { display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+
+        .section-title { font-size: 10px; color: #f39c12; letter-spacing: 2px; margin-bottom: 12px; border-bottom: 1px solid #2c3e50; padding-bottom: 8px; }
+
+        /* Ranking */
+        .ranking-wrapper {
+            background: #111c27; border: 2px solid #2c3e50;
+            border-radius: 4px; overflow: hidden;
+        }
+        .ranking-table { width: 100%; border-collapse: collapse; }
+        .ranking-table thead { background: #0d1520; }
+        .ranking-table th {
+            font-size: 9px; color: #7f8c8d; text-align: left;
+            padding: 10px 14px; letter-spacing: 1px;
+            border-bottom: 2px solid #2c3e50;
+        }
+        .ranking-table td {
+            font-size: 11px; color: #ecf0f1;
+            padding: 10px 14px; border-bottom: 1px solid #1e2f3f;
+        }
+        .ranking-table tr:last-child td { border-bottom: none; }
+        .ranking-table tbody tr:nth-child(odd)  { background: rgba(255,255,255,0.02); }
+        .ranking-table tbody tr:hover           { background: rgba(243,156,18,0.06); }
+        .rank-pos { color: #f39c12; font-size: 13px; font-weight: bold; width: 36px; text-align: center; }
+        .rank-pos-1 { color: #f1c40f; font-size: 15px; }
+        .rank-pos-2 { color: #bdc3c7; }
+        .rank-pos-3 { color: #e67e22; }
+        .rank-avatar { width: 32px; height: 32px; border-radius: 3px; object-fit: cover; vertical-align: middle; margin-right: 8px; border: 1px solid #2c3e50; }
+        .rank-name { display: flex; align-items: center; gap: 2px; }
+        .rank-name-text { white-space: nowrap; }
+        .rank-badge-cursed { font-size: 12px; margin-left: 4px; }
+        .rank-leader-crown { font-size: 12px; margin-left: 4px; }
+        .rank-xp-cell { min-width: 110px; }
+        .rank-xp-num  { font-size: 10px; color: #a679d6; font-variant-numeric: tabular-nums; margin-bottom: 4px; }
+        .rank-xp-bar-track { background: #1e2f3f; height: 5px; border-radius: 2px; overflow: hidden; }
+        .rank-xp-bar-fill  { height: 100%; background: linear-gradient(90deg, #7d3c98, #a679d6); border-radius: 2px; transition: width 0.4s ease; }
+        .rank-xp-next { font-size: 8px; color: #5d6d7e; margin-top: 2px; }
+        .rank-level { color: #5dade2; font-variant-numeric: tabular-nums; }
+        .rank-quests{ color: #2ecc71; font-variant-numeric: tabular-nums; }
+        .rank-gold  { color: #f1c40f; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+        /* Painel do Líder */
+        .leader-panel {
+            background: #1a2634; border: 2px solid #2c3e50;
+            border-radius: 4px; padding: 16px;
+        }
+        .leader-info { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #2c3e50; }
+        .leader-avatar { width: 40px; height: 40px; flex-shrink: 0; border-radius: 2px; object-fit: cover; border: 2px solid #f39c12; }
+        .leader-text   { display: flex; flex-direction: column; gap: 4px; }
+        .leader-label  { font-size: 8px; color: #7f8c8d; letter-spacing: 1px; line-height: 1; }
+        .leader-name   { font-size: 11px; color: #f39c12; line-height: 1; }
+
+        .spend-form { display: flex; flex-direction: column; gap: 10px; }
+        .spend-form label { font-size: 8px; color: #7f8c8d; letter-spacing: 1px; display: block; margin-bottom: 4px; }
+        .spend-form select,
+        .spend-form input { width: 100%; box-sizing: border-box; }
+        .spend-btn { background: #27ae60; }
+        .spend-btn:disabled { background: #7f8c8d; cursor: not-allowed; }
+
+        .locked-msg { font-size: 9px; color: #7f8c8d; text-align: center; padding: 20px 0; }
+
+        @media (max-width: 640px) {
+            .guild-grid { grid-template-columns: 1fr; }
+            .guild-header { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-wrapper">
+        <div class="top-bar">
+            <div class="player-info">
+                <img src="assets/imgs/caneca_pixel.jpg" alt="Avatar" class="avatar" id="playerAvatar" style="object-fit:cover;">
+                <div class="stats">
+                    <h1 id="playerName" data-cy="player-name">Aventureiro</h1>
+                    <div id="levelDisplay" style="font-weight:bold;color:#000;font-size:14px;">Lvl: 1</div>
+                    <div class="xp-container"><div class="xp-bar" id="xpBar"></div></div>
+                    <div class="coin-display"><span class="coin-icon">💰</span> <span id="coinCount">0</span> Gold</div>
+                </div>
+            </div>
+            <div class="actions">
+                <a href="index.html"  class="btn-pixel" data-cy="link-board">⚔ Board</a>
+                <a href="loja.html"   class="btn-pixel shop-btn" data-cy="link-loja">Ir para Loja</a>
+                <button class="btn-pixel logout-btn" data-cy="btn-logout" onclick="logout()">Sair</button>
+            </div>
+        </div>
+
+        <div class="guild-wrapper">
+            <!-- Cabeçalho da Guilda -->
+            <div class="guild-header" id="guildHeader">
+                <div class="guild-icon" id="guildIcon">⚔️</div>
+                <div class="guild-info">
+                    <div class="guild-name"  id="guildName">GUILDA</div>
+                    <div class="guild-faction" id="guildFaction">FACÇÃO</div>
+                </div>
+                <div class="treasury-box">
+                    <div class="treasury-label">TESOURO COMUM</div>
+                    <div class="treasury-value">💰 <span id="treasuryBalance">0</span></div>
+                    <div class="treasury-tax" id="treasuryTax">10% de cada missão</div>
+                </div>
+            </div>
+
+            <div class="guild-grid">
+                <!-- Ranking de membros -->
+                <div>
+                    <div class="section-title">RANKING DE MEMBROS</div>
+                    <div class="ranking-wrapper">
+                        <table class="ranking-table" data-cy="ranking-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>HERÓI</th>
+                                    <th>NÍV</th>
+                                    <th>XP</th>
+                                    <th>MISSÕES</th>
+                                    <th>GOLD</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rankingBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Painel do Líder -->
+                <div class="leader-panel" data-cy="leader-panel">
+                    <div class="section-title">LÍDER DA GUILDA</div>
+                    <div class="leader-info">
+                        <img src="assets/imgs/caneca_pixel.jpg" class="leader-avatar" id="leaderAvatar" alt="">
+                        <div class="leader-text">
+                            <div class="leader-label">COMANDANTE</div>
+                            <div class="leader-name" id="leaderName">—</div>
+                        </div>
+                    </div>
+
+                    <div id="spendSection">
+                        <div class="section-title">DISTRIBUIR TESOURO</div>
+                        <div class="spend-form" id="spendForm" data-cy="spend-form">
+                            <div>
+                                <label>AVENTUREIRO</label>
+                                <select id="spendTarget" class="pixel-input" data-cy="select-spend-target"></select>
+                            </div>
+                            <div>
+                                <label>QUANTIDADE (GOLD)</label>
+                                <input type="number" id="spendAmount" class="pixel-input" min="1" placeholder="Ex: 50" data-cy="input-spend-amount">
+                            </div>
+                            <button class="btn-pixel spend-btn" id="spendBtn" onclick="spendTreasury()" data-cy="btn-spend-treasury">
+                                💰 ENVIAR GOLD
+                            </button>
+                        </div>
+                        <div class="locked-msg" id="lockedMsg" style="display:none;">
+                            Apenas o líder da guilda pode distribuir o tesouro.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" data-cy="toast-container"></div>
+
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/guild.js"></script>
+</body>
+</html>

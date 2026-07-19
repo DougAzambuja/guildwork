@@ -7,7 +7,7 @@ if (!token) {
     window.location.href = 'login.html';
 }
 
-const MAX_XP = 10000;
+function xpParaProximoNivel(level) { return 200 * (level + 1) + 300; }
 
 let currentCoins   = 0;
 let playerData     = {};
@@ -60,7 +60,8 @@ function renderPlayerProfile() {
     if (!card) return;
 
     const { nome, avatar_url, level, xp, coins, faction, quests_completed } = playerData;
-    const xpPct = Math.min(100, Math.round((xp / MAX_XP) * 100));
+    const xpMax = xpParaProximoNivel(level);
+    const xpPct = Math.min(100, Math.round((xp / xpMax) * 100));
 
     const GUILD_ICONS = { Produto: '📦', Suporte: '🎧', 'Customer Service': '📣' };
     const guildIcon   = GUILD_ICONS[faction] || '🏰';
@@ -78,7 +79,7 @@ function renderPlayerProfile() {
         <div class="profile-xp-section">
             <div class="profile-xp-label">
                 <span>XP</span>
-                <span>${xp.toLocaleString('pt-BR')} / ${MAX_XP.toLocaleString('pt-BR')}</span>
+                <span>${xp.toLocaleString('pt-BR')} / ${xpMax.toLocaleString('pt-BR')}</span>
             </div>
             <div class="profile-xp-track">
                 <div class="profile-xp-fill" style="width: ${xpPct}%"></div>

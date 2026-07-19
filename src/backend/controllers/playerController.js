@@ -2,7 +2,9 @@ const User                = require('../models/user');
 const LootItem            = require('../models/lootItem');
 const notificationService = require('../services/notificationService');
 
-const MAX_XP = 10000;
+function xpParaProximoNivel(level) {
+    return 200 * (level + 1) + 300;
+}
 
 // GET /api/players/profile — retorna os dados do jogador logado
 exports.getProfile = async (req, res) => {
@@ -42,9 +44,8 @@ exports.updateGamification = async (req, res) => {
         const levelBefore = user.level || 1;
         user.quests_completed = (user.quests_completed || 0) + 1;
 
-        // Lógica de Level Up
-        if (user.xp >= MAX_XP) {
-            user.xp -= MAX_XP;
+        while (user.xp >= xpParaProximoNivel(user.level)) {
+            user.xp -= xpParaProximoNivel(user.level);
             user.level += 1;
         }
 

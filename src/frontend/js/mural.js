@@ -10,8 +10,11 @@ if (!token || !localStorage.getItem('guild_role')) {
 // ==========================================
 // 1. VARIÁVEIS DE ESTADO
 // ==========================================
-const maxXP    = 10000;
 const WIP_LIMIT = 3;
+
+function xpParaProximoNivel(level) {
+    return 200 * (level + 1) + 300;
+}
 
 const CURSE_CONFIG = {
     sla_breach: {
@@ -621,7 +624,10 @@ async function finishQuest(questId, questType) {
             if (data.leveledUp) {
                 showLevelUpAnimation(data.updatedState.level);
             } else {
-                showToast(`Quest concluída! +${data.xpGained} XP +${data.coinsGained} 💰`);
+                const treasuryMsg = data.treasuryContribution > 0
+                    ? ` (+${data.treasuryContribution} ao tesouro 🏰)`
+                    : '';
+                showToast(`Quest concluída! +${data.xpGained} XP +${data.coinsGained} 💰${treasuryMsg}`);
             }
 
             if (wasCurseType && !playerData.curseType) {
@@ -735,7 +741,8 @@ function formatSlaVerbose(seconds) {
 // 8. ATUALIZAÇÃO VISUAL (UI)
 // ==========================================
 function updateUI() {
-    const xpPct = Math.min((playerData.xp / maxXP) * 100, 100);
+    const xpMax = xpParaProximoNivel(playerData.level);
+    const xpPct = Math.min((playerData.xp / xpMax) * 100, 100);
 
     const xpBar = document.getElementById('xpBar');
     if (xpBar) xpBar.style.width = xpPct + '%';
@@ -786,8 +793,9 @@ function updateSidebar() {
     });
 
     // — Próximo Nível —
-    const xpToLevel    = Math.max(0, maxXP - playerData.xp);
-    const xpPct        = Math.min((playerData.xp / maxXP) * 100, 100);
+    const _xpMax    = xpParaProximoNivel(playerData.level);
+    const xpToLevel = Math.max(0, _xpMax - playerData.xp);
+    const xpPct     = Math.min((playerData.xp / _xpMax) * 100, 100);
     const xpToLevelBar = document.getElementById('xpToLevelBar');
     const xpToLevelTxt = document.getElementById('xpToLevelText');
     if (xpToLevelBar) xpToLevelBar.style.width = xpPct + '%';

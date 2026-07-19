@@ -38,6 +38,7 @@ app.use('/api/sprints', require('./routes/sprint'));
 app.use('/api/admin',         require('./routes/admin'));
 app.use('/api/metrics',       require('./routes/metrics'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/guild',         require('./routes/guild'));
 
 // ==========================================
 // JOB DE BACKGROUND — SLA e alertas admin

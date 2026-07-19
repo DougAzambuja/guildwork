@@ -1,10 +1,16 @@
 const Quest               = require('../models/quest');
 const QuestCompletion     = require('../models/questCompletion');
 const User                = require('../models/user');
+const Guild               = require('../models/guild');
 const notificationService = require('../services/notificationService');
 
-const MAX_XP   = 10000;
 const WIP_LIMIT = 3;
+
+// XP necessário para avançar do nível N para N+1
+// Progressão linear crescente: early levels são rápidos, late game desacelera gradualmente
+function xpParaProximoNivel(level) {
+    return 200 * (level + 1) + 300;
+}
 
 // GET /api/quests — Retorna quests da facção do jogador (+ quests atribuídas a ele de outras facções)
 exports.getQuests = async (req, res) => {
@@ -168,8 +174,8 @@ exports.completeQuest = async (req, res) => {
         let newLevel = user.level  || 1;
         let leveledUp = false;
 
-        if (newXp >= MAX_XP) {
-            newXp -= MAX_XP;
+        while (newXp >= xpParaProximoNivel(newLevel)) {
+            newXp -= xpParaProximoNivel(newLevel);
             newLevel += 1;
             leveledUp = true;
         }
@@ -191,6 +197,14 @@ exports.completeQuest = async (req, res) => {
         quest.comments.push({ user_id: user._id, text: `${user.nome || user.username || 'Aventureiro'} concluiu a missão`, type: 'activity' });
         await quest.save();
 
+        // Contribuição para o tesouro da guilda (não deduz do jogador — bonus da guilda)
+        const guild = await Guild.findOne({ faction_key: user.faction });
+        let treasuryContribution = 0;
+        if (guild) {
+            treasuryContribution = Math.floor(coinsGained * guild.tax_rate);
+            await Guild.findByIdAndUpdate(guild._id, { $inc: { treasury_balance: treasuryContribution } });
+        }
+
         if (leveledUp) {
             notificationService.notifyLevelUp(user._id, newLevel).catch(() => {});
         }
@@ -202,13 +216,15 @@ exports.completeQuest = async (req, res) => {
             coinsGained,
             leveledUp,
             newCurseApplied,
+            treasuryContribution,
             updatedState: {
                 xp:              newXp,
                 coins:           newCoins,
                 level:           newLevel,
                 questsCompleted: newQuestsCompleted,
                 isCursed:        user.is_cursed,
-                curseType:       user.curse_type
+                curseType:       user.curse_type,
+                xpNextLevel:     xpParaProximoNivel(newLevel)
             }
         });
 
