@@ -100,9 +100,10 @@ function renderUsersPage() {
     const GUILD_ICONS = { Produto: '📦', Suporte: '🎧', 'Customer Service': '📣' };
 
     tbody.innerHTML = slice.map(p => {
+        const crownMark   = p.is_guild_leader ? ' 👑' : '';
         const guildaLabel = p.role === 'admin'
             ? '🏰 Mestre'
-            : `${GUILD_ICONS[p.faction] || '🏰'} ${p.faction || '—'}`;
+            : `${GUILD_ICONS[p.faction] || '🏰'} ${p.faction || '—'}${crownMark}`;
 
         return `
             <tr>
