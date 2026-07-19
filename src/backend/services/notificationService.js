@@ -1,13 +1,17 @@
 const Notification = require('../models/notification');
+const User         = require('../models/user');
 
 // Marcos de conquista por quests concluídas
 const ACHIEVEMENTS = [
-    { at: 1,  title: '🎖️ Aventureiro Estreante', message: 'Você concluiu sua primeira missão na Guilda!' },
-    { at: 5,  title: '⚔️ Guerreiro Dedicado',    message: '5 missões concluídas! Sua lenda começa a crescer.' },
-    { at: 10, title: '🛡️ Veterano da Guilda',    message: '10 missões! Você é um pilar desta guilda.' },
-    { at: 25, title: '👑 Herói Lendário',         message: '25 missões! Seu nome é lembrado em todas as tavernas.' },
-    { at: 50, title: '🌟 Mestre das Missões',     message: '50 missões! A guilda nunca viu tamanha dedicação.' }
+    { key: 'first_quest', at: 1,  title: '🎖️ Aventureiro Estreante', message: 'Você concluiu sua primeira missão na Guilda!' },
+    { key: 'quests_5',   at: 5,  title: '⚔️ Guerreiro Dedicado',    message: '5 missões concluídas! Sua lenda começa a crescer.' },
+    { key: 'quests_10',  at: 10, title: '🛡️ Veterano da Guilda',    message: '10 missões! Você é um pilar desta guilda.' },
+    { key: 'quests_25',  at: 25, title: '👑 Herói Lendário',         message: '25 missões! Seu nome é lembrado em todas as tavernas.' },
+    { key: 'quests_50',  at: 50, title: '🌟 Mestre das Missões',     message: '50 missões! A guilda nunca viu tamanha dedicação.' }
 ];
+
+// Exporta a lista para o frontend poder renderizar conquistas bloqueadas
+const ALL_ACHIEVEMENTS = ACHIEVEMENTS;
 
 // ==========================================
 // PRIMITIVA — cria qualquer notificação
@@ -52,6 +56,16 @@ async function notifyLevelUp(userId, newLevel) {
 async function checkAndNotifyAchievement(userId, questsCompleted) {
     const milestone = ACHIEVEMENTS.find(a => a.at === questsCompleted);
     if (!milestone) return;
+
+    // Persistir conquista no User (se ainda não foi desbloqueada)
+    const user = await User.findById(userId).select('achievements');
+    const alreadyUnlocked = user?.achievements?.some(a => a.key === milestone.key);
+    if (!alreadyUnlocked) {
+        await User.findByIdAndUpdate(userId, {
+            $push: { achievements: { key: milestone.key, title: milestone.title } }
+        });
+    }
+
     await create(
         userId,
         'achievement',
@@ -113,5 +127,6 @@ module.exports = {
     notifyLevelUp,
     checkAndNotifyAchievement,
     notifySlaWarning,
-    notifyAdminAlert
+    notifyAdminAlert,
+    ALL_ACHIEVEMENTS
 };

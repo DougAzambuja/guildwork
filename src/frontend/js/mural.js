@@ -52,8 +52,9 @@ let playerData = {
     curseType:   null,
     name:        'Aventureiro',
     avatar:      'assets/imgs/caneca_pixel.jpg',
-    activeBuff:  null,
-    csatStreak:  0
+    activeBuff:   null,
+    csatStreak:   0,
+    achievements: []
 };
 
 let currentBoardStats = { todo: 0, inProgress: 0, done: 0, myWip: 0, slaAlerts: 0 };
@@ -124,7 +125,8 @@ async function fetchPlayerState() {
                     expiresAt: data.buff_expires_at       || null,
                     quests:    data.buff_quests_remaining || null
                 } : null,
-                csatStreak: data.csat_streak || 0
+                csatStreak:   data.csat_streak    || 0,
+                achievements: data.achievements   || []
             };
 
             updateUI();
@@ -985,6 +987,45 @@ function showLevelUpAnimation(level) {
 // ==========================================
 let tempSelectedAvatar = '';
 
+const ALL_ACHIEVEMENTS = [
+    { key: 'first_quest', title: '🎖️ Aventureiro Estreante', desc: '1 missão concluída' },
+    { key: 'quests_5',   title: '⚔️ Guerreiro Dedicado',    desc: '5 missões concluídas' },
+    { key: 'quests_10',  title: '🛡️ Veterano da Guilda',    desc: '10 missões concluídas' },
+    { key: 'quests_25',  title: '👑 Herói Lendário',         desc: '25 missões concluídas' },
+    { key: 'quests_50',  title: '🌟 Mestre das Missões',     desc: '50 missões concluídas' }
+];
+
+function renderAchievementBadges() {
+    const container = document.getElementById('achievementsBadges');
+    if (!container) return;
+
+    const unlockedKeys = new Set((playerData.achievements || []).map(a => a.key));
+
+    container.innerHTML = ALL_ACHIEVEMENTS.map(a => {
+        const unlocked = unlockedKeys.has(a.key);
+        const stored   = (playerData.achievements || []).find(u => u.key === a.key);
+        const dateStr  = stored?.unlocked_at
+            ? new Date(stored.unlocked_at).toLocaleDateString('pt-BR')
+            : '';
+
+        return `
+            <div style="display:flex; align-items:center; gap:12px; padding:8px 10px;
+                        background:${unlocked ? 'rgba(243,156,18,0.08)' : 'rgba(255,255,255,0.02)'};
+                        border:1px solid ${unlocked ? '#f39c12' : '#2c3e50'};
+                        border-radius:3px; opacity:${unlocked ? '1' : '0.45'};">
+                <span style="font-size:20px; line-height:1; flex-shrink:0;">${unlocked ? a.title.split(' ')[0] : '🔒'}</span>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:9px; color:${unlocked ? '#f1c40f' : '#7f8c8d'}; font-weight:bold; letter-spacing:1px;">
+                        ${a.title.split(' ').slice(1).join(' ')}
+                    </div>
+                    <div style="font-size:8px; color:#7f8c8d; margin-top:2px;">${unlocked ? (dateStr ? `Desbloqueado em ${dateStr}` : 'Desbloqueado') : a.desc}</div>
+                </div>
+                ${unlocked ? '<span style="font-size:10px;color:#27ae60;">✓</span>' : ''}
+            </div>
+        `;
+    }).join('');
+}
+
 window.openProfileModal = () => {
     document.getElementById('profileModal').style.display = 'flex';
     document.getElementById('editProfileName').value = playerData.name;
@@ -994,6 +1035,7 @@ window.openProfileModal = () => {
         el.classList.remove('selected');
         if (el.getAttribute('src') === playerData.avatar) el.classList.add('selected');
     });
+    renderAchievementBadges();
 };
 
 window.closeProfileModal = () => {

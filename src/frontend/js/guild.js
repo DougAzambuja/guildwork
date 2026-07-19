@@ -21,15 +21,6 @@ function xpCellHtml(xp, level) {
     `;
 }
 
-function showToast(msg, type = 'success') {
-    const c = document.getElementById('toast-container');
-    if (!c) return;
-    const t = document.createElement('div');
-    t.className = `toast ${type}`;
-    t.textContent = msg;
-    c.appendChild(t);
-    setTimeout(() => t.remove(), 3500);
-}
 
 let guildData   = null;
 let membersData = [];
