@@ -50,86 +50,107 @@
                 position: absolute;
                 top: calc(100% + 8px);
                 right: 0;
-                width: 300px;
-                background: #1a252f;
-                border: 2px solid #2c3e50;
+                width: 380px;
+                background: #1e2d3d;
+                border: 2px solid #3d5166;
                 z-index: 9998;
-                max-height: 400px;
+                max-height: 420px;
                 display: flex;
                 flex-direction: column;
-                box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+                box-shadow: 0 8px 24px rgba(0,0,0,0.7);
             }
             .notif-header {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding: 8px 12px;
-                border-bottom: 1px solid #2c3e50;
-                background: #0d1b2a;
+                padding: 10px 12px;
+                border-bottom: 2px solid #2c3e50;
+                background: #0d1520;
                 flex-shrink: 0;
             }
             .notif-header-title {
-                font-size: 7px;
-                color: #7f8c8d;
-                letter-spacing: 1px;
+                font-size: 11px;
+                color: #a0aab4;
+                letter-spacing: 2px;
                 font-family: 'Courier New', monospace;
+                font-weight: bold;
             }
             .notif-read-all-btn {
-                background: none;
-                border: 1px solid #2980b9;
-                color: #3498db;
-                font-size: 7px;
+                background: #1a4a6b;
+                border: 1px solid #5dade2;
+                color: #ecf0f1;
+                font-size: 10px;
                 cursor: pointer;
                 font-family: 'Courier New', monospace;
-                padding: 3px 7px;
+                padding: 5px 10px;
                 letter-spacing: 0.5px;
+                border-radius: 2px;
+                font-weight: bold;
             }
-            .notif-read-all-btn:hover { background: #2980b9; color: #fff; }
+            .notif-read-all-btn:hover { background: #2980b9; border-color: #85c1e9; color: #fff; }
             .notif-list {
                 overflow-y: auto;
                 flex: 1;
             }
             .notif-item {
                 padding: 10px 12px;
-                border-bottom: 1px solid #0d1b2a;
+                border-bottom: 1px solid #1a2a38;
                 cursor: pointer;
                 transition: background 0.15s;
                 border-left: 3px solid transparent;
             }
-            .notif-item:hover { background: #0d1b2a; }
-            .notif-item.unread { border-left-color: #3498db; }
-            .notif-item.unread .notif-item-title { color: #ecf0f1; }
-            .notif-item-title {
-                font-size: 9px;
-                color: #bdc3c7;
-                margin-bottom: 3px;
-                font-family: 'Courier New', monospace;
+            .notif-item:hover { background: #243447; }
+            .notif-item.unread {
+                border-left-color: #3498db;
+                background: rgba(52, 152, 219, 0.07);
             }
+            .notif-item.unread:hover { background: rgba(52, 152, 219, 0.13); }
+            .notif-item-title {
+                font-size: 13px;
+                color: #c8d0d8;
+                margin-bottom: 5px;
+                font-family: 'Courier New', monospace;
+                font-weight: bold;
+                line-height: 1.3;
+            }
+            .notif-item.unread .notif-item-title { color: #ecf0f1; }
             .notif-item-msg {
-                font-size: 8px;
-                color: #7f8c8d;
-                line-height: 1.4;
+                font-size: 11px;
+                color: #adb6c0;
+                line-height: 1.5;
                 font-family: 'Courier New', monospace;
             }
             .notif-item-time {
-                font-size: 7px;
-                color: #4a6278;
-                margin-top: 4px;
+                font-size: 10px;
+                color: #6d8ba0;
+                margin-top: 5px;
                 font-family: 'Courier New', monospace;
             }
             .notif-empty {
-                font-size: 8px;
-                color: #7f8c8d;
+                font-size: 10px;
+                color: #a0aab4;
                 text-align: center;
-                padding: 24px 16px;
+                padding: 28px 16px;
                 font-family: 'Courier New', monospace;
+                line-height: 1.8;
             }
+            /* Acento de cor por tipo */
+            .notif-type-level_up        { border-left-color: #f1c40f !important; }
+            .notif-type-level_up        .notif-item-title { color: #f1c40f; }
+            .notif-type-achievement     { border-left-color: #e67e22 !important; }
+            .notif-type-achievement     .notif-item-title { color: #e67e22; }
+            .notif-type-sla_warning     { border-left-color: #e74c3c !important; }
+            .notif-type-sla_warning     .notif-item-title { color: #e74c3c; }
+            .notif-type-quest_assigned  { border-left-color: #3498db !important; }
+            .notif-type-quest_assigned  .notif-item-title { color: #5dade2; }
+            .notif-type-admin_alert     { border-left-color: #9b59b6 !important; }
+            .notif-type-admin_alert     .notif-item-title { color: #bb8fce; }
             /* Ícone por tipo */
-            .notif-type-quest_assigned  .notif-item-title::before { content: '⚔️ '; }
-            .notif-type-level_up        .notif-item-title::before { content: '🎉 '; }
-            .notif-type-sla_warning     .notif-item-title::before { content: '⏰ '; }
-            .notif-type-achievement     .notif-item-title::before { content: '🏆 '; }
-            .notif-type-admin_alert     .notif-item-title::before { content: '🚨 '; }
+            .notif-type-quest_assigned  .notif-item-title::before { content: '⚔️  '; }
+            .notif-type-level_up        .notif-item-title::before { content: '🎉  '; }
+            .notif-type-sla_warning     .notif-item-title::before { content: '⏰  '; }
+            .notif-type-achievement     .notif-item-title::before { content: '🏆  '; }
+            .notif-type-admin_alert     .notif-item-title::before { content: '🚨  '; }
         `;
         document.head.appendChild(style);
     }
