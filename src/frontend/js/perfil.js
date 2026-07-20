@@ -1,23 +1,6 @@
 const token = localStorage.getItem('guild_token');
 if (!token) window.location.href = 'login.html';
 
-function xpParaProximoNivel(level) { return 200 * (level + 1) + 300; }
-
-const ALL_ACHIEVEMENTS = [
-    { key: 'first_quest', title: '🎖️ Aventureiro Estreante', desc: '1 missão concluída'  },
-    { key: 'quests_5',   title: '⚔️ Guerreiro Dedicado',    desc: '5 missões concluídas' },
-    { key: 'quests_10',  title: '🛡️ Veterano da Guilda',    desc: '10 missões concluídas'},
-    { key: 'quests_25',  title: '👑 Herói Lendário',         desc: '25 missões concluídas'},
-    { key: 'quests_50',  title: '🌟 Mestre das Missões',     desc: '50 missões concluídas'},
-];
-
-const CURSE_LABELS = {
-    sla_breach: { icon: '💀', label: 'Maldição do Atraso',       color: '#e74c3c' },
-    abandoned:  { icon: '👻', label: 'Maldição do Abandono',     color: '#8e44ad' },
-    csat_low:   { icon: '💔', label: 'Maldição da Insatisfação', color: '#e67e22' },
-};
-
-const GUILD_ICONS = { Produto: '📦', Suporte: '🎧', 'Customer Service': '📣' };
 
 document.addEventListener('DOMContentLoaded', async () => {
     const id = window.location.hash.slice(1); // perfil.html#OBJECTID
@@ -59,8 +42,8 @@ function renderPerfil(p) {
 
     // Banner de maldição
     let curseBanner = '';
-    if (p.is_cursed && p.curse_type && CURSE_LABELS[p.curse_type]) {
-        const cfg = CURSE_LABELS[p.curse_type];
+    if (p.is_cursed && p.curse_type && CURSE_CONFIG[p.curse_type]) {
+        const cfg = CURSE_CONFIG[p.curse_type];
         curseBanner = `
             <div class="perfil-curse-banner" style="background:rgba(0,0,0,0.3);border:1px solid ${cfg.color};color:${cfg.color};margin:16px 20px 0;">
                 ${cfg.icon} ${cfg.label} ativa
@@ -70,15 +53,16 @@ function renderPerfil(p) {
 
     // Stats agregados
     const s = p.stats || {};
-    const streak    = p.delivery_streak || 0;
-    const cleanRate = s.clean_rate != null ? `${s.clean_rate}%` : '—';
-    const avgCsat   = s.avg_csat   != null ? `${s.avg_csat}★` : '—';
+    const streak   = p.delivery_streak || 0;
+    const lastStat = s.avg_csat != null
+        ? { icon: '⭐', value: `${s.avg_csat}★`, label: 'CSAT médio' }
+        : { icon: '🛡️', value: s.clean_rate != null ? `${s.clean_rate}%` : '—', label: 'Taxa limpa' };
 
     // Conquistas
     const achievementsHtml = ALL_ACHIEVEMENTS.map(a => {
-        const unlocked = unlockedKeys.has(a.key);
-        const icon     = a.title.split(' ')[0];
-        const name     = a.title.split(' ').slice(1).join(' ');
+        const unlocked      = unlockedKeys.has(a.key);
+        const [icon, ...rest] = a.title.split(' ');
+        const name          = rest.join(' ');
         return `
             <div class="achievement-badge ${unlocked ? 'unlocked' : 'locked'}" data-cy="badge-${a.key}">
                 <span class="achievement-icon">${unlocked ? icon : '🔒'}</span>
@@ -139,9 +123,9 @@ function renderPerfil(p) {
                 <span class="perfil-stat-label">Gold atual</span>
             </div>
             <div class="perfil-stat">
-                <span class="perfil-stat-icon">${s.avg_csat != null ? '⭐' : '🛡️'}</span>
-                <span class="perfil-stat-value">${s.avg_csat != null ? avgCsat : cleanRate}</span>
-                <span class="perfil-stat-label">${s.avg_csat != null ? 'CSAT médio' : 'Taxa limpa'}</span>
+                <span class="perfil-stat-icon">${lastStat.icon}</span>
+                <span class="perfil-stat-value">${lastStat.value}</span>
+                <span class="perfil-stat-label">${lastStat.label}</span>
             </div>
         </div>
 

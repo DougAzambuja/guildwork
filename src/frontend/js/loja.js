@@ -7,15 +7,6 @@ if (!token) {
     window.location.href = 'login.html';
 }
 
-function xpParaProximoNivel(level) { return 200 * (level + 1) + 300; }
-
-const ALL_ACHIEVEMENTS = [
-    { key: 'first_quest', title: '🎖️ Aventureiro Estreante', desc: '1 missão' },
-    { key: 'quests_5',   title: '⚔️ Guerreiro Dedicado',    desc: '5 missões' },
-    { key: 'quests_10',  title: '🛡️ Veterano da Guilda',    desc: '10 missões' },
-    { key: 'quests_25',  title: '👑 Herói Lendário',         desc: '25 missões' },
-    { key: 'quests_50',  title: '🌟 Mestre das Missões',     desc: '50 missões' },
-];
 
 function renderAchievementsBadgesHtml(achievements = []) {
     const unlockedKeys = new Set(achievements.map(a => a.key));
@@ -100,8 +91,7 @@ function renderPlayerProfile() {
     const xpMax = xpParaProximoNivel(level);
     const xpPct = Math.min(100, Math.round((xp / xpMax) * 100));
 
-    const GUILD_ICONS = { Produto: '📦', Suporte: '🎧', 'Customer Service': '📣' };
-    const guildIcon   = GUILD_ICONS[faction] || '🏰';
+    const guildIcon = GUILD_ICONS[faction] || '🏰';
 
     card.innerHTML = `
         <div class="profile-avatar-wrap">
