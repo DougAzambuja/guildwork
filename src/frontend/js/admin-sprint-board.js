@@ -3,11 +3,17 @@
 // ==========================================
 const token    = localStorage.getItem('guild_token');
 const params   = new URLSearchParams(window.location.search);
-const sprintId = params.get('id');
+// serve (npx serve) dropa query string no redirect de *.html → *.
+// Lemos do query param primeiro; sessionStorage é o fallback.
+const sprintId = params.get('id') || sessionStorage.getItem('admin_board_sprint_id') || null;
 
-let allQuests     = [];
-let allSprints    = [];
-let currentFilter = null;
+let allQuests      = [];
+let allSprints     = [];
+let allGuilds      = [];
+let sprintFactions = []; // Facções da sprint carregada — filtra as abas de guilda
+// Guarda contra sessionStorage com valor '' ou string 'null' de testes anteriores
+const _rawGuildId  = sessionStorage.getItem('admin_board_guild');
+let currentGuildId = (_rawGuildId && _rawGuildId !== 'null') ? _rawGuildId : null;
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!token || localStorage.getItem('guild_role') !== 'admin') {
@@ -20,13 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    const adminName = localStorage.getItem('guild_user') || 'Mestre da Guilda';
-    const nameEl    = document.getElementById('playerName');
-    if (nameEl) nameEl.textContent = adminName;
-
     showLoadingState();
-    // Carrega ambos em paralelo — sprint first, sprints list second
-    Promise.all([loadSprintBoard(), loadAllSprints()]);
+    // Carrega em paralelo: board da sprint, lista de sprints e lista de guildas
+    Promise.all([loadSprintBoard(), loadAllSprints(), loadAllGuilds()]);
 });
 
 function showLoadingState() {
@@ -60,12 +62,23 @@ const TYPE_LABELS   = { normal: 'Normal', urgent: '⚡ Urgente', support: '🎧 
 // ==========================================
 async function loadSprintBoard() {
     try {
-        const res = await fetch(`${API_URL}/sprints/${sprintId}`, {
+        const url = currentGuildId
+            ? `${API_URL}/sprints/${sprintId}?guild_id=${currentGuildId}`
+            : `${API_URL}/sprints/${sprintId}`;
+
+        const res = await fetch(url, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
+            // Se o guild_id em sessão apontava para uma guilda excluída, limpa e retenta
+            if (res.status === 404 && currentGuildId && err.message?.includes('Guilda')) {
+                currentGuildId = null;
+                sessionStorage.removeItem('admin_board_guild');
+                renderGuildTabs();
+                return loadSprintBoard();
+            }
             showToast(err.message || 'Sprint não encontrada.', 'error');
             showError('Sprint não encontrada ou sem acesso.');
             return;
@@ -78,10 +91,13 @@ async function loadSprintBoard() {
             return;
         }
 
-        allQuests = Array.isArray(data.quests) ? data.quests : [];
+        allQuests      = Array.isArray(data.quests) ? data.quests : [];
+        sprintFactions = Array.isArray(data.sprint.factions) ? data.sprint.factions : [];
 
         renderSprintHeader(data);
         renderKanban();
+        // Re-renderiza abas de guilda após conhecer as facções da sprint
+        renderGuildTabs();
 
         // Canvas precisa de layout pronto — usa rAF
         requestAnimationFrame(() => loadBurndown());
@@ -94,6 +110,9 @@ async function loadSprintBoard() {
 }
 
 function showError(msg) {
+    const titleEl = document.getElementById('sprintTitle');
+    if (titleEl) titleEl.textContent = 'Erro ao carregar';
+
     ['cards-todo', 'cards-in_progress', 'cards-done'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.innerHTML = `<div style="font-size:7px;color:#e74c3c;padding:10px;">${msg}</div>`;
@@ -155,14 +174,11 @@ function renderSprintHeader({ sprint, metrics }) {
 // 4. KANBAN
 // ==========================================
 function renderKanban() {
-    const filtered = currentFilter
-        ? allQuests.filter(q => q.faction === currentFilter)
-        : allQuests;
-
+    // allQuests já vem filtrado do servidor quando guild_id está ativo
     const groups = {
-        todo:        filtered.filter(q => q.status === 'todo'),
-        in_progress: filtered.filter(q => q.status === 'in_progress'),
-        done:        filtered.filter(q => q.status === 'done')
+        todo:        allQuests.filter(q => q.status === 'todo'),
+        in_progress: allQuests.filter(q => q.status === 'in_progress'),
+        done:        allQuests.filter(q => q.status === 'done')
     };
 
     for (const [status, quests] of Object.entries(groups)) {
@@ -185,41 +201,89 @@ function renderQuestCard(q) {
     const qId          = String(q._id);
     const assigneeName = q.assigned_to ? (q.assigned_to.nome || q.assigned_to.username || '—') : null;
     const factionIcon  = FACTION_ICONS[q.faction] || '🏰';
-    const typeLabel    = TYPE_LABELS[q.type]       || (q.type || 'normal');
+    const typeKey      = q.type || 'normal';
     const faction      = (q.faction || 'Produto').replace(/'/g, "\\'");
 
     return `
         <div class="quest-card" data-status="${q.status}" data-cy="quest-card" data-id="${qId}">
+            <span class="kanban-type-badge badge-${typeKey}" style="margin-bottom:5px;">${(TYPE_LABELS[typeKey] || typeKey).toUpperCase()}</span>
             <div class="quest-card-title">${q.title}</div>
             <div class="quest-card-meta">
                 <span class="quest-tag faction">${factionIcon} ${q.faction || 'Produto'}</span>
-                <span class="quest-tag">${typeLabel}</span>
                 <span class="quest-tag xp">+${q.xp_reward || 0} XP</span>
                 <span class="quest-tag gold">💰 ${q.coin_reward || 0}</span>
                 ${assigneeName ? `<span class="quest-tag assignee">👤 ${assigneeName}</span>` : ''}
             </div>
             <div class="quest-card-actions">
+                <button class="quest-action-btn detail" data-cy="btn-card-details"
+                    onclick="openBoardQuestDetail('${qId}')">👁 Detalhes</button>
                 <button class="quest-action-btn" data-cy="btn-card-transfer-sprint"
-                    onclick="openTransferSprint('${qId}')">🔀 Mover Sprint</button>
+                    onclick="openTransferSprint('${qId}')">🔀 Sprint</button>
                 <button class="quest-action-btn" data-cy="btn-card-transfer-faction"
                     onclick="openTransferFaction('${qId}', '${faction}')">🏰 Guilda</button>
                 <button class="quest-action-btn copy" data-cy="btn-card-copy-quest"
                     onclick="openCopyQuest('${qId}')">📋 Copiar</button>
                 <button class="quest-action-btn remove" data-cy="btn-card-remove-quest"
-                    onclick="openRemoveQuest('${qId}')">✖ Remover</button>
+                    onclick="openRemoveQuest('${qId}')">✖</button>
             </div>
         </div>
     `;
 }
 
 // ==========================================
-// 5. FILTRO DE FACÇÃO
+// 5. FILTRO DE GUILDA (server-side)
 // ==========================================
-window.setFactionFilter = (faction, btn) => {
-    currentFilter = faction;
+// GUILD_ICONS já está disponível globalmente via utils.js
+
+async function loadAllGuilds() {
+    try {
+        const res = await fetch(`${API_URL}/guild/all`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        allGuilds = await res.json();
+        renderGuildTabs();
+    } catch (err) {
+        console.error('[Board] Erro ao carregar guildas:', err);
+    }
+}
+
+function renderGuildTabs() {
+    const container = document.getElementById('guildFilters');
+    if (!container) return;
+
+    // Exibe somente as guildas associadas às facções da sprint
+    const visibleGuilds = sprintFactions.length
+        ? allGuilds.filter(g => sprintFactions.includes(g.faction_key))
+        : allGuilds;
+
+    // Omite "Todas" quando só há uma guilda — não há nada para alternar
+    const showAll = visibleGuilds.length > 1;
+    const allBtn  = showAll
+        ? `<button class="faction-filter-btn${!currentGuildId ? ' active' : ''}" data-cy="filter-all-guilds" onclick="setGuildFilter(null, this)">🏰 Todas</button>`
+        : '';
+
+    const guildBtns = visibleGuilds.map(g => {
+        const icon     = GUILD_ICONS[g.faction_key] || '🏰';
+        const isActive = currentGuildId === String(g._id);
+        return `<button class="faction-filter-btn${isActive ? ' active' : ''}"
+                    data-cy="filter-guild-${g._id}"
+                    data-guild-id="${g._id}"
+                    onclick="setGuildFilter('${g._id}', this)">
+                    ${icon} ${g.name}
+                </button>`;
+    }).join('');
+
+    container.innerHTML = allBtn + guildBtns;
+}
+
+window.setGuildFilter = async (guildId, btn) => {
+    currentGuildId = guildId || null;
+    sessionStorage.setItem('admin_board_guild', currentGuildId || '');
     document.querySelectorAll('.faction-filter-btn').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
-    renderKanban();
+    showLoadingState();
+    await loadSprintBoard();
 };
 
 // ==========================================
@@ -256,22 +320,24 @@ function renderBurndownChart({ labels, ideal_line, actual_line, total_quests }) 
     const cW  = W - PAD.left - PAD.right;
     const cH  = H - PAD.top  - PAD.bottom;
 
-    const maxY  = Math.max(total_quests || 1, 1);
-    const pts   = (labels || []).length;
+    const maxY      = Math.max(total_quests || 1, 1);
+    const pts       = (labels || []).length;
+    // Evita labels duplicadas no eixo Y quando total de quests é pequeno
+    const gridLines = Math.min(5, maxY);
 
     ctx.clearRect(0, 0, W, H);
 
     // Grid
     ctx.strokeStyle = '#1e2d3d';
     ctx.lineWidth   = 1;
-    for (let i = 0; i <= 5; i++) {
-        const y = PAD.top + (cH / 5) * i;
+    for (let i = 0; i <= gridLines; i++) {
+        const y = PAD.top + (cH / gridLines) * i;
         ctx.beginPath();
         ctx.moveTo(PAD.left, y);
         ctx.lineTo(PAD.left + cW, y);
         ctx.stroke();
 
-        const val = Math.round(maxY - (maxY / 5) * i);
+        const val = Math.round(maxY - (maxY / gridLines) * i);
         ctx.fillStyle  = '#7f8c8d';
         ctx.font       = '9px monospace';
         ctx.textAlign  = 'right';
@@ -311,33 +377,39 @@ function renderBurndownChart({ labels, ideal_line, actual_line, total_quests }) 
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Linha real (vermelha, preenchida)
-    const actual = actual_line || [];
-    if (actual.length > 0) {
+    // Linha real (vermelha, preenchida) — dias futuros chegam como null, são ignorados
+    const actual   = actual_line || [];
+    const lastReal = actual.reduce((last, v, i) => v !== null ? i : last, -1);
+    if (lastReal >= 0) {
         ctx.strokeStyle = '#e74c3c';
         ctx.lineWidth   = 2;
         ctx.beginPath();
+        let started = false;
         actual.forEach((v, i) => {
-            if (i === 0) ctx.moveTo(toX(i), toY(v));
-            else         ctx.lineTo(toX(i), toY(v));
+            if (v === null) return;
+            if (!started) { ctx.moveTo(toX(i), toY(v)); started = true; }
+            else          { ctx.lineTo(toX(i), toY(v)); }
         });
         ctx.stroke();
 
-        // Preenchimento sob a linha real
+        // Preenchimento sob a linha real (até o último dia com dado real)
         ctx.beginPath();
+        started = false;
         actual.forEach((v, i) => {
-            if (i === 0) ctx.moveTo(toX(i), toY(v));
-            else         ctx.lineTo(toX(i), toY(v));
+            if (v === null) return;
+            if (!started) { ctx.moveTo(toX(i), toY(v)); started = true; }
+            else          { ctx.lineTo(toX(i), toY(v)); }
         });
-        ctx.lineTo(toX(actual.length - 1), PAD.top + cH);
+        ctx.lineTo(toX(lastReal), PAD.top + cH);
         ctx.lineTo(toX(0), PAD.top + cH);
         ctx.closePath();
         ctx.fillStyle = 'rgba(231,76,60,0.10)';
         ctx.fill();
 
-        // Pontos na linha real
+        // Pontos na linha real (somente dias com valor não-null)
         ctx.fillStyle = '#e74c3c';
         actual.forEach((v, i) => {
+            if (v === null) return;
             ctx.beginPath();
             ctx.arc(toX(i), toY(v), 3, 0, Math.PI * 2);
             ctx.fill();
@@ -539,3 +611,269 @@ async function loadAllSprints() {
 window.addEventListener('resize', () => {
     if (allQuests.length >= 0) requestAnimationFrame(() => loadBurndown());
 });
+
+// ==========================================
+// 12. MODAL — DETALHE DA QUEST
+// ==========================================
+let _boardDetailQuestId = null;
+
+const _B_STATUS = {
+    todo:        { label: 'A FAZER',   color: '#2980b9' },
+    in_progress: { label: 'PROGRESSO', color: '#e67e22' },
+    done:        { label: 'CONCLUÍDA', color: '#27ae60' }
+};
+
+function _bEsc(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function _bTimeAgo(iso) {
+    const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+    const h = Math.floor(m / 60);
+    const d = Math.floor(h / 24);
+    if (d > 0) return `${d}d atrás`;
+    if (h > 0) return `${h}h atrás`;
+    if (m > 0) return `${m}min atrás`;
+    return 'agora';
+}
+
+function _bFormatSla(seconds) {
+    if (seconds >= 3600) {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        return m > 0 ? `${h}h${m}m` : `${h}h`;
+    }
+    if (seconds >= 60) {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return s > 0 ? `${m}m${s}s` : `${m}m`;
+    }
+    return `${seconds}s`;
+}
+
+window.openBoardQuestDetail = async (questId) => {
+    _boardDetailQuestId = questId;
+    const modal = document.getElementById('modalBoardQuestDetail');
+    if (!modal) return;
+    modal.style.display = 'flex';
+
+    const commentsEl = document.getElementById('bqd-comments');
+    if (commentsEl) commentsEl.innerHTML = '<div style="color:#7f8c8d;font-size:8px;text-align:center;padding:10px;">Carregando...</div>';
+
+    try {
+        const res = await fetch(`${API_URL}/quests/${questId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) { showToast('Erro ao carregar quest.', 'error'); return; }
+        renderBoardQuestDetail(await res.json());
+    } catch (err) {
+        console.error(err);
+        showToast('Erro de conexão.', 'error');
+    }
+};
+
+window.closeBoardQuestDetail = () => {
+    const modal = document.getElementById('modalBoardQuestDetail');
+    if (modal) modal.style.display = 'none';
+    _boardDetailQuestId = null;
+};
+
+function renderBoardQuestDetail(quest) {
+    const typeBadge = document.getElementById('bqd-type-badge');
+    if (typeBadge) {
+        typeBadge.innerHTML = `<span class="status-badge" style="font-size:7px;padding:2px 8px;background:#2c3e50;">${(TYPE_LABELS[quest.type] || quest.type || 'normal').toUpperCase()}</span>`;
+    }
+
+    const titleEl = document.getElementById('bqd-title');
+    if (titleEl) titleEl.textContent = quest.title;
+
+    const st           = _B_STATUS[quest.status] || _B_STATUS.todo;
+    const assigneeName = quest.assigned_to ? (quest.assigned_to.nome || quest.assigned_to.username || '—') : '—';
+    const slaText      = quest.sla_seconds ? _bFormatSla(quest.sla_seconds) : '—';
+    const labelBadges  = (quest.labels || []).map(l =>
+        `<span style="background:#2c3e50;color:#bdc3c7;font-size:7px;padding:2px 6px;">${_bEsc(l)}</span>`
+    ).join('');
+
+    const metaEl = document.getElementById('bqd-meta');
+    if (metaEl) {
+        metaEl.innerHTML = `
+            <span class="status-badge" style="background:${st.color};font-size:7px;padding:2px 8px;">${st.label}</span>
+            <span style="font-size:7px;color:#3498db;border:1px solid #2980b9;padding:2px 6px;">${FACTION_ICONS[quest.faction] || '🏰'} ${_bEsc(quest.faction || 'Produto')}</span>
+            <span style="font-size:7px;color:#2ecc71;border:1px solid #27ae60;padding:2px 6px;">+${quest.xp_reward || 0} XP</span>
+            <span style="font-size:7px;color:#f1c40f;border:1px solid #d4ac0d;padding:2px 6px;">💰 ${quest.coin_reward || 0}</span>
+            <span style="font-size:7px;color:#bdc3c7;border:1px solid #2c3e50;padding:2px 6px;">⏱️ ${slaText}</span>
+            <span style="font-size:7px;color:#9b59b6;border:1px solid #8e44ad;padding:2px 6px;">👤 ${_bEsc(assigneeName)}</span>
+            ${labelBadges}
+        `;
+    }
+
+    const editTitle   = document.getElementById('bqd-edit-title');
+    const editXp      = document.getElementById('bqd-edit-xp');
+    const editGold    = document.getElementById('bqd-edit-gold');
+    const editSla     = document.getElementById('bqd-edit-sla');
+    const editFaction = document.getElementById('bqd-edit-faction');
+    const editLabels  = document.getElementById('bqd-edit-labels');
+    if (editTitle)   editTitle.value   = quest.title;
+    if (editXp)      editXp.value      = quest.xp_reward || 0;
+    if (editGold)    editGold.value    = quest.coin_reward || 0;
+    if (editSla)     editSla.value     = quest.sla_seconds || '';
+    if (editFaction) editFaction.value = quest.faction || 'Produto';
+    if (editLabels)  editLabels.value  = (quest.labels || []).join(', ');
+
+    const checklistSection = document.getElementById('bqd-checklist-section');
+    const items = quest.checklist || [];
+    if (items.length && checklistSection) {
+        checklistSection.style.display = 'block';
+        const done = items.filter(i => i.done).length;
+        const pct  = Math.round((done / items.length) * 100);
+
+        const progressEl = document.getElementById('bqd-checklist-progress');
+        if (progressEl) progressEl.innerHTML = `
+            <div style="display:flex;justify-content:space-between;font-size:7px;color:#7f8c8d;margin-bottom:4px;">
+                <span>${done}/${items.length} itens</span><span>${pct}%</span>
+            </div>
+            <div style="background:#0d1b2a;height:5px;border-radius:2px;overflow:hidden;">
+                <div style="height:100%;background:#27ae60;width:${pct}%;"></div>
+            </div>`;
+
+        const itemsEl = document.getElementById('bqd-checklist-items');
+        if (itemsEl) itemsEl.innerHTML = items.map(item => `
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #1a252f;">
+                <input type="checkbox" ${item.done ? 'checked' : ''}
+                       data-cy="checkbox-board-checklist-item"
+                       onchange="boardToggleChecklistItem('${quest._id}','${item._id}',this)"
+                       style="cursor:pointer;accent-color:#27ae60;flex-shrink:0;">
+                <span style="font-size:8px;color:${item.done ? '#7f8c8d' : '#ecf0f1'};text-decoration:${item.done ? 'line-through' : 'none'};">
+                    ${_bEsc(item.text)}
+                </span>
+            </div>`).join('');
+    } else if (checklistSection) {
+        checklistSection.style.display = 'none';
+    }
+
+    renderBoardQuestComments(quest.comments || []);
+}
+
+function renderBoardQuestComments(comments) {
+    const listEl = document.getElementById('bqd-comments');
+    if (!listEl) return;
+
+    const sorted = [...comments].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+    if (!sorted.length) {
+        listEl.innerHTML = '<div style="color:#7f8c8d;font-size:8px;text-align:center;padding:8px;">Sem atividade ainda.</div>';
+        return;
+    }
+
+    listEl.innerHTML = sorted.map(c => {
+        const isActivity = c.type === 'activity';
+        const author     = c.user_id ? _bEsc(c.user_id.nome || c.user_id.username) : 'Sistema';
+        const ago        = _bTimeAgo(c.created_at);
+
+        if (isActivity) {
+            return `<div style="display:flex;align-items:center;gap:6px;padding:4px 0;color:#7f8c8d;font-size:7px;">
+                <span style="color:#2980b9;flex-shrink:0;">●</span>
+                <span>${_bEsc(c.text)}</span>
+                <span style="margin-left:auto;white-space:nowrap;font-size:7px;">${ago}</span>
+            </div>`;
+        }
+
+        return `<div style="padding:6px 0;border-bottom:1px solid #1a252f;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+                <span style="font-size:7px;color:#f1c40f;font-weight:bold;">${author}</span>
+                <span style="font-size:7px;color:#7f8c8d;">${ago}</span>
+            </div>
+            <div style="font-size:8px;color:#ecf0f1;">${_bEsc(c.text)}</div>
+        </div>`;
+    }).join('');
+
+    listEl.scrollTop = listEl.scrollHeight;
+}
+
+window.boardToggleChecklistItem = async (questId, itemId, checkbox) => {
+    try {
+        const res = await fetch(`${API_URL}/quests/${questId}/checklist/${itemId}`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            checkbox.checked = !checkbox.checked;
+            showToast('Erro ao atualizar item.', 'error');
+            return;
+        }
+        const detailRes = await fetch(`${API_URL}/quests/${questId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (detailRes.ok) renderBoardQuestDetail(await detailRes.json());
+    } catch (err) {
+        checkbox.checked = !checkbox.checked;
+        console.error(err);
+    }
+};
+
+window.submitBoardComment = async () => {
+    if (!_boardDetailQuestId) return;
+    const input = document.getElementById('bqd-comment-input');
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+
+    try {
+        const res = await fetch(`${API_URL}/quests/${_boardDetailQuestId}/comments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ text })
+        });
+        if (res.ok) {
+            input.value = '';
+            const detailRes = await fetch(`${API_URL}/quests/${_boardDetailQuestId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (detailRes.ok) renderBoardQuestComments((await detailRes.json()).comments || []);
+        } else {
+            showToast('Erro ao enviar comentário.', 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('Erro de conexão.', 'error');
+    }
+};
+
+window.submitBoardQuestEdit = async () => {
+    if (!_boardDetailQuestId) return;
+
+    const title   = document.getElementById('bqd-edit-title')?.value.trim();
+    const xp      = parseInt(document.getElementById('bqd-edit-xp')?.value   || '0');
+    const gold    = parseInt(document.getElementById('bqd-edit-gold')?.value  || '0');
+    const slaRaw  = parseInt(document.getElementById('bqd-edit-sla')?.value   || '0');
+    const faction = document.getElementById('bqd-edit-faction')?.value;
+    const labels  = (document.getElementById('bqd-edit-labels')?.value || '')
+        .split(',').map(l => l.trim()).filter(Boolean);
+
+    if (!title) { showToast('Título não pode ser vazio.', 'error'); return; }
+
+    try {
+        const res = await fetch(`${API_URL}/quests/${_boardDetailQuestId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ title, xp_reward: xp, coin_reward: gold, sla_seconds: slaRaw || null, faction, labels })
+        });
+
+        if (res.ok) {
+            showToast('Quest atualizada!');
+            const [detailRes] = await Promise.all([
+                fetch(`${API_URL}/quests/${_boardDetailQuestId}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                loadSprintBoard()
+            ]);
+            if (detailRes.ok) renderBoardQuestDetail(await detailRes.json());
+        } else {
+            const err = await res.json().catch(() => ({}));
+            showToast(err.message || 'Erro ao salvar.', 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('Erro de conexão.', 'error');
+    }
+};

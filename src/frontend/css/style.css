@@ -778,6 +778,14 @@ body:has(.mural-layout) {
 /* =========================================
    10. TABS DO PAINEL ADMIN
    ========================================= */
+
+/* Faz o bloco inteiro (top-bar + nav) grudar no topo ao scrollar */
+#admin-header {
+    position: sticky;
+    top: 0;
+    z-index: 200;
+}
+
 .admin-tabs {
     display: flex;
     gap: 0;

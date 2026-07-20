@@ -2,17 +2,14 @@
 // 0. PROTEÇÃO E INICIALIZAÇÃO
 // ==========================================
 const token = localStorage.getItem('guild_token');
-let activeSprintId = null;
+let activeSprintId = null; // ID da sprint com status 'active' (para adicionar quests)
+let viewSprintId   = null; // ID da sprint exibida no dashboard
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!token || localStorage.getItem('guild_role') !== 'admin') {
         window.location.href = 'login.html';
         return;
     }
-
-    const adminName = localStorage.getItem('guild_user') || 'Mestre da Guilda';
-    const nameEl    = document.getElementById('playerName');
-    if (nameEl) nameEl.innerText = adminName;
 
     setupSprintForm();
     document.getElementById('editSprintForm').addEventListener('submit', submitEditSprint);
@@ -21,11 +18,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadPage() {
-    await Promise.all([loadActiveSprint(), loadAllSprints()]);
+    await loadAllSprints();
 }
 
 // ==========================================
-// 1. SPRINT ATIVA — DASHBOARD
+// 1. SPRINT DASHBOARD (selecionável)
 // ==========================================
 const HEALTH_CONFIG = {
     on_track: { label: '✅ NO RITMO',  color: '#27ae60' },
@@ -35,38 +32,40 @@ const HEALTH_CONFIG = {
 
 const FACTION_ICONS = { Produto: '📦', Suporte: '🎧', 'Customer Service': '📣' };
 
-async function loadActiveSprint() {
+async function loadSprintDashboard(sprintId) {
+    if (!sprintId) return;
+    viewSprintId = sprintId;
     try {
-        const res  = await fetch(`${API_URL}/sprints/active`, {
+        const res  = await fetch(`${API_URL}/sprints/${sprintId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
+        if (!res.ok) return;
         const data = await res.json();
-
-        if (!data || !data.sprint) {
-            document.getElementById('activeSprint').style.display = 'none';
-            return;
-        }
-
-        activeSprintId = data.sprint._id;
         renderActiveSprint(data);
-        await loadAvailableQuests();
-        document.getElementById('activeSprint').style.display = 'block';
+        document.getElementById('sprintDashboardContent').style.display = 'block';
     } catch (err) {
-        console.error('Erro ao carregar sprint ativa:', err);
+        console.error('Erro ao carregar dashboard da sprint:', err);
     }
 }
+
+window.onSprintSelectorChange = async (sprintId) => {
+    if (!sprintId) return;
+    document.getElementById('sprintDashboardContent').style.display = 'none';
+    await loadSprintDashboard(sprintId);
+};
 
 function renderActiveSprint({ sprint, metrics, by_faction, top_performers }) {
     const health = HEALTH_CONFIG[metrics.health_score] || HEALTH_CONFIG.on_track;
 
     // Badge de saúde
     const badge = document.getElementById('sprintHealthBadge');
-    badge.textContent        = health.label;
-    badge.style.background   = health.color;
+    badge.textContent      = health.label;
+    badge.style.background = health.color;
+    badge.style.display    = 'inline-block';
 
     // Info card
-    document.getElementById('activeSprintName').textContent   = sprint.name;
-    document.getElementById('activeSprintGoal').textContent   = sprint.goal || '—';
+    document.getElementById('activeSprintName').textContent    = sprint.name;
+    document.getElementById('activeSprintGoal').textContent    = sprint.goal || '—';
     document.getElementById('activeSprintDaysLeft').textContent = `${metrics.days_remaining}d`;
 
     const fmt = d => new Date(d).toLocaleDateString('pt-BR');
@@ -86,7 +85,7 @@ function renderActiveSprint({ sprint, metrics, by_faction, top_performers }) {
     document.getElementById('mXp').textContent         = metrics.total_xp.toLocaleString('pt-BR');
     document.getElementById('mCoins').textContent      = `💰 ${metrics.total_coins.toLocaleString('pt-BR')}`;
 
-    // Fações
+    // Facções
     const factionGrid = document.getElementById('sprintFactionGrid');
     const entries = Object.entries(by_faction);
     factionGrid.innerHTML = entries.length
@@ -118,36 +117,62 @@ function renderActiveSprint({ sprint, metrics, by_faction, top_performers }) {
         }).join('')
         : '<div style="font-size:8px; color:#7f8c8d;">Nenhuma quest nesta sprint ainda.</div>';
 
-    // Top performers
+    // Top performers — cards enriquecidos
     const performersEl = document.getElementById('sprintTopPerformers');
     const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+    const DEFAULT_AVATAR = 'assets/imgs/caneca_pixel.jpg';
+
     performersEl.innerHTML = top_performers.length
-        ? top_performers.map((p, i) => `
-            <div style="display:flex; justify-content:space-between; align-items:center; font-size:9px; padding:6px 0; border-bottom:1px solid #2c3e50;">
-                <span>${medals[i]} ${p.user.nome || p.user.username}</span>
-                <div style="display:flex; gap:12px;">
-                    <span style="color:#3498db;">${p.done} quest(s)</span>
-                    <span style="color:#2ecc71;">${p.xp.toLocaleString('pt-BR')} XP</span>
-                </div>
-            </div>
-        `).join('')
-        : '<div style="font-size:8px; color:#7f8c8d;">Nenhuma quest concluída ainda.</div>';
+        ? `<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px;">
+            ${top_performers.map((p, i) => {
+                const name   = p.user.nome || p.user.username || '—';
+                const avatar = p.user.avatar_url || DEFAULT_AVATAR;
+                const pct    = metrics.total_quests > 0
+                    ? Math.round((p.done / metrics.total_quests) * 100) : 0;
+                return `
+                <div style="background:#1a252f; border:2px solid #2c3e50; border-left:4px solid #f1c40f; padding:12px; display:flex; gap:10px; align-items:center;" data-cy="performer-card">
+                    <div style="font-size:18px; flex-shrink:0; line-height:1;">${medals[i]}</div>
+                    <img src="${avatar}" alt=""
+                         style="width:36px; height:36px; border:2px solid #f1c40f; object-fit:cover; image-rendering:pixelated; flex-shrink:0;"
+                         onerror="this.src='${DEFAULT_AVATAR}'">
+                    <div style="min-width:0; flex:1;">
+                        <div style="font-size:9px; color:#f1c40f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${name}">${name}</div>
+                        <div style="display:flex; gap:8px; margin-top:5px; flex-wrap:wrap;">
+                            <span style="font-size:8px; color:#2ecc71;">${p.xp.toLocaleString('pt-BR')} XP</span>
+                            <span style="font-size:8px; color:#3498db;">${p.done} quest(s)</span>
+                        </div>
+                        <div style="background:#2c3e50; height:4px; border-radius:2px; margin-top:6px; overflow:hidden;">
+                            <div style="height:100%; width:${pct}%; background:#f1c40f;"></div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('')}
+           </div>`
+        : '<div style="font-size:8px; color:#7f8c8d; padding:8px 0;">Nenhuma quest concluída ainda.</div>';
+
+    // Exibe "ADICIONAR QUESTS" somente quando visualizando a sprint ativa
+    const addSection = document.getElementById('addQuestsSection');
+    if (addSection) {
+        const isActive = sprint.status === 'active' || String(sprint._id) === activeSprintId;
+        addSection.style.display = isActive ? 'block' : 'none';
+    }
 }
 
 async function loadAvailableQuests() {
     if (!activeSprintId) return;
     try {
-        const res    = await fetch(`${API_URL}/quests/all`, {
+        const res  = await fetch(`${API_URL}/quests/all?sprint_id=backlog&limit=100`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        const quests = await res.json();
+        const data = await res.json();
+        const available = (Array.isArray(data) ? data : (data.quests || []))
+            .filter(q => q.status !== 'done');
 
-        // Quests sem sprint atribuída (ou sem sprint_id)
-        const available = quests.filter(q => !q.sprint_id && q.status !== 'done');
-        const select    = document.getElementById('questsToAdd');
+        const select = document.getElementById('questsToAdd');
+        if (!select) return;
         select.innerHTML = available.length
             ? available.map(q => `<option value="${q._id}">[${q.faction}] ${q.title}</option>`).join('')
-            : '<option disabled>Nenhuma quest disponível</option>';
+            : '<option disabled style="color:#7f8c8d;">Nenhuma quest no backlog</option>';
     } catch (err) {
         console.error('Erro ao carregar quests disponíveis:', err);
     }
@@ -181,6 +206,14 @@ window.addQuestsToActiveSprint = async () => {
 // ==========================================
 // 2. HISTÓRICO DE SPRINTS
 // ==========================================
+
+// serve (npx serve) faz 301 de *.html?param=x → * dropando o query string.
+// Usamos sessionStorage para passar o sprint ID de forma confiável.
+window.goToBoard = function (sprintId) {
+    sessionStorage.setItem('admin_board_sprint_id', sprintId);
+    window.location.href = 'admin-sprint-board.html?id=' + sprintId;
+};
+
 const STATUS_CONFIG = {
     planning:  { label: 'Planning',  color: '#3498db' },
     active:    { label: 'Ativa',     color: '#27ae60' },
@@ -190,14 +223,52 @@ const STATUS_CONFIG = {
 
 async function loadAllSprints() {
     try {
-        const res    = await fetch(`${API_URL}/sprints`, {
+        const res     = await fetch(`${API_URL}/sprints`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const sprints = await res.json();
+
         renderSprintsList(sprints);
+        populateSprintSelector(sprints);
     } catch (err) {
         console.error('Erro ao carregar sprints:', err);
     }
+}
+
+function populateSprintSelector(sprints) {
+    const selector = document.getElementById('viewSprintSelect');
+    if (!selector) return;
+
+    if (!sprints.length) {
+        selector.innerHTML = '<option value="">Nenhuma sprint</option>';
+        document.getElementById('noSprintsMsg').style.display = 'block';
+        return;
+    }
+
+    const STATUS_SPRINT_LABELS = {
+        planning:  '📋',
+        active:    '⚡',
+        completed: '✅',
+        cancelled: '❌'
+    };
+
+    selector.innerHTML = sprints.map(s =>
+        `<option value="${s._id}">${STATUS_SPRINT_LABELS[s.status] || ''} ${s.name}</option>`
+    ).join('');
+
+    // Detecta sprint ativa para controles de "Adicionar Quests"
+    const active = sprints.find(s => s.status === 'active');
+    activeSprintId = active ? String(active._id) : null;
+
+    // Pré-seleciona: sprint ativa ou a primeira da lista
+    const defaultId = activeSprintId || String(sprints[0]._id);
+    selector.value = defaultId;
+
+    // Carrega dashboard + quests disponíveis em paralelo
+    Promise.all([
+        loadSprintDashboard(defaultId),
+        loadAvailableQuests()
+    ]);
 }
 
 function renderSprintsList(sprints) {
@@ -218,7 +289,8 @@ function renderSprintsList(sprints) {
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
                     <div style="flex:1; min-width:0;">
                         <a href="admin-sprint-board.html?id=${s._id}" style="font-size:10px; color:#f1c40f; text-decoration:none; cursor:pointer;" data-cy="btn-open-sprint-board"
-                           onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${s.name} ↗</a>
+                           onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'"
+                           onclick="event.preventDefault(); goToBoard('${s._id}')">${s.name} ↗</a>
                         ${s.goal ? `<div style="font-size:8px; color:#7f8c8d; margin-top:2px;">${s.goal}</div>` : ''}
                         <div style="font-size:8px; color:#bdc3c7; margin-top:4px;">
                             ${fmt(s.start_date)} → ${fmt(s.end_date)} &nbsp;|&nbsp; ${s.duration_days} dias
@@ -227,7 +299,7 @@ function renderSprintsList(sprints) {
                     <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                         <span class="status-badge" style="background:${st.color}; font-size:8px; padding:3px 8px;">${st.label}</span>
                         <span style="font-size:9px; color:#2ecc71;">${s.quests_done || 0}/${s.quest_count || 0} quests</span>
-                        <a href="admin-sprint-board.html?id=${s._id}" class="btn-pixel" data-cy="btn-view-board" style="font-size:7px; padding:4px 8px; background:#2980b9; text-decoration:none; display:inline-block;">Board</a>
+                        <button class="btn-pixel" data-cy="btn-view-board" style="font-size:7px; padding:4px 8px; background:#2980b9;" onclick="goToBoard('${s._id}')">Board</button>
                         <button class="btn-pixel" data-cy="btn-edit-sprint" style="font-size:7px; padding:4px 8px;" onclick="openEditSprintModal('${s._id}', ${JSON.stringify(s).replace(/"/g, '&quot;')})">Editar</button>
                         <button class="btn-pixel" data-cy="btn-delete-sprint" style="font-size:7px; padding:4px 8px; background:#e74c3c;" onclick="deleteSprint('${s._id}')">Excluir</button>
                     </div>

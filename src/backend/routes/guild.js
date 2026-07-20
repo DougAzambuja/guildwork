@@ -8,6 +8,7 @@ const checkAdmin = (req, res, next) => {
     return res.status(403).json({ message: 'Acesso restrito ao Mestre da Guilda.' });
 };
 
+router.get('/all',      auth, checkAdmin, guildController.getAllGuilds);
 router.get('/',         auth, guildController.getGuild);
 router.post('/spend',   auth, guildController.spendTreasury);
 router.patch('/leader', auth, checkAdmin, guildController.setLeader);

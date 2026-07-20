@@ -62,6 +62,16 @@ exports.spendTreasury = async (req, res) => {
     }
 };
 
+// GET /api/guild/all — Admin lista todas as guildas (para o seletor do board)
+exports.getAllGuilds = async (req, res) => {
+    try {
+        const guilds = await Guild.find().sort({ faction_key: 1 }).lean();
+        res.json(guilds);
+    } catch (err) {
+        res.status(500).json({ message: 'Erro ao buscar guildas.', error: err.message });
+    }
+};
+
 // PATCH /api/guild/leader — Admin nomeia novo líder
 exports.setLeader = async (req, res) => {
     try {

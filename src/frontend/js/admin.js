@@ -12,66 +12,108 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initDashboard() {
-    const adminName = localStorage.getItem('guild_user') || 'Mestre da Guilda';
-    const nameEl    = document.getElementById('playerName');
-    if (nameEl) nameEl.innerText = adminName;
-
     await loadDashboard();
     setInterval(loadDashboard, 30000);
 }
 
 async function loadDashboard() {
     try {
-        const [rosterRes, sprintRes] = await Promise.all([
+        const [rosterRes, sprintsRes] = await Promise.all([
             fetch(`${API_URL}/admin/roster`, { headers: { 'Authorization': `Bearer ${token}` } }),
-            fetch(`${API_URL}/sprints/active`, { headers: { 'Authorization': `Bearer ${token}` } })
+            fetch(`${API_URL}/sprints`,       { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
 
-        if (rosterRes.ok) renderDashboardStats(await rosterRes.json());
-        if (sprintRes.ok) renderActiveSprint(await sprintRes.json());
+        if (rosterRes.ok)  renderDashboardStats(await rosterRes.json());
+        if (sprintsRes.ok) populateDashSprintSelector(await sprintsRes.json());
     } catch (err) {
         console.error('Erro ao carregar dashboard:', err);
     }
 }
 
 // ==========================================
-// 1. DASHBOARD — SPRINT ATIVA
+// 1. DASHBOARD — SPRINT
 // ==========================================
 const HEALTH_LABELS = {
     on_track: { label: '✅ NO RITMO',  color: '#27ae60' },
     at_risk:  { label: '⚠️ EM RISCO',  color: '#e67e22' },
     behind:   { label: '🚨 ATRASADA',  color: '#e74c3c' }
 };
+const STATUS_SPRINT_LABELS_DASH = {
+    active:    '⚡',
+    planning:  '📋',
+    completed: '✅',
+    cancelled: '❌'
+};
 const FACTION_ICONS_DASH = { Produto: '📦', Suporte: '🎧', 'Customer Service': '📣' };
 
-function renderActiveSprint(data) {
+function populateDashSprintSelector(sprints) {
     const section = document.getElementById('dashSprintSection');
-    if (!section) return;
+    const select  = document.getElementById('dashSprintSelect');
+    if (!section || !select) return;
 
-    if (!data || !data.sprint) {
+    if (!sprints || sprints.length === 0) {
         section.style.display = 'none';
         return;
     }
 
-    const { sprint, metrics, by_faction } = data;
-
     section.style.display = 'block';
+    select.innerHTML = sprints.map(s =>
+        `<option value="${s._id}">${STATUS_SPRINT_LABELS_DASH[s.status] || ''} ${s.name}</option>`
+    ).join('');
+
+    // Prefere a sprint ativa; senão a primeira da lista
+    const active = sprints.find(s => s.status === 'active');
+    const defaultId = active ? String(active._id) : String(sprints[0]._id);
+    select.value = defaultId;
+
+    loadDashSprintData(defaultId);
+}
+
+async function loadDashSprintData(sprintId) {
+    try {
+        const res = await fetch(`${API_URL}/sprints/${sprintId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) renderActiveSprint(await res.json());
+    } catch (err) {
+        console.error('Erro ao carregar sprint do dashboard:', err);
+    }
+}
+
+window.onDashSprintChange = (sprintId) => {
+    if (sprintId) loadDashSprintData(sprintId);
+};
+
+function renderActiveSprint(data) {
+    if (!data || !data.sprint) return;
+
+    const { sprint, metrics, by_faction } = data;
 
     const health = HEALTH_LABELS[metrics.health_score] || HEALTH_LABELS.on_track;
     const badge  = document.getElementById('dashSprintHealth');
-    badge.textContent      = health.label;
-    badge.style.background = health.color;
+    if (badge) {
+        badge.textContent      = health.label;
+        badge.style.background = health.color;
+        badge.style.display    = 'inline-block';
+    }
 
     const link = document.getElementById('dashSprintBoardLink');
-    if (link) link.href = `admin-sprint-board.html?id=${sprint._id}`;
+    if (link) {
+        link.href = `admin-sprint-board.html?id=${sprint._id}`;
+        link.onclick = (e) => {
+            e.preventDefault();
+            sessionStorage.setItem('admin_board_sprint_id', sprint._id);
+            window.location.href = link.href;
+        };
+    }
 
     const fmt = d => new Date(d).toLocaleDateString('pt-BR');
-    document.getElementById('dashSprintName').textContent   = sprint.name;
-    document.getElementById('dashSprintPeriod').textContent = `${fmt(sprint.start_date)} → ${fmt(sprint.end_date)}`;
+    document.getElementById('dashSprintName').textContent     = sprint.name;
+    document.getElementById('dashSprintPeriod').textContent   = `${fmt(sprint.start_date)} → ${fmt(sprint.end_date)}`;
     document.getElementById('dashSprintDaysLeft').textContent = `${metrics.days_remaining}d`;
-    document.getElementById('dashSprintQuests').textContent = `${metrics.done_quests}/${metrics.total_quests} concluídas`;
-    document.getElementById('dashSprintPct').textContent   = `${metrics.completion_pct}%`;
-    document.getElementById('dashSprintBar').style.width   = `${metrics.completion_pct}%`;
+    document.getElementById('dashSprintQuests').textContent   = `${metrics.done_quests}/${metrics.total_quests} concluídas`;
+    document.getElementById('dashSprintPct').textContent      = `${metrics.completion_pct}%`;
+    document.getElementById('dashSprintBar').style.width      = `${metrics.completion_pct}%`;
 
     const factionsEl = document.getElementById('dashSprintFactions');
     if (factionsEl) {

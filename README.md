@@ -29,7 +29,7 @@ GUILDWORK/
 │   └── frontend/
 │       ├── assets/imgs/            # Sprites e texturas pixel art
 │       ├── css/style.css           # CSS modularizado por componente
-│       ├── js/                     # mural.js, guild.js, loja.js, perfil.js, leaderboard.js, admin-*.js, notifications.js, utils.js (constantes compartilhadas)
+│       ├── js/                     # mural.js, guild.js, loja.js, perfil.js, leaderboard.js, admin-*.js, admin-header.js (header compartilhado do painel), notifications.js, utils.js (constantes compartilhadas)
 │       ├── index.html              # Board Kanban (jogador)
 │       ├── guild.html              # Tela da Guilda (ranking + link para perfil público)
 │       ├── loja.html               # Loja de itens
@@ -211,15 +211,18 @@ net stop MongoDB
 | 👑 Herói Lendário | 25 missões concluídas |
 | 🌟 Mestre das Missões | 50 missões concluídas |
 
-### 🛡️ Painel Admin (Telas Independentes)
+### 🛡️ Painel Admin
 | Tela | Feature |
 |---|---|
-| **Dashboard** | Métricas da sprint, desempenho por facção, totais gerais |
+| **Dashboard** | Métricas da sprint com seletor (todas as sprints, padrão: ativa), desempenho por facção, totais gerais; header fixo ao scrollar |
 | **Missões** | CRUD de quests, filtros por facção/sprint/status, paginação, atribuição, cópia |
 | **Membros (Roster)** | Recrutamento, edição, paginação, ícone 👑 para líderes de guilda |
-| **Sprints** | Criação de sprints, board kanban, gráfico burndown |
+| **Sprints** | Criação de sprints, board kanban, gráfico burndown (linha ideal para toda a sprint, linha real até hoje com dias futuros em null); dashboard selecionável por sprint (qualquer sprint, não só a ativa); top performers com avatar e XP; quests do backlog para adicionar à sprint ativa |
 | **Loot** | CRUD de itens da loja |
-| **Board da Sprint** | Visão admin do kanban com filtros por facção |
+| **Métricas** | Gráficos de maldição, economia, SLA e CSAT com Canvas puro |
+| **Board da Sprint** | Visão admin do kanban com filtro de guilda server-side (`?guild_id=`); estado persiste na sessão; cards compactos com scroll por coluna; modal de detalhes com edição, checklist e comentários; kanban do player exibe apenas quests de sprints ativas |
+
+> Todas as telas do painel compartilham `admin-header.js` (header + nav gerados dinamicamente, aba ativa detectada pela URL) e `notifications.js` (sino com polling de 30s).
 
 ---
 
