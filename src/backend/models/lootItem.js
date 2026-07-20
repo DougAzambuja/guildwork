@@ -15,9 +15,13 @@ const LootItemSchema = new mongoose.Schema({
         type: String, 
         default: 'assets/imgs/caneca_pixel.jpg' // Se o Admin esquecer a imagem, o banco assume esta por padrão
     },
-    created_by: { 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'User' 
+    is_cosmetic: {
+        type: Boolean,
+        default: false
+    },
+    created_by: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     }
 }, { timestamps: true });
 

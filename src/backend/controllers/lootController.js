@@ -19,7 +19,7 @@ exports.getItems = async (req, res) => {
  */
 exports.createItem = async (req, res) => {
     try {
-        const { name, price, image_url } = req.body;
+        const { name, price, image_url, is_cosmetic } = req.body;
 
         if (!name || !price) {
             return res.status(400).json({ message: 'Nome e preço são obrigatórios.' });
@@ -28,7 +28,8 @@ exports.createItem = async (req, res) => {
         const item = await LootItem.create({
             name,
             price,
-            image: image_url || 'assets/imgs/caneca_pixel.jpg'
+            image:       image_url || 'assets/imgs/caneca_pixel.jpg',
+            is_cosmetic: !!is_cosmetic
         });
 
         res.status(201).json(item);

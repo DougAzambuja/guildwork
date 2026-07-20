@@ -169,12 +169,24 @@ net stop MongoDB
 | Semana atual | Cabeçalho com período (segunda a domingo), reset implícito sem cron |
 | Link para perfil | Nome de cada aventureiro é clicável e abre o perfil público |
 
+### 🧙 Perfil do Aventureiro
+| Feature | Detalhe |
+|---|---|
+| Perfil público | Página `/perfil.html#ID` acessível por qualquer membro com barra de XP, facção e banner de maldição |
+| Hub de edição (próprio perfil) | Nome editável, seletor de classe avatar, Guarda-Roupa de cosméticos, URL personalizada e botão "Salvar Herói" (único `PUT /api/players/me`) |
+| Stats agregados | Missões concluídas, conquistas desbloqueadas, streak de dias, XP total ganho, Gold atual e CSAT médio |
+| Conquistas | Todos os achievements com estado desbloqueado/bloqueado e data de desbloqueio |
+
 ### 🏪 Loja de Itens
 | Feature | Detalhe |
 |---|---|
 | Vitrine | Itens com preço, imagem e disponibilidade |
 | Carrinho | Preview de saldo pós-compra, bloqueio visual quando gold insuficiente |
 | Card de perfil | Avatar, nível, XP, guilda, gold, missões e conquistas |
+| Cosméticos | Admin marca itens como cosmético (`🎭`); compra adiciona ao Guarda-Roupa do jogador |
+| Guarda-Roupa | Seção no próprio perfil com cosméticos comprados; clique equipa como avatar |
+| Perfil como hub de edição | Próprio perfil permite editar nome, avatar (classe ou cosmético), URL customizada e salvar tudo com um clique em "Salvar Herói" |
+| Modal preview | Modal "Seu Herói" no board exibe snapshot rápido com link para o perfil completo |
 
 ### 🔔 Notificações
 | Feature | Detalhe |
@@ -213,8 +225,6 @@ net stop MongoDB
 
 ## 🗺️ Backlog — Próximas Features
 
-* **Streak de Login/Entrega (#43/#44):** Bônus de XP para aventureiros que completam quests em dias consecutivos.
-* **Perfil Público (#47/#48):** Página pública com histórico e badges de cada aventureiro.
 * **Boss Fight de Sprint (#30/#31):** Evento especial ao fechar uma sprint com metas cumpridas.
 * **Árvore de Talentos (#32/#33):** Bônus passivos por facção desbloqueados com XP.
 * **Avatares Pixelados (#57):** Estudo de ferramentas (DiceBear, Morphic, Piskel) para geração procedural de personagens.
