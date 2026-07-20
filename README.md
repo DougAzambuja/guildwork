@@ -1,4 +1,4 @@
-# ⚔️ GuildWork - The Office Quest
+﻿# ⚔️ GuildWork - The Office Quest
 
 Bem-vindo ao GuildWork! Um sistema de gestão de tarefas gamificado que transforma o fluxo de trabalho diário em uma experiência de RPG. Os funcionários (Aventureiros) ganham XP, sobem de nível e acumulam Ouro (Gold) para trocar por itens reais na Forja (Loja), enquanto o Mestre da Guilda (Admin) monitora o desempenho e o SLA de cada entrega.
 
@@ -29,12 +29,13 @@ GUILDWORK/
 │   └── frontend/
 │       ├── assets/imgs/            # Sprites e texturas pixel art
 │       ├── css/style.css           # CSS modularizado por componente
-│       ├── js/                     # mural.js, guild.js, loja.js, perfil.js, admin-*.js, notifications.js, utils.js (constantes compartilhadas)
+│       ├── js/                     # mural.js, guild.js, loja.js, perfil.js, leaderboard.js, admin-*.js, notifications.js, utils.js (constantes compartilhadas)
 │       ├── index.html              # Board Kanban (jogador)
 │       ├── guild.html              # Tela da Guilda (ranking + link para perfil público)
 │       ├── loja.html               # Loja de itens
 │       ├── login.html              # Autenticação
 │       ├── perfil.html             # Perfil público do aventureiro (métricas agregadas)
+│       ├── leaderboard.html        # Ranking semanal por XP (issues #41/#42)
 │       ├── admin.html              # Painel Admin
 │       ├── admin-quests.html       # Gestão de Missões
 │       ├── admin-roster.html       # Gestão de Membros
@@ -62,7 +63,8 @@ GUILDWORK/
 7. **Streak de Entregas Diárias:** Cada dia com ao menos 1 quest concluída incrementa o streak. Bônus de XP flat (não afetado por buffs/maldições) ao atingir marcos: 3 dias (+50 XP), 7 dias (+150 XP), 14 dias (+300 XP), 30 dias (+500 XP).
 8. **Conquistas (Achievements):** Desbloqueadas automaticamente pelo servidor conforme missões concluídas (marcos: 1, 5, 10, 25, 50). Retroativamente concedidas se o usuário já ultrapassou o marco.
 9. **Perfil Público:** Cada aventureiro tem uma página de perfil acessível via `/perfil.html#ID` com métricas agregadas (XP total ganho, Gold total, CSAT médio, taxa limpa, streak, conquistas).
-10. **Prevenção de Exploit na Loja:** O servidor recalcula o total pelo banco antes de debitar.
+10. **Leaderboard Sazonal:** Ranking semanal por XP ganho na semana corrente (segunda a domingo). Reset implícito — sem cron, calculado via agregação em `QuestCompletion` filtrada por `createdAt >= weekStart`. O jogador logado é destacado na tabela e no pódio.
+11. **Prevenção de Exploit na Loja:** O servidor recalcula o total pelo banco antes de debitar.
 
 ## 🚀 Como Rodar o Projeto
 
@@ -156,6 +158,16 @@ net stop MongoDB
 | Ranking | Tabela de membros com medalhas, XP bar, maldição e coroa do líder |
 | Tesouro | Saldo comum, taxa de contribuição automática por missão |
 | Distribuição | Líder pode enviar Gold para qualquer membro da guilda |
+| Link Sazonal | Botão direto para o Leaderboard Sazonal no painel de ranking |
+
+### 🏆 Leaderboard Sazonal
+| Feature | Detalhe |
+|---|---|
+| Pódio Top 3 | Cards estilizados com ouro/prata/bronze, avatar e XP semanal |
+| Ranking completo | Tabela com barra de XP proporcional, missões concluídas e nível |
+| Destaque próprio | Linha/card "VOCÊ" destacado em laranja para o jogador logado |
+| Semana atual | Cabeçalho com período (segunda a domingo), reset implícito sem cron |
+| Link para perfil | Nome de cada aventureiro é clicável e abre o perfil público |
 
 ### 🏪 Loja de Itens
 | Feature | Detalhe |
@@ -205,5 +217,4 @@ net stop MongoDB
 * **Perfil Público (#47/#48):** Página pública com histórico e badges de cada aventureiro.
 * **Boss Fight de Sprint (#30/#31):** Evento especial ao fechar uma sprint com metas cumpridas.
 * **Árvore de Talentos (#32/#33):** Bônus passivos por facção desbloqueados com XP.
-* **Leaderboard Sazonal (#41/#42):** Ranking semanal com reset automático.
 * **Avatares Pixelados (#57):** Estudo de ferramentas (DiceBear, Morphic, Piskel) para geração procedural de personagens.

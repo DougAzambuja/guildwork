@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -132,24 +132,25 @@
     </style>
 </head>
 <body>
-    <div class="main-wrapper">
-        <div class="top-bar">
+    <div class="top-bar">
             <div class="player-info">
                 <img src="assets/imgs/caneca_pixel.jpg" alt="Avatar" class="avatar" id="playerAvatar" style="object-fit:cover;">
                 <div class="stats">
                     <h1 id="playerName" data-cy="player-name">Aventureiro</h1>
-                    <div id="levelDisplay" style="font-weight:bold;color:#000;font-size:14px;">Lvl: 1</div>
+                    <div id="levelDisplay" style="font-size: 9px; color: #7f8c8d;">Lvl: 1</div>
                     <div class="xp-container"><div class="xp-bar" id="xpBar"></div></div>
                     <div class="coin-display"><span class="coin-icon">💰</span> <span id="coinCount">0</span> Gold</div>
                 </div>
             </div>
             <div class="actions">
-                <a href="index.html"  class="btn-pixel" data-cy="link-board">⚔ Board</a>
-                <a href="loja.html"   class="btn-pixel shop-btn" data-cy="link-loja">Ir para Loja</a>
+                <a href="index.html"       class="btn-pixel" data-cy="link-board">⚔ Board</a>
+                <a href="leaderboard.html" class="btn-pixel" data-cy="link-leaderboard" style="background:#c0392b;">🏆 Ranking</a>
+                <a href="loja.html"        class="btn-pixel shop-btn" data-cy="link-loja">Ir para Loja</a>
                 <button class="btn-pixel logout-btn" data-cy="btn-logout" onclick="logout()">Sair</button>
             </div>
         </div>
 
+    <div class="main-wrapper">
         <div class="guild-wrapper">
             <!-- Cabeçalho da Guilda -->
             <div class="guild-header" id="guildHeader">
@@ -169,7 +170,10 @@
             <div class="guild-grid">
                 <!-- Ranking de membros -->
                 <div class="ranking-wrapper">
-                    <div class="panel-header">⚔️ RANKING DE MEMBROS</div>
+                    <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between;">
+                        <span>⚔️ RANKING DE MEMBROS</span>
+                        <a href="leaderboard.html" class="btn-pixel" data-cy="btn-leaderboard-full" style="font-size:8px;padding:6px 10px;background:#c0392b;">🏆 SAZONAL</a>
+                    </div>
                     <table class="ranking-table" data-cy="ranking-table">
                         <thead>
                             <tr>

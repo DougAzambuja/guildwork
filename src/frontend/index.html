@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -8,13 +8,12 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="main-wrapper">
-        <div class="top-bar">
+    <div class="top-bar">
             <div class="player-info">
                 <img src="assets/imgs/caneca_pixel.jpg" alt="Avatar" class="avatar" id="playerAvatar" style="cursor: pointer; object-fit: cover;" onclick="openProfileModal()" title="Editar Perfil">
                 <div class="stats">
                     <h1 id="playerName" data-cy="player-name">Aventureiro</h1>
-                    <div id="levelDisplay" style="font-weight: bold; color: #000000; font-size: 14px;">Lvl: 1</div>
+                    <div id="levelDisplay" style="font-size: 9px; color: #7f8c8d;">Lvl: 1</div>
                     <div class="xp-container" id="xpContainer">
                         <div class="xp-bar" id="xpBar" data-cy="xp-bar"></div>
                     </div>
@@ -32,6 +31,7 @@
             </div>
         </div>
 
+    <div class="main-wrapper">
         <div class="mural-layout">
             <div class="board-container kanban-mode" id="questBoard" data-cy="quest-board">
                 <div class="kanban-board">

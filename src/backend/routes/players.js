@@ -6,6 +6,7 @@ router.use(authMiddleware);
 
 router.get('/me',          playerController.getProfile);
 router.put('/me',          playerController.updateProfile);
+router.get('/leaderboard', playerController.getLeaderboard);
 router.get('/:id/public',  playerController.getPublicProfile);
 router.post('/xp',      playerController.updateGamification);
 router.put('/curse',    playerController.updateCurse);
