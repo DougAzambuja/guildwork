@@ -2,6 +2,7 @@ const Quest               = require('../models/quest');
 const QuestCompletion     = require('../models/questCompletion');
 const User                = require('../models/user');
 const Guild               = require('../models/guild');
+const Sprint              = require('../models/sprint');
 const notificationService = require('../services/notificationService');
 
 const WIP_LIMIT = 3;
@@ -12,15 +13,22 @@ function xpParaProximoNivel(level) {
     return 200 * (level + 1) + 300;
 }
 
-// GET /api/quests — Retorna quests da facção do jogador (+ quests atribuídas a ele de outras facções)
+// GET /api/quests — Retorna quests de sprints ativas na facção do jogador (+ quests atribuídas a ele)
 exports.getQuests = async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).select('faction');
+        const [user, activeSprints] = await Promise.all([
+            User.findById(req.user.id).select('faction').lean(),
+            Sprint.find({ status: 'active' }).select('_id').lean()
+        ]);
+
+        const activeSprintIds = activeSprints.map(s => s._id);
 
         const quests = await Quest.find({
             is_active: true,
             $or: [
-                { faction: user.faction },
+                // Quests da facção do jogador em sprints ativas
+                { faction: user.faction, sprint_id: { $in: activeSprintIds } },
+                // Quests atribuídas diretamente a ele (independente de sprint/facção)
                 { assigned_to: req.user.id }
             ]
         })

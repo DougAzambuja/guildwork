@@ -8,27 +8,7 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="top-bar">
-            <div class="player-info">
-                <div class="avatar" style="background-color: #f1c40f; display:flex; align-items:center; justify-content:center; font-size:8px; text-align:center;">DM</div>
-                <div class="stats">
-                    <h1 id="playerName">Mestre da Guilda</h1>
-                    <div style="font-size: 10px; color: #7f8c8d;">Centro de Comando</div>
-                </div>
-            </div>
-            <div class="actions">
-                <button class="btn-pixel logout-btn" data-cy="btn-logout" onclick="logout()">Sair</button>
-            </div>
-        </div>
-
-        <nav class="admin-tabs">
-            <a href="admin.html" class="admin-tab">📈 Dashboard</a>
-            <a href="admin-quests.html" class="admin-tab active">⚔️ Missões</a>
-            <a href="admin-loot.html" class="admin-tab">🔨 Loot</a>
-            <a href="admin-roster.html" class="admin-tab">🛡️ Membros</a>
-            <a href="admin-sprints.html" class="admin-tab">🏃 Sprints</a>
-            <a href="admin-metrics.html" class="admin-tab">📊 Métricas</a>
-        </nav>
+    <div id="admin-header"></div>
 
     <div class="main-wrapper">
         <div style="display:flex; flex-direction:column; gap:24px;">
@@ -262,6 +242,7 @@
 
     <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
+    <script src="js/admin-header.js"></script>
     <script src="js/notifications.js"></script>
     <script src="js/admin-quests.js"></script>
 </body>

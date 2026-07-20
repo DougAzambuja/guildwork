@@ -1,5 +1,6 @@
 const Sprint          = require('../models/sprint');
 const Quest           = require('../models/quest');
+const Guild           = require('../models/guild');
 const User            = require('../models/user');
 const QuestCompletion = require('../models/questCompletion');
 
@@ -45,9 +46,14 @@ function calcHealthScore(completedQuests, totalQuests, startDate, endDate) {
 
 /**
  * Monta o payload completo de analytics de uma sprint.
+ * @param {Object} sprint - Documento da sprint (lean)
+ * @param {string|null} filterFaction - faction_key da guilda para filtrar, ou null para todas
  */
-async function buildSprintAnalytics(sprint) {
-    const quests = await Quest.find({ sprint_id: sprint._id })
+async function buildSprintAnalytics(sprint, filterFaction = null) {
+    const questFilter = { sprint_id: sprint._id };
+    if (filterFaction) questFilter.faction = filterFaction;
+
+    const quests = await Quest.find(questFilter)
         .populate('assigned_to', 'nome username avatar_url')
         .lean();
 
@@ -172,16 +178,32 @@ exports.getActiveSprint = async (req, res) => {
 };
 
 /**
- * GET /api/sprints/:id
+ * GET /api/sprints/:id?guild_id=<id>
  * Retorna uma sprint específica com analytics completo.
+ * Param opcional guild_id (admin only): filtra quests e métricas pela guilda.
  */
 exports.getSprintById = async (req, res) => {
     try {
         const sprint = await Sprint.findById(req.params.id).lean();
         if (!sprint) return res.status(404).json({ message: 'Sprint não encontrada.' });
 
-        const analytics = await buildSprintAnalytics(sprint);
-        res.json({ sprint: { ...sprint, status: resolveStatus(sprint) }, ...analytics });
+        let filterFaction = null;
+        const { guild_id } = req.query;
+        if (guild_id) {
+            if (req.user?.role !== 'admin') {
+                return res.status(403).json({ message: 'Filtro por guilda restrito ao Mestre da Guilda.' });
+            }
+            const guild = await Guild.findById(guild_id).select('faction_key').lean();
+            if (!guild) return res.status(404).json({ message: 'Guilda não encontrada.' });
+            filterFaction = guild.faction_key;
+        }
+
+        const analytics = await buildSprintAnalytics(sprint, filterFaction);
+        res.json({
+            sprint:      { ...sprint, status: resolveStatus(sprint) },
+            guild_filter: filterFaction || null,
+            ...analytics
+        });
     } catch (err) {
         res.status(500).json({ message: 'Erro ao buscar sprint.', error: err.message });
     }
@@ -343,29 +365,36 @@ exports.getSprintBurndown = async (req, res) => {
             .select('completed_at')
             .lean();
 
-        const start   = new Date(sprint.start_date);
-        const end     = new Date(sprint.end_date);
-        const today   = new Date();
+        const start    = new Date(sprint.start_date);
+        const end      = new Date(sprint.end_date);
+        const today    = new Date();
         const chartEnd = today < end ? today : end;
 
-        const labels      = [];
-        const idealLine   = [];
-        const actualLine  = [];
+        const labels     = [];
+        const idealLine  = [];
+        const actualLine = [];
 
         let current  = new Date(start);
         let dayIndex = 0;
 
-        while (current <= chartEnd) {
+        // Itera todos os dias da sprint (não só até hoje) para exibir a linha ideal completa
+        while (current <= end) {
             const dayEnd = new Date(current);
             dayEnd.setHours(23, 59, 59, 999);
 
-            const doneCount = completions.filter(c => new Date(c.completed_at) <= dayEnd).length;
-
             labels.push(current.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
-            actualLine.push(Math.max(0, total - doneCount));
+
             idealLine.push(
                 Math.max(0, Math.round(total - (total * (dayIndex / Math.max(sprint.duration_days - 1, 1)))))
             );
+
+            // Linha real só até hoje — dias futuros ficam null (não renderizados)
+            if (current <= chartEnd) {
+                const doneCount = completions.filter(c => new Date(c.completed_at) <= dayEnd).length;
+                actualLine.push(Math.max(0, total - doneCount));
+            } else {
+                actualLine.push(null);
+            }
 
             current.setDate(current.getDate() + 1);
             dayIndex++;

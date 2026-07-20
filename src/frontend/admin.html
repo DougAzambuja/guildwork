@@ -8,27 +8,7 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="top-bar">
-            <div class="player-info">
-                <div class="avatar" style="background-color: #f1c40f; display:flex; align-items:center; justify-content:center; font-size:8px; text-align:center;">DM</div>
-                <div class="stats">
-                    <h1 id="playerName" data-cy="admin-name">Mestre da Guilda</h1>
-                    <div style="font-size: 10px; color: #7f8c8d;">Centro de Comando</div>
-                </div>
-            </div>
-            <div class="actions">
-                <button class="btn-pixel logout-btn" data-cy="btn-logout" onclick="logout()">Sair</button>
-            </div>
-        </div>
-
-        <nav class="admin-tabs">
-            <a href="admin.html" class="admin-tab active">📈 Dashboard</a>
-            <a href="admin-quests.html" class="admin-tab">⚔️ Missões</a>
-            <a href="admin-loot.html" class="admin-tab">🔨 Loot</a>
-            <a href="admin-roster.html" class="admin-tab">🛡️ Membros</a>
-            <a href="admin-sprints.html" class="admin-tab">🏃 Sprints</a>
-            <a href="admin-metrics.html" class="admin-tab">📊 Métricas</a>
-        </nav>
+    <div id="admin-header"></div>
 
     <div class="main-wrapper">
         <div style="display:flex; flex-direction:column; gap:24px;">
@@ -57,12 +37,17 @@
                 </div>
             </div>
 
-            <!-- SPRINT ATIVA -->
+            <!-- SPRINT -->
             <div class="dashboard-section" data-cy="dashboard-active-sprint" id="dashSprintSection" style="display:none;">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
-                    <h2 class="section-title" style="margin:0; border:none;">🏃 SPRINT EM ANDAMENTO</h2>
-                    <div style="display:flex; gap:8px; align-items:center;">
-                        <span id="dashSprintHealth" class="status-badge" style="font-size:8px; padding:3px 10px;"></span>
+                    <h2 class="section-title" style="margin:0; border:none;">🏃 SPRINT</h2>
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <select id="dashSprintSelect" data-cy="select-dash-sprint"
+                                style="font-family:'Press Start 2P',cursive; font-size:7px; padding:5px 8px; background:#1a252f; color:#f1c40f; border:2px solid #2c3e50; outline:none; cursor:pointer; max-width:220px;"
+                                onchange="onDashSprintChange(this.value)">
+                            <option value="">Carregando...</option>
+                        </select>
+                        <span id="dashSprintHealth" class="status-badge" style="font-size:8px; padding:3px 10px; display:none;"></span>
                         <a id="dashSprintBoardLink" href="#" class="btn-pixel" data-cy="btn-open-board-dashboard"
                            style="font-size:7px; padding:5px 9px; background:#2980b9; text-decoration:none; display:inline-block;">
                             📋 Abrir Board
@@ -118,6 +103,7 @@
 
     <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
+    <script src="js/admin-header.js"></script>
     <script src="js/notifications.js"></script>
     <script src="js/admin.js"></script>
 </body>
