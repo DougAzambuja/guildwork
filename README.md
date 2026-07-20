@@ -148,7 +148,7 @@ net stop MongoDB
 | Modal de Quest | Detalhes, checklist, timeline de atividade e comentários |
 | Auto-refresh | Board atualiza a cada 30s com contador regressivo |
 | Animação Level Up | Overlay ao subir de nível |
-| Perfil editável | Nome, avatar pré-definido ou URL customizada |
+| Acesso ao Perfil | Clique no avatar da top bar → modal "Seu Herói" → link para perfil completo |
 | Conquistas | Badges desbloqueados por marcos de missões concluídas |
 
 ### 🏰 Tela da Guilda

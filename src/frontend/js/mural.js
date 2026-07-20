@@ -776,9 +776,6 @@ function updateUI() {
     const avatarEl = document.getElementById('playerAvatar');
     if (avatarEl) avatarEl.src = playerData.avatar;
 
-    const perfilLink = document.getElementById('linkMeuPerfil');
-    if (perfilLink && playerData.id) perfilLink.href = `perfil.html#${playerData.id}`;
-
     updateObjectivesUI();
 }
 
