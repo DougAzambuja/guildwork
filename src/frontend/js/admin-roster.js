@@ -97,8 +97,6 @@ function renderUsersPage() {
     const start = usersPage * USERS_PER_PAGE;
     const slice = allUsers.slice(start, start + USERS_PER_PAGE);
 
-    const GUILD_ICONS = { Produto: '📦', Suporte: '🎧', 'Customer Service': '📣' };
-
     tbody.innerHTML = slice.map(p => {
         const crownMark   = p.is_guild_leader ? ' 👑' : '';
         const guildaLabel = p.role === 'admin'

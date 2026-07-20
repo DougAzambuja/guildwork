@@ -12,33 +12,6 @@ if (!token || !localStorage.getItem('guild_role')) {
 // ==========================================
 const WIP_LIMIT = 3;
 
-function xpParaProximoNivel(level) {
-    return 200 * (level + 1) + 300;
-}
-
-const CURSE_CONFIG = {
-    sla_breach: {
-        icon:    '💀',
-        label:   'Maldição do Atraso',
-        color:   '#e74c3c',
-        penalty: 'XP reduzido pela metade nesta entrega.',
-        cure:    'Conclua qualquer missão para quebrar a maldição.'
-    },
-    abandoned: {
-        icon:    '👻',
-        label:   'Maldição do Abandono',
-        color:   '#8e44ad',
-        penalty: 'Gold reduzido pela metade nesta entrega.',
-        cure:    'Conclua qualquer missão para quebrar a maldição.'
-    },
-    csat_low: {
-        icon:    '💔',
-        label:   'Maldição da Insatisfação',
-        color:   '#e67e22',
-        penalty: 'XP e Gold reduzidos. Missões urgentes bloqueadas.',
-        cure:    'Conclua uma quest de Suporte com CSAT ≥ 4★.'
-    }
-};
 
 let playerData = {
     id:          null,
@@ -91,7 +64,7 @@ function startBoardAutoRefresh() {
         if (countdown <= 0) {
             countdown = REFRESH_SECONDS;
             if (btn) btn.classList.add('refreshing');
-            loadBoard().then(() => {
+            Promise.all([loadBoard(), fetchPlayerState()]).then(() => {
                 if (btn) btn.classList.remove('refreshing');
             });
         }
@@ -1039,13 +1012,6 @@ function showLevelUpAnimation(level) {
 // ==========================================
 let tempSelectedAvatar = '';
 
-const ALL_ACHIEVEMENTS = [
-    { key: 'first_quest', title: '🎖️ Aventureiro Estreante', desc: '1 missão concluída' },
-    { key: 'quests_5',   title: '⚔️ Guerreiro Dedicado',    desc: '5 missões concluídas' },
-    { key: 'quests_10',  title: '🛡️ Veterano da Guilda',    desc: '10 missões concluídas' },
-    { key: 'quests_25',  title: '👑 Herói Lendário',         desc: '25 missões concluídas' },
-    { key: 'quests_50',  title: '🌟 Mestre das Missões',     desc: '50 missões concluídas' }
-];
 
 function renderAchievementBadges() {
     const container = document.getElementById('achievementsBadges');
@@ -1087,6 +1053,22 @@ window.openProfileModal = () => {
         el.classList.remove('selected');
         if (el.getAttribute('src') === playerData.avatar) el.classList.add('selected');
     });
+
+    const curseBannerEl = document.getElementById('modalCurseBanner');
+    if (curseBannerEl) {
+        const cfg = playerData.curseType ? CURSE_CONFIG[playerData.curseType] : null;
+        if (cfg) {
+            curseBannerEl.style.cssText = `display:block; background:rgba(0,0,0,0.3); border:1px solid ${cfg.color}; color:${cfg.color}; padding:10px 12px; border-radius:2px;`;
+            curseBannerEl.innerHTML = `
+                <div style="font-size:9px;font-weight:bold;letter-spacing:1px;margin-bottom:4px;">${cfg.icon} ${cfg.label.toUpperCase()}</div>
+                <div style="font-size:8px;color:#e67e22;">⚠ ${cfg.penalty}</div>
+                <div style="font-size:7px;color:#7f8c8d;margin-top:4px;">✨ Cura: ${cfg.cure}</div>
+            `;
+        } else {
+            curseBannerEl.style.display = 'none';
+        }
+    }
+
     renderAchievementBadges();
 };
 

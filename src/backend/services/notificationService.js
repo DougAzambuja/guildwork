@@ -54,25 +54,18 @@ async function notifyLevelUp(userId, newLevel) {
 // TRIGGER: Conquista desbloqueada
 // ==========================================
 async function checkAndNotifyAchievement(userId, questsCompleted) {
-    const milestone = ACHIEVEMENTS.find(a => a.at === questsCompleted);
-    if (!milestone) return;
-
-    // Persistir conquista no User (se ainda não foi desbloqueada)
     const user = await User.findById(userId).select('achievements');
-    const alreadyUnlocked = user?.achievements?.some(a => a.key === milestone.key);
-    if (!alreadyUnlocked) {
-        await User.findByIdAndUpdate(userId, {
-            $push: { achievements: { key: milestone.key, title: milestone.title } }
-        });
-    }
+    const unlockedKeys = new Set((user?.achievements || []).map(a => a.key));
 
-    await create(
-        userId,
-        'achievement',
-        milestone.title,
-        milestone.message,
-        { quests_completed: questsCompleted }
-    );
+    // Concede todos os marcos ainda não desbloqueados até o total atual
+    const toGrant = ACHIEVEMENTS.filter(a => a.at <= questsCompleted && !unlockedKeys.has(a.key));
+
+    for (const milestone of toGrant) {
+        await User.findByIdAndUpdate(userId, {
+            $push: { achievements: { key: milestone.key, title: milestone.title, unlocked_at: new Date() } }
+        });
+        await create(userId, 'achievement', milestone.title, milestone.message, { quests_completed: milestone.at });
+    }
 }
 
 // ==========================================

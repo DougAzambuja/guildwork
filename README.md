@@ -29,11 +29,12 @@ GUILDWORK/
 │   └── frontend/
 │       ├── assets/imgs/            # Sprites e texturas pixel art
 │       ├── css/style.css           # CSS modularizado por componente
-│       ├── js/                     # mural.js, guild.js, loja.js, admin-*.js, notifications.js, utils.js
+│       ├── js/                     # mural.js, guild.js, loja.js, perfil.js, admin-*.js, notifications.js, utils.js (constantes compartilhadas)
 │       ├── index.html              # Board Kanban (jogador)
-│       ├── guild.html              # Tela da Guilda
+│       ├── guild.html              # Tela da Guilda (ranking + link para perfil público)
 │       ├── loja.html               # Loja de itens
 │       ├── login.html              # Autenticação
+│       ├── perfil.html             # Perfil público do aventureiro (métricas agregadas)
 │       ├── admin.html              # Painel Admin
 │       ├── admin-quests.html       # Gestão de Missões
 │       ├── admin-roster.html       # Gestão de Membros
@@ -58,7 +59,10 @@ GUILDWORK/
    - Streak 3 → XP Duplo nas próximas 2 quests
    - Streak 5 → XP Duplo por 24 horas
 6. **Tesouro da Guilda:** % do Gold de cada quest concluída vai automaticamente para o tesouro da guilda (tax configurável). Líder pode distribuir para membros.
-7. **Prevenção de Exploit na Loja:** O servidor recalcula o total pelo banco antes de debitar.
+7. **Streak de Entregas Diárias:** Cada dia com ao menos 1 quest concluída incrementa o streak. Bônus de XP flat (não afetado por buffs/maldições) ao atingir marcos: 3 dias (+50 XP), 7 dias (+150 XP), 14 dias (+300 XP), 30 dias (+500 XP).
+8. **Conquistas (Achievements):** Desbloqueadas automaticamente pelo servidor conforme missões concluídas (marcos: 1, 5, 10, 25, 50). Retroativamente concedidas se o usuário já ultrapassou o marco.
+9. **Perfil Público:** Cada aventureiro tem uma página de perfil acessível via `/perfil.html#ID` com métricas agregadas (XP total ganho, Gold total, CSAT médio, taxa limpa, streak, conquistas).
+10. **Prevenção de Exploit na Loja:** O servidor recalcula o total pelo banco antes de debitar.
 
 ## 🚀 Como Rodar o Projeto
 

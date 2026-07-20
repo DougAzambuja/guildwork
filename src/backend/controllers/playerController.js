@@ -1,3 +1,4 @@
+const mongoose            = require('mongoose');
 const User                = require('../models/user');
 const LootItem            = require('../models/lootItem');
 const QuestCompletion     = require('../models/questCompletion');
@@ -21,12 +22,16 @@ exports.getProfile = async (req, res) => {
 // GET /api/players/:id/public — perfil público de outro jogador (sem dados sensíveis)
 exports.getPublicProfile = async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(404).json({ message: 'Jogador não encontrado.' });
+        }
+
         const [user, agg] = await Promise.all([
             User.findById(req.params.id).select(
                 'nome username avatar_url level xp coins faction quests_completed achievements delivery_streak is_cursed curse_type'
             ),
             QuestCompletion.aggregate([
-                { $match: { user_id: require('mongoose').Types.ObjectId.createFromHexString(req.params.id) } },
+                { $match: { user_id: new mongoose.Types.ObjectId(req.params.id) } },
                 { $group: {
                     _id:          null,
                     total_xp:     { $sum: '$xp_gained'    },

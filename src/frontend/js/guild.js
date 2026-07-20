@@ -7,7 +7,6 @@ function logout() {
     window.location.href = 'login.html';
 }
 
-function xpParaProximoNivel(level) { return 200 * (level + 1) + 300; }
 
 function xpCellHtml(xp, level) {
     const needed = xpParaProximoNivel(level);
