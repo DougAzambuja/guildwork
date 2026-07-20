@@ -64,6 +64,58 @@ exports.getPublicProfile = async (req, res) => {
     }
 };
 
+// GET /api/players/leaderboard — ranking semanal por XP ganho na semana corrente
+exports.getLeaderboard = async (req, res) => {
+    try {
+        const now = new Date();
+        const daysFromMonday = now.getDay() === 0 ? 6 : now.getDay() - 1;
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - daysFromMonday);
+        weekStart.setHours(0, 0, 0, 0);
+
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 7);
+
+        const rankings = await QuestCompletion.aggregate([
+            { $match: { createdAt: { $gte: weekStart } } },
+            { $group: {
+                _id:          '$user_id',
+                weekly_xp:    { $sum: '$xp_gained' },
+                quests_count: { $sum: 1 },
+            }},
+            { $sort: { weekly_xp: -1 } },
+            { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'user' } },
+            { $unwind: '$user' },
+            { $project: {
+                _id:          0,
+                user_id:      '$_id',
+                weekly_xp:    1,
+                quests_count: 1,
+                nome:         '$user.nome',
+                username:     '$user.username',
+                avatar_url:   '$user.avatar_url',
+                level:        '$user.level',
+                faction:      '$user.faction',
+                is_cursed:    '$user.is_cursed',
+            }}
+        ]);
+
+        const myId = req.user.id;
+
+        res.json({
+            rankings: rankings.map((r, i) => ({
+                ...r,
+                rank: i + 1,
+                isMe: r.user_id.toString() === myId,
+            })),
+            weekStart: weekStart.toISOString(),
+            weekEnd:   weekEnd.toISOString(),
+        });
+    } catch (err) {
+        res.status(500).json({ message: 'Erro interno.', error: err.message });
+    }
+};
+
 // PUT /api/players/profile — atualiza perfil (nome, avatar)
 exports.updateProfile = async (req, res) => {
     try {
