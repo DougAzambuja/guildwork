@@ -543,35 +543,28 @@ body {
 /* =========================================
    8. LAYOUT DO MURAL E OBJETIVOS
    ========================================= */
+
+/* Impede scroll de página no board — main-wrapper tem min-height:100vh
+   mas o top-bar (75px) fica fora dele, somando 100vh+75px no total.
+   :has() garante que só a página com o mural seja afetada. */
+html:has(.mural-layout),
+body:has(.mural-layout) {
+    overflow: hidden;
+    height: 100%;
+}
+
 .mural-layout {
     display: flex;
     gap: 20px;
     align-items: flex-start;
 }
 
-/* Quadro Maior e com Rolagem (Scroll) Responsiva */
+/* Quadro — ocupa toda a altura disponível da tela */
 .mural-layout .board-container {
     width: 75%;
-    height: 65vh;
-    min-height: 550px;
-    overflow-y: auto;
+    height: calc(100vh - 115px);
+    overflow-y: hidden;
     align-content: start;
-}
-
-/* Scrollbar Temática em Pixel Art para o Quadro */
-.mural-layout .board-container::-webkit-scrollbar {
-    width: 16px;
-}
-.mural-layout .board-container::-webkit-scrollbar-track {
-    background: #3e2312; /* Cor do fundo da madeira */
-    border-left: 4px solid #111;
-}
-.mural-layout .board-container::-webkit-scrollbar-thumb {
-    background: #f1c40f; /* Cor amarela combinando com o ouro */
-    border: 3px solid #111;
-}
-.mural-layout .board-container::-webkit-scrollbar-thumb:hover {
-    background: #e67e22; /* Fica laranja ao passar o mouse */
 }
 
 /* Painel Lateral Redimensionado */
@@ -634,7 +627,7 @@ body {
    ========================================= */
 .objectives-container {
     overflow-y: auto;
-    max-height: calc(65vh + 10px);
+    max-height: calc(100vh - 115px);
 }
 
 .objectives-container::-webkit-scrollbar { width: 6px; }
@@ -1147,8 +1140,7 @@ body {
 .board-container.kanban-mode {
     display: block;
     padding: 20px;
-    height: 65vh;
-    min-height: 550px;
+    height: calc(100vh - 115px);
     overflow: hidden;
     box-sizing: border-box;
 }
@@ -1746,3 +1738,70 @@ body {
 
 .cart-balance-preview.ok    { color: #2ecc71; }
 .cart-balance-preview.short { color: #e74c3c; animation: pulse 1s infinite; }
+
+/* =========================================
+   20. RESPONSIVIDADE — SEM MOBILE (≥768px)
+   Dois breakpoints cobre laptops menores e
+   tablets grandes. Mobile vem numa sprint futura.
+   Fórmula da altura: 100vh - topbar - (padding × 2)
+   ========================================= */
+
+/* ≤1100px — laptops menores / monitores compactos */
+@media (max-width: 1100px) {
+    .main-wrapper { padding: 12px; }
+
+    /* Altura: 75px topbar + 12+12px padding = 99px */
+    .mural-layout .board-container,
+    .board-container.kanban-mode { height: calc(100vh - 99px); }
+    .objectives-container         { max-height: calc(100vh - 99px); }
+
+    .mural-layout { gap: 14px; }
+
+    /* Top bar ligeiramente mais compacta */
+    .top-bar  { padding: 10px 16px; gap: 10px; }
+    .actions  { gap: 8px; }
+    .actions .btn-pixel { font-size: 8px; padding: 7px 9px; }
+
+    /* Caderneta: padding menor */
+    .objectives-container { padding: 14px; }
+    .objectives-title     { font-size: 12px; }
+}
+
+/* ≤900px — tablets grandes / laptops de 13" */
+@media (max-width: 900px) {
+    .main-wrapper { padding: 8px; }
+
+    /* Altura: 75px topbar + 8+8px padding = 91px */
+    .mural-layout .board-container,
+    .board-container.kanban-mode {
+        height: calc(100vh - 91px);
+        width: 63%;
+    }
+    .objectives-container {
+        max-height: calc(100vh - 91px);
+        width: 37%;
+        padding: 10px;
+    }
+
+    .mural-layout { gap: 8px; }
+
+    /* Top bar mais compacta — evita quebra de linha */
+    .top-bar  { padding: 8px 12px; gap: 8px; }
+    .actions  { gap: 5px; }
+    .actions .btn-pixel { font-size: 7px; padding: 6px 7px; }
+    .stats h1 { font-size: 10px; }
+
+    /* Kanban: colunas com largura mínima + scroll horizontal
+       para quando as colunas ficam muito apertadas */
+    .kanban-board   { overflow-x: auto; }
+    .kanban-column  { min-width: 190px; flex-shrink: 0; }
+    .kanban-col-body { padding: 8px; gap: 8px; }
+    .kanban-card    { padding: 10px; }
+
+    /* Caderneta: fontes menores para caber no espaço reduzido */
+    .objectives-title  { font-size: 10px; margin-bottom: 12px; }
+    .sidebar-divider   { font-size: 7px; }
+    .sidebar-metric    { margin-bottom: 10px; }
+    .sprint-health-grid { gap: 4px; }
+    .sprint-health-count { font-size: 18px; }
+}
