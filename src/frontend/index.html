@@ -25,6 +25,7 @@
 
             <div class="actions">
                 <button class="btn-pixel" id="btnRefreshBoard" onclick="loadBoard()" title="Recarregar board">↻ Atualizar</button>
+                <a href="#" class="btn-pixel" id="linkMeuPerfil" data-cy="link-meu-perfil" style="background:#2980b9;">🧙 Perfil</a>
                 <a href="guild.html" class="btn-pixel" data-cy="link-guilda" style="background:#8e44ad;">🏰 Guilda</a>
                 <a href="loja.html" class="btn-pixel shop-btn" data-cy="link-loja">Ir para Loja</a>
                 <button class="btn-pixel logout-btn" data-cy="btn-logout" onclick="logout()">Sair</button>
@@ -215,48 +216,22 @@
     </div>
 
     <div id="profileModal" class="modal-overlay" style="display: none;" data-cy="profile-modal">
-        <div class="modal-content">
-            <h2 class="section-title" style="text-align: center;">SEU HERÓI</h2>
+        <div class="modal-content" style="max-width:320px; text-align:center;">
+            <h2 class="section-title" style="text-align:center;">SEU HERÓI</h2>
 
-            <img src="" id="modalAvatarPreview" class="avatar-preview" alt="Preview">
+            <img src="" id="modalAvatarPreview" class="avatar-preview" alt="Avatar" style="margin:0 auto 12px;">
 
-            <form id="profileForm" data-cy="profile-form">
-                <div class="form-group">
-                    <label>Nome do Aventureiro</label>
-                    <input type="text" id="editProfileName" class="pixel-input" required data-cy="input-profile-name" autocomplete="off">
-                </div>
-
-                <div class="form-group">
-                    <label style="text-align: center; margin-top: 15px;">Escolha uma Classe Inicial</label>
-                    <div class="avatar-grid" id="avatarGrid">
-                        <img src="assets/imgs/caneca_pixel.jpg" class="avatar-option" onclick="selectAvatar('assets/imgs/caneca_pixel.jpg', this)" title="Mago do Café">
-                        <img src="assets/imgs/mouse_pixel.jpg" class="avatar-option" onclick="selectAvatar('assets/imgs/mouse_pixel.jpg', this)" title="Guerreiro do Clique">
-                        <img src="assets/imgs/mochila_pixel.jpg" class="avatar-option" onclick="selectAvatar('assets/imgs/mochila_pixel.jpg', this)" title="Ladino Suporte">
-                        <img src="assets/imgs/caneta_pixel.jpg" class="avatar-option" onclick="selectAvatar('assets/imgs/caneta_pixel.jpg', this)" title="Escudeiro de QA">
-                    </div>
-                </div>
-
-                <div class="modal-divider"><span>OU</span></div>
-
-                <div class="form-group">
-                    <label>Usar Avatar Customizado (URL da Imagem)</label>
-                    <input type="text" id="editProfilePic" class="pixel-input" placeholder="Cole o link de uma imagem..." data-cy="input-profile-pic">
-                </div>
-
-                <div class="actions" style="margin-top: 25px; justify-content: space-between;">
-                    <button type="button" class="btn-pixel" style="background-color: #7f8c8d;" onclick="closeProfileModal()">CANCELAR</button>
-                    <button type="submit" class="btn-pixel" style="background-color: #27ae60;">SALVAR PERFIL</button>
-                </div>
-            </form>
+            <div id="modalPlayerName" style="font-size:12px; color:#f39c12; letter-spacing:1px; margin-bottom:4px;"></div>
+            <div id="modalPlayerLevel" style="font-size:8px; color:#7f8c8d; margin-bottom:16px;"></div>
 
             <!-- Maldição ativa -->
-            <div id="modalCurseBanner" style="display:none; margin-top:16px;"></div>
+            <div id="modalCurseBanner" style="display:none; margin-bottom:16px;"></div>
 
-            <!-- Conquistas -->
-            <div style="margin-top: 20px; border-top: 1px solid #2c3e50; padding-top: 16px;">
-                <div style="font-size: 8px; color: #7f8c8d; letter-spacing: 2px; margin-bottom: 12px;">CONQUISTAS</div>
-                <div id="achievementsBadges" style="display: flex; flex-direction: column; gap: 8px;"></div>
-            </div>
+            <a id="modalEditPerfilLink" href="#" class="btn-pixel" data-cy="btn-editar-perfil"
+               style="display:block; width:100%; box-sizing:border-box; text-align:center; background:#2980b9; margin-bottom:10px; padding:12px;">
+               🧙 EDITAR PERFIL COMPLETO
+            </a>
+            <button class="btn-pixel" style="width:100%; box-sizing:border-box; background:#7f8c8d; padding:10px;" onclick="closeProfileModal()">FECHAR</button>
         </div>
     </div>
 

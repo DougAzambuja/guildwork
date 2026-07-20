@@ -30,9 +30,10 @@ function setupLootForm() {
         e.preventDefault();
 
         const newItem = {
-            name:      document.getElementById('lootName').value.trim(),
-            price:     parseInt(document.getElementById('lootPrice').value),
-            image_url: document.getElementById('lootImage').value
+            name:        document.getElementById('lootName').value.trim(),
+            price:       parseInt(document.getElementById('lootPrice').value),
+            image_url:   document.getElementById('lootImage').value,
+            is_cosmetic: document.getElementById('lootIsCosmetic').checked
         };
 
         try {

@@ -43,6 +43,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     startBoardAutoRefresh();
 });
 
+// Quando o browser restaura a página do bfcache (ex: botão Voltar),
+// fecha o modal e refaz o fetch para garantir dados frescos (avatar, coins, etc.)
+window.addEventListener('pageshow', async (e) => {
+    if (!e.persisted) return;
+    const modal = document.getElementById('profileModal');
+    if (modal) modal.style.display = 'none';
+    await fetchPlayerState();
+});
+
 // ==========================================
 // 2. AUTO-REFRESH DO BOARD
 // ==========================================
@@ -100,8 +109,10 @@ async function fetchPlayerState() {
                     quests:    data.buff_quests_remaining || null
                 } : null,
                 csatStreak:     data.csat_streak      || 0,
-                achievements:   data.achievements     || [],
-                deliveryStreak: data.delivery_streak  || 0,
+                achievements:    data.achievements      || [],
+                deliveryStreak:  data.delivery_streak  || 0,
+                ownedCosmetics:  data.owned_cosmetics  || [],
+                faction:         data.faction          || 'Produto',
             };
 
             updateUI();
@@ -765,6 +776,9 @@ function updateUI() {
     const avatarEl = document.getElementById('playerAvatar');
     if (avatarEl) avatarEl.src = playerData.avatar;
 
+    const perfilLink = document.getElementById('linkMeuPerfil');
+    if (perfilLink && playerData.id) perfilLink.href = `perfil.html#${playerData.id}`;
+
     updateObjectivesUI();
 }
 
@@ -1008,123 +1022,36 @@ function showLevelUpAnimation(level) {
 }
 
 // ==========================================
-// 11. GESTÃO DE PERFIL (MODAL)
+// 11. MODAL DE PERFIL (preview rápido)
 // ==========================================
-let tempSelectedAvatar = '';
-
-
-function renderAchievementBadges() {
-    const container = document.getElementById('achievementsBadges');
-    if (!container) return;
-
-    const unlockedKeys = new Set((playerData.achievements || []).map(a => a.key));
-
-    container.innerHTML = ALL_ACHIEVEMENTS.map(a => {
-        const unlocked = unlockedKeys.has(a.key);
-        const stored   = (playerData.achievements || []).find(u => u.key === a.key);
-        const dateStr  = stored?.unlocked_at
-            ? new Date(stored.unlocked_at).toLocaleDateString('pt-BR')
-            : '';
-
-        return `
-            <div style="display:flex; align-items:center; gap:12px; padding:8px 10px;
-                        background:${unlocked ? 'rgba(243,156,18,0.08)' : 'rgba(255,255,255,0.02)'};
-                        border:1px solid ${unlocked ? '#f39c12' : '#2c3e50'};
-                        border-radius:3px; opacity:${unlocked ? '1' : '0.45'};">
-                <span style="font-size:20px; line-height:1; flex-shrink:0;">${unlocked ? a.title.split(' ')[0] : '🔒'}</span>
-                <div style="flex:1; min-width:0;">
-                    <div style="font-size:9px; color:${unlocked ? '#f1c40f' : '#7f8c8d'}; font-weight:bold; letter-spacing:1px;">
-                        ${a.title.split(' ').slice(1).join(' ')}
-                    </div>
-                    <div style="font-size:8px; color:#7f8c8d; margin-top:2px;">${unlocked ? (dateStr ? `Desbloqueado em ${dateStr}` : 'Desbloqueado') : a.desc}</div>
-                </div>
-                ${unlocked ? '<span style="font-size:10px;color:#27ae60;">✓</span>' : ''}
-            </div>
-        `;
-    }).join('');
-}
-
 window.openProfileModal = () => {
     document.getElementById('profileModal').style.display = 'flex';
-    document.getElementById('editProfileName').value = playerData.name;
-    tempSelectedAvatar = playerData.avatar;
-    document.getElementById('modalAvatarPreview').src = tempSelectedAvatar;
-    document.querySelectorAll('.avatar-option').forEach(el => {
-        el.classList.remove('selected');
-        if (el.getAttribute('src') === playerData.avatar) el.classList.add('selected');
-    });
+    document.getElementById('modalAvatarPreview').src = playerData.avatar;
+
+    const nameEl = document.getElementById('modalPlayerName');
+    if (nameEl) nameEl.textContent = playerData.name;
+
+    const levelEl = document.getElementById('modalPlayerLevel');
+    if (levelEl) levelEl.textContent = `Nível ${playerData.level} · ${GUILD_ICONS[playerData.faction] || '🏰'} ${playerData.faction || ''}`;
+
+    const link = document.getElementById('modalEditPerfilLink');
+    if (link && playerData.id) {
+        link.href = `perfil.html#${playerData.id}`;
+        link.onclick = () => { document.getElementById('profileModal').style.display = 'none'; };
+    }
 
     const curseBannerEl = document.getElementById('modalCurseBanner');
     if (curseBannerEl) {
         const cfg = playerData.curseType ? CURSE_CONFIG[playerData.curseType] : null;
         if (cfg) {
-            curseBannerEl.style.cssText = `display:block; background:rgba(0,0,0,0.3); border:1px solid ${cfg.color}; color:${cfg.color}; padding:10px 12px; border-radius:2px;`;
-            curseBannerEl.innerHTML = `
-                <div style="font-size:9px;font-weight:bold;letter-spacing:1px;margin-bottom:4px;">${cfg.icon} ${cfg.label.toUpperCase()}</div>
-                <div style="font-size:8px;color:#e67e22;">⚠ ${cfg.penalty}</div>
-                <div style="font-size:7px;color:#7f8c8d;margin-top:4px;">✨ Cura: ${cfg.cure}</div>
-            `;
+            curseBannerEl.style.cssText = `display:block; background:rgba(0,0,0,0.3); border:1px solid ${cfg.color}; color:${cfg.color}; padding:10px 12px; border-radius:2px; font-size:8px;`;
+            curseBannerEl.innerHTML = `${cfg.icon} ${cfg.label} ativa — ${cfg.penalty}`;
         } else {
             curseBannerEl.style.display = 'none';
         }
     }
-
-    renderAchievementBadges();
 };
 
 window.closeProfileModal = () => {
     document.getElementById('profileModal').style.display = 'none';
 };
-
-window.selectAvatar = (url, element) => {
-    tempSelectedAvatar = url;
-    document.getElementById('modalAvatarPreview').src = url;
-    document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
-    if (element) element.classList.add('selected');
-};
-
-const editProfilePicEl = document.getElementById('editProfilePic');
-if (editProfilePicEl) {
-    editProfilePicEl.addEventListener('input', function(e) {
-        const val = e.target.value.trim();
-        if (val) {
-            tempSelectedAvatar = val;
-            document.getElementById('modalAvatarPreview').src = val;
-            document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
-        }
-    });
-}
-
-const profileForm = document.getElementById('profileForm');
-if (profileForm) {
-    profileForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const newName = document.getElementById('editProfileName').value.trim();
-        const newPic  = document.getElementById('editProfilePic').value.trim() || tempSelectedAvatar;
-
-        try {
-            const res = await fetch(`${API_URL}/players/me`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ nome: newName, avatar_url: newPic })
-            });
-
-            if (res.ok) {
-                playerData.name   = newName;
-                playerData.avatar = newPic;
-                localStorage.setItem('guild_user', newName);
-                updateUI();
-                closeProfileModal();
-                showToast('Perfil forjado com sucesso!');
-            } else {
-                showToast('Erro ao salvar perfil.', 'error');
-            }
-        } catch (err) {
-            console.error(err);
-            showToast('Erro de conexão com o servidor.', 'error');
-        }
-    });
-}

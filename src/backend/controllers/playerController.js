@@ -213,10 +213,45 @@ exports.checkout = async (req, res) => {
         }
 
         user.coins -= total;
+
+        // Para itens cosméticos: adiciona ao guarda-roupa do jogador (sem duplicatas)
+        const cosmeticsBought = [];
+        for (const cartItem of items) {
+            const dbItem = dbItems.find(i => i._id.toString() === cartItem.id);
+            if (dbItem.is_cosmetic) {
+                const alreadyOwned = user.owned_cosmetics.some(
+                    c => c.item_id.toString() === dbItem._id.toString()
+                );
+                if (!alreadyOwned) {
+                    user.owned_cosmetics.push({ item_id: dbItem._id, name: dbItem.name, image: dbItem.image });
+                    cosmeticsBought.push({ name: dbItem.name, image: dbItem.image });
+                }
+            }
+        }
+
         await user.save();
 
-        res.json({ message: 'Compra processada.', updatedCoins: user.coins });
+        res.json({ message: 'Compra processada.', updatedCoins: user.coins, cosmeticsBought });
 
+    } catch (err) {
+        res.status(500).json({ message: 'Erro interno.', error: err.message });
+    }
+};
+
+// PUT /api/players/equip-cosmetic — equipa um cosmético como avatar
+exports.equipCosmetic = async (req, res) => {
+    try {
+        const { image } = req.body;
+        if (!image) return res.status(400).json({ message: 'Imagem obrigatória.' });
+
+        const user = await User.findById(req.user.id);
+        const owns = user.owned_cosmetics.some(c => c.image === image);
+        if (!owns) return res.status(403).json({ message: 'Cosmético não encontrado no guarda-roupa.' });
+
+        user.avatar_url = image;
+        await user.save();
+
+        res.json({ message: 'Cosmético equipado.', avatar_url: user.avatar_url });
     } catch (err) {
         res.status(500).json({ message: 'Erro interno.', error: err.message });
     }

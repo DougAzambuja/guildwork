@@ -50,6 +50,13 @@ const UserSchema = new mongoose.Schema({
     delivery_streak:  { type: Number, default: 0 },
     last_delivery_at: { type: Date,   default: null },
 
+    // Cosméticos comprados na loja
+    owned_cosmetics: [{
+        item_id: { type: mongoose.Schema.Types.ObjectId, ref: 'LootItem' },
+        name:    { type: String },
+        image:   { type: String },
+    }],
+
     // Buff temporário via streak de CSAT
     csat_streak:           { type: Number, default: 0 },
     buff_type:             { type: String, enum: ['xp_double_activity', 'xp_double_time'], default: null },

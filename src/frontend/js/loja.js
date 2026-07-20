@@ -47,6 +47,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateCartUI();
 });
 
+window.addEventListener('pageshow', async (e) => {
+    if (!e.persisted) return;
+    await loadPlayerProfile();
+});
+
 // ==========================================
 // 1. CARREGAR E RENDERIZAR PERFIL DO JOGADOR
 // ==========================================
@@ -151,13 +156,19 @@ async function loadCustomLoot() {
             customLoot.forEach((item, index) => {
                 const shopItem = document.createElement('div');
                 shopItem.className = 'shop-item';
-                shopItem.setAttribute('data-cy',    `product-custom-${index}`);
-                shopItem.setAttribute('data-price', item.price);
-                shopItem.setAttribute('data-id',    item._id);
+                shopItem.setAttribute('data-cy',          `product-custom-${index}`);
+                shopItem.setAttribute('data-price',        item.price);
+                shopItem.setAttribute('data-id',           item._id);
+                shopItem.setAttribute('data-is-cosmetic',  item.is_cosmetic ? '1' : '0');
+
+                const cosmeticBadge = item.is_cosmetic
+                    ? `<div style="font-size:7px;color:#9b59b6;letter-spacing:1px;margin-bottom:4px;">🎭 COSMÉTICO</div>`
+                    : '';
 
                 shopItem.innerHTML = `
+                    ${cosmeticBadge}
                     <div class="item-name" style="color: #f1c40f;">✨ ${item.name}</div>
-                    <img src="${item.image || 'assets/imgs/caneca_pixel.jpg'}" alt="Img" class="item-img" style="border-color: #f1c40f;">
+                    <img src="${item.image || 'assets/imgs/caneca_pixel.jpg'}" alt="Img" class="item-img" style="border-color: ${item.is_cosmetic ? '#9b59b6' : '#f1c40f'};">
                     <div class="item-price">${item.price} 💰</div>
                     <div class="shop-item-lock-notice"></div>
                     <button class="btn-pixel btn-buy" data-cy="btn-add-custom-${index}" onclick="addToCart('${item._id}', '${item.name}', ${item.price})">Adicionar</button>
@@ -311,9 +322,23 @@ async function checkout() {
             playerData.coins = currentCoins;
             renderPlayerProfile();
 
+            const cartHasCosmetics = cart.some(item => {
+                const el = document.querySelector(`[data-id="${item.id}"]`);
+                return el && el.getAttribute('data-is-cosmetic') === '1';
+            });
+
             clearCart();
             applyAffordability(currentCoins);
-            showToast('Compra realizada com sucesso! O RH enviará os itens 🎁');
+
+            if (cartHasCosmetics) {
+                if (data.cosmeticsBought && data.cosmeticsBought.length > 0) {
+                    showToast('Cosmético adquirido! Equipe no seu Perfil 🎭');
+                } else {
+                    showToast('Cosmético já está no seu Guarda-Roupa! 🎭');
+                }
+            } else {
+                showToast('Compra realizada com sucesso! O RH enviará os itens 🎁');
+            }
         } else {
             showToast(`Falha no checkout: ${data.message || 'Erro inesperado'}`, 'error');
         }
