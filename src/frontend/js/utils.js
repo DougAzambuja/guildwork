@@ -20,6 +20,14 @@ const CURSE_CONFIG = {
     csat_low:   { icon: '💔', label: 'Maldição da Insatisfação', color: '#e67e22', penalty: 'XP e Gold reduzidos. Missões urgentes bloqueadas.', cure: 'Conclua uma quest de Suporte com CSAT ≥ 4★.'      },
 };
 
+// Aplica/remove o efeito visual de maldição (tom verde) no avatar do jogador — usado
+// em toda tela que mostra o próprio avatar, não só no board (mural.js já tem sua
+// própria lógica mais completa com curse-warning e não usa este helper).
+function applyCurseAvatarClass(el, isCursed) {
+    if (!el) return;
+    el.classList.toggle('curse-avatar', !!isCursed);
+}
+
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     if (!container) return;

@@ -1131,6 +1131,15 @@ body:has(.mural-layout) {
     background-color: #c0392b !important;
 }
 
+/* Mesmo efeito de maldição do board (.avatar.curse-critical), mas numa classe própria
+   pra funcionar em qualquer avatar do jogador em qualquer tela (guilda, loja, ranking,
+   perfil) — sem depender da classe .avatar específica do top-bar do board. */
+.curse-avatar {
+    border-color: #c0392b !important;
+    animation: borderFlicker 0.4s infinite alternate;
+    filter: hue-rotate(90deg) saturate(2) brightness(0.8); /* Filtro Verde Zumbi/Envenenado */
+}
+
 /* --- ANIMAÇÕES DA MALDIÇÃO --- */
 @keyframes borderPulse {
     from { box-shadow: 0 0 4px #e67e22; }

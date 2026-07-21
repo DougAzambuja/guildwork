@@ -1472,7 +1472,9 @@ function showLevelUpAnimation(level) {
 // ==========================================
 window.openProfileModal = () => {
     document.getElementById('profileModal').style.display = 'flex';
-    document.getElementById('modalAvatarPreview').src = playerData.avatar;
+    const modalAvatarEl = document.getElementById('modalAvatarPreview');
+    modalAvatarEl.src = playerData.avatar;
+    applyCurseAvatarClass(modalAvatarEl, playerData.isCursed);
 
     const nameEl = document.getElementById('modalPlayerName');
     if (nameEl) nameEl.textContent = playerData.name;

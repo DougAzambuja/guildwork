@@ -184,6 +184,7 @@ function renderPlayerTopBar() {
     if (levelEl)  levelEl.textContent = `Lvl: ${me.level}`;
     if (coinEl)   coinEl.textContent  = me.coins;
     if (avatarEl) avatarEl.src        = me.avatar_url || 'assets/imgs/caneca_pixel.jpg';
+    applyCurseAvatarClass(avatarEl, me.is_cursed);
     if (xpBar) {
         const pct = Math.min((me.xp / xpParaProximoNivel(me.level)) * 100, 100);
         xpBar.style.width = pct + '%';
