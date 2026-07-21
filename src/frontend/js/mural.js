@@ -326,8 +326,13 @@ function renderTodoCard(quest, myWipCount) {
                      : csatBlocked  ? '<div class="wip-warning">💔 Maldição: urgentes bloqueadas</div>'
                      : '';
 
+    const subtaskBadge = quest.subtasks_total > 0
+        ? `<span style="background:#8e44ad;color:#fff;font-size:8px;padding:2px 6px;display:inline-block;margin-bottom:4px;" data-cy="subtask-badge">[${quest.subtasks_done || 0}/${quest.subtasks_total}]</span>`
+        : '';
+
     el.innerHTML = `
         <span class="kanban-type-badge badge-${quest.type || 'normal'}">${(quest.type || 'NORMAL').toUpperCase()}</span>
+        ${subtaskBadge}
         <div class="kanban-card-title">${quest.title}</div>
         <div class="kanban-card-meta">
             <span class="xp-reward">+${quest.xp_reward} XP</span>
@@ -369,8 +374,13 @@ function renderInProgressCard(quest) {
            </button>`
         : '';
 
+    const subtaskBadgeIP = quest.subtasks_total > 0
+        ? `<span style="background:#8e44ad;color:#fff;font-size:8px;padding:2px 6px;display:inline-block;margin-bottom:4px;" data-cy="subtask-badge">[${quest.subtasks_done || 0}/${quest.subtasks_total}]</span>`
+        : '';
+
     el.innerHTML = `
         <span class="kanban-type-badge badge-${quest.type || 'normal'}">${(quest.type || 'NORMAL').toUpperCase()}</span>
+        ${subtaskBadgeIP}
         <div class="kanban-card-title">${quest.title}</div>
         <div class="kanban-card-meta">
             <span class="xp-reward">+${quest.xp_reward} XP</span>
@@ -473,10 +483,16 @@ async function openQuestModal(questId) {
 
     const checklistSection = document.getElementById('qdm-checklist-section');
     const commentsList     = document.getElementById('qdm-comments-list');
+    const subtaskForm      = document.getElementById('qdm-subtask-form');
+    const subtaskSection   = document.getElementById('qdm-subtasks-section');
     if (checklistSection) checklistSection.style.display = 'none';
     if (commentsList) commentsList.innerHTML = '<div style="color:#7f8c8d;font-size:9px;text-align:center;padding:10px;">Carregando...</div>';
+    if (subtaskForm)    subtaskForm.style.display = 'none';
+    if (subtaskSection) subtaskSection.style.display = 'none';
 
-    document.getElementById('questDetailModal').style.display = 'flex';
+    const modal = document.getElementById('questDetailModal');
+    modal.style.display = 'flex';
+    modal.dataset.questId = questId;
 
     try {
         const res = await fetch(`${API_URL}/quests/${questId}`, {
@@ -485,6 +501,7 @@ async function openQuestModal(questId) {
         if (!res.ok) return;
         const full = await res.json();
         _renderModalChecklist(full);
+        _renderPlayerSubtasks(full);
         _renderModalComments(full.comments || []);
     } catch (err) {
         console.error('Erro ao carregar detalhe da quest:', err);
@@ -1517,4 +1534,124 @@ window.openProfileModal = () => {
 
 window.closeProfileModal = () => {
     document.getElementById('profileModal').style.display = 'none';
+};
+
+// ==========================================
+// SUBTASKS — modal do jogador (somente leitura)
+// ==========================================
+function _renderPlayerSubtasks(quest) {
+    const section  = document.getElementById('qdm-subtasks-section');
+    const progEl   = document.getElementById('qdm-subtasks-progress');
+    const listEl   = document.getElementById('qdm-subtask-list');
+    if (!section || !progEl || !listEl) return;
+
+    const canManage = isGuildLeader && quest.faction === playerData.faction;
+    const isSubtask = !!quest.parent_id;
+
+    const addBtn = document.getElementById('qdm-subtask-add-btn');
+    if (addBtn) addBtn.style.display = (canManage && !isSubtask) ? 'inline-block' : 'none';
+
+    const breadcrumb = document.getElementById('qdm-subtask-parent-breadcrumb');
+    if (breadcrumb) {
+        if (isSubtask && quest.parent_id) {
+            breadcrumb.style.display = 'block';
+            breadcrumb.innerHTML = `<span style="font-size:8px;color:#9b59b6;">↩ Quest pai: <button onclick="openQuestModal('${quest.parent_id._id}')" style="background:none;border:none;color:#3498db;font-family:'Press Start 2P',cursive;font-size:8px;cursor:pointer;padding:0;text-decoration:underline;">${_esc(quest.parent_id.title)}</button></span>`;
+        } else {
+            breadcrumb.style.display = 'none';
+            breadcrumb.innerHTML = '';
+        }
+    }
+
+    const subtasks = quest.subtasks || [];
+    const hasContent = subtasks.length > 0 || canManage;
+    if (!hasContent) { section.style.display = 'none'; return; }
+    section.style.display = 'block';
+
+    const total = subtasks.length;
+    const done  = subtasks.filter(s => s.status === 'done').length;
+    const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
+
+    const statusColors = { todo: '#2c3e50', in_progress: '#e67e22', done: '#27ae60' };
+    const statusLabels = { todo: 'A Fazer', in_progress: 'Em Progresso', done: 'Concluída' };
+
+    progEl.innerHTML = total > 0 ? `
+        <div style="display:flex;justify-content:space-between;font-size:8px;color:#7f8c8d;margin-bottom:4px;">
+            <span>${done} de ${total} concluídas</span><span>${pct}%</span>
+        </div>
+        <div style="background:#ddd;height:4px;border-radius:2px;overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:${pct===100?'#27ae60':'#3498db'};"></div>
+        </div>` : '<div style="font-size:8px;color:#7f8c8d;">Nenhuma subtask ainda.</div>';
+
+    listEl.innerHTML = subtasks.map(s => {
+        const color    = statusColors[s.status] || statusColors.todo;
+        const label    = statusLabels[s.status] || 'A Fazer';
+        const assignee = s.assigned_to ? (s.assigned_to.nome || s.assigned_to.username) : 'Nenhum herói responsável';
+        if (canManage) {
+            return `
+            <div onclick="openQuestModal('${s._id}')"
+                 style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#1a252f;border:1px solid #2c3e50;margin-bottom:4px;cursor:pointer;"
+                 onmouseover="this.style.background='#1e3044';this.style.borderColor='#3498db';"
+                 onmouseout="this.style.background='#1a252f';this.style.borderColor='#2c3e50';">
+                <span style="background:${color};color:#fff;font-size:7px;padding:2px 6px;white-space:nowrap;flex-shrink:0;">${label}</span>
+                <span style="flex:1;font-size:9px;color:#ecf0f1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_esc(s.title)}</span>
+                <span style="font-size:8px;color:#7f8c8d;white-space:nowrap;flex-shrink:0;">👤 ${_esc(assignee)}</span>
+            </div>`;
+        }
+        return `
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#1a252f;border:1px solid #2c3e50;margin-bottom:4px;">
+            <span style="background:${color};color:#fff;font-size:7px;padding:2px 6px;white-space:nowrap;flex-shrink:0;">${label}</span>
+            <span style="flex:1;font-size:9px;color:#ecf0f1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_esc(s.title)}</span>
+            <span style="font-size:8px;color:#7f8c8d;white-space:nowrap;flex-shrink:0;">👤 ${_esc(assignee)}</span>
+        </div>`;
+    }).join('');
+}
+
+window.playerToggleSubtaskForm = () => {
+    const form = document.getElementById('qdm-subtask-form');
+    if (!form) return;
+    const opening = form.style.display === 'none';
+    form.style.display = opening ? 'block' : 'none';
+    if (!opening) return;
+
+    const sel = document.getElementById('qdm-subtask-assignee-select');
+    if (sel && sel.options.length <= 1 && guildMembers.length) {
+        sel.innerHTML = '<option value="">👤 Sem atribuição</option>' +
+            guildMembers.map(m => `<option value="${m._id}">${_esc(m.nome || m.username)}</option>`).join('');
+    }
+};
+
+window.playerCreateSubtask = async () => {
+    const title       = document.getElementById('qdm-subtask-title-input')?.value.trim();
+    const assignee    = document.getElementById('qdm-subtask-assignee-select')?.value;
+    const xp_reward   = parseInt(document.getElementById('qdm-subtask-xp-input')?.value || '0', 10) || 0;
+    const coin_reward = parseInt(document.getElementById('qdm-subtask-gold-input')?.value || '0', 10) || 0;
+    if (!title) { showToast('Informe o título da subtask.', 'error'); return; }
+
+    const questId = document.getElementById('questDetailModal')?.dataset.questId;
+    if (!questId) return;
+
+    try {
+        const res = await fetch(`${API_URL}/quests/${questId}/subtasks`, {
+            method:  'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ title, assigned_to: assignee || null, xp_reward, coin_reward })
+        });
+        const data = await res.json();
+        if (!res.ok) { showToast(data.message || 'Erro ao criar subtask.', 'error'); return; }
+
+        document.getElementById('qdm-subtask-title-input').value = '';
+        const xpEl   = document.getElementById('qdm-subtask-xp-input');
+        const goldEl = document.getElementById('qdm-subtask-gold-input');
+        if (xpEl)   xpEl.value   = '0';
+        if (goldEl) goldEl.value = '0';
+        document.getElementById('qdm-subtask-form').style.display = 'none';
+        showToast('Subtask criada!', 'success');
+
+        const freshRes = await fetch(`${API_URL}/quests/${questId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (freshRes.ok) _renderPlayerSubtasks(await freshRes.json());
+    } catch {
+        showToast('Erro de conexão.', 'error');
+    }
 };

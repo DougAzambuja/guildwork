@@ -242,10 +242,19 @@ function renderQuestPage(quests) {
             ? ' ' + q.labels.map(l => `<span style="background:#2c3e50;color:#bdc3c7;font-size:7px;padding:1px 5px;border-radius:2px;">${l}</span>`).join(' ')
             : '';
 
+        const isSubtask = !!q.parent_id;
+        const subtaskPrefix = isSubtask
+            ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;flex-shrink:0;margin-right:5px;background:#3d1a52;border:2px solid #8e44ad;border-radius:2px;color:#f0e6f6;font-size:9px;font-weight:900;font-family:\'Courier New\',monospace;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.9);">L</span>'
+            : '';
+        const trStyle = isSubtask ? 'background:rgba(142,68,173,0.10);' : '';
+
         return `
-            <tr>
-                <td style="max-width:160px;">
-                    <span title="${q.title}" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${q.title}</span>
+            <tr style="${trStyle}">
+                <td style="max-width:160px;overflow:hidden;">
+                    <div style="display:flex;align-items:center;overflow:hidden;">
+                        ${subtaskPrefix}
+                        <span title="${q.title}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">${q.title}</span>
+                    </div>
                     ${labelBadges}
                 </td>
                 <td>${q.type || 'normal'}</td>
@@ -353,11 +362,19 @@ window.openQuestDetail = async (questId, startInEditMode) => {
     }
 };
 
-window.closeQuestDetail = () => {
-    if (_adminEditMode && _adminHasUnsavedEdits()) {
-        if (!confirm('Você tem alterações não salvas nesta missão. Sair mesmo assim?')) return;
-    }
+let _adminPendingDiscard = null;
 
+function _adminHasSubtaskFormContent() {
+    const form = document.getElementById('qdm-a-subtask-form');
+    if (!form || form.style.display === 'none') return false;
+    return !!(document.getElementById('qdm-a-subtask-title-input')?.value.trim());
+}
+
+function _adminNeedsUnsavedWarning() {
+    return _adminEditMode && (_adminHasUnsavedEdits() || _adminHasSubtaskFormContent());
+}
+
+function _forceCloseQuestDetail() {
     const modal = document.getElementById('questAdminDetailModal');
     if (modal) modal.style.display = 'none';
     _adminDetailQuestId = null;
@@ -365,6 +382,27 @@ window.closeQuestDetail = () => {
     _adminEditMode = false;
     _adminChecklistDraft = null;
     _adminLastQuest = null;
+}
+
+window.closeQuestDetail = () => {
+    if (_adminNeedsUnsavedWarning()) {
+        _adminPendingDiscard = 'close';
+        document.getElementById('adminUnsavedModal').style.display = 'flex';
+        return;
+    }
+    _forceCloseQuestDetail();
+};
+
+window.adminCancelDiscard = () => {
+    document.getElementById('adminUnsavedModal').style.display = 'none';
+    _adminPendingDiscard = null;
+};
+
+window.adminConfirmDiscard = () => {
+    document.getElementById('adminUnsavedModal').style.display = 'none';
+    if (_adminPendingDiscard === 'close') _forceCloseQuestDetail();
+    else if (_adminPendingDiscard === 'cancel') window.adminToggleEditMode(false);
+    _adminPendingDiscard = null;
 };
 
 function renderAdminQuestDetail(quest) {
@@ -373,6 +411,17 @@ function renderAdminQuestDetail(quest) {
 
     const typeBadge = document.getElementById('qdm-a-type-badge');
     if (typeBadge) typeBadge.innerHTML = `<span class="kanban-type-badge badge-${quest.type || 'normal'}" style="font-size:9px;">${(quest.type || 'NORMAL').toUpperCase()}</span>`;
+
+    const parentBreadcrumb = document.getElementById('qdm-a-parent-breadcrumb');
+    if (parentBreadcrumb) {
+        if (quest.parent_id) {
+            parentBreadcrumb.style.display = 'block';
+            parentBreadcrumb.innerHTML = `<span style="font-size:8px;color:#9b59b6;">↩ Quest pai: <button onclick="openQuestDetail('${quest.parent_id._id}')" style="background:none;border:none;color:#3498db;font-family:'Press Start 2P',cursive;font-size:8px;cursor:pointer;padding:0;text-decoration:underline;">${_aEsc(quest.parent_id.title)}</button></span>`;
+        } else {
+            parentBreadcrumb.style.display = 'none';
+            parentBreadcrumb.innerHTML = '';
+        }
+    }
 
     const titleEl = document.getElementById('qdm-a-title');
     if (titleEl) { titleEl.textContent = quest.title; titleEl.style.display = editing ? 'none' : ''; }
@@ -402,7 +451,7 @@ function renderAdminQuestDetail(quest) {
     if (controls)   controls.style.display   = editing ? 'none' : 'flex';
     if (editForm)   editForm.style.display   = editing ? 'block' : 'none';
     if (infoGrid)   infoGrid.style.display   = editing ? 'none' : 'grid';
-    if (activitySec) activitySec.style.display = editing ? 'none' : 'block';
+    if (activitySec) activitySec.style.display = (editing || quest.parent_id) ? 'none' : 'block';
     if (editActions) editActions.style.display = editing ? 'flex' : 'none';
 
     // Checklist — modo de edição igual ao do líder de guilda: EDITAR mostra
@@ -458,6 +507,7 @@ function renderAdminQuestDetail(quest) {
         }).join('');
     }
 
+    renderAdminSubtasks(quest);
     renderAdminComments(quest.comments || []);
 }
 
@@ -551,6 +601,14 @@ window.adminToggleEditMode = (on) => {
         _adminChecklistDraft = (quest.checklist || []).map(i => ({ _id: i._id, text: i.text, done: i.done }));
     } else {
         _adminChecklistDraft = null;
+        const subtaskForm = document.getElementById('qdm-a-subtask-form');
+        if (subtaskForm) subtaskForm.style.display = 'none';
+        const titleInput = document.getElementById('qdm-a-subtask-title-input');
+        if (titleInput) titleInput.value = '';
+        const xpEl   = document.getElementById('qdm-a-subtask-xp-input');
+        const goldEl = document.getElementById('qdm-a-subtask-gold-input');
+        if (xpEl)   xpEl.value = '0';
+        if (goldEl) goldEl.value = '0';
     }
 
     renderAdminQuestDetail(quest);
@@ -600,7 +658,11 @@ function _adminHasUnsavedEdits() {
 }
 
 window.adminCancelEdit = () => {
-    if (_adminHasUnsavedEdits() && !confirm('Descartar as alterações desta missão?')) return;
+    if (_adminHasUnsavedEdits() || _adminHasSubtaskFormContent()) {
+        _adminPendingDiscard = 'cancel';
+        document.getElementById('adminUnsavedModal').style.display = 'flex';
+        return;
+    }
     window.adminToggleEditMode(false);
 };
 
@@ -632,12 +694,20 @@ window.adminSaveEdit = async () => {
         const data = await res.json();
         if (!res.ok) { showToast(data.message || 'Erro ao atualizar missão.', 'error'); return; }
 
-        _adminLastQuest = data;
-
         const checklistOk = await _adminCommitChecklistDraft();
         showToast(checklistOk ? 'Missão atualizada!' : 'Missão atualizada, mas houve erro ao salvar o checklist.', checklistOk ? 'success' : 'error');
 
         window.adminToggleEditMode(false);
+
+        // Re-fetch completo para garantir parent_id populado e dados atualizados
+        const freshRes = await fetch(`${API_URL}/quests/${_adminDetailQuestId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (freshRes.ok) {
+            _adminLastQuest = await freshRes.json();
+            renderAdminQuestDetail(_adminLastQuest);
+        }
+
         await renderAdminQuests(1);
     } catch (err) {
         console.error(err);
@@ -826,5 +896,111 @@ window.resetQuest = async (questId) => {
     } catch (err) {
         console.error(err);
         showToast('Erro de conexão com o servidor.', 'error');
+    }
+};
+
+// ==========================================
+// SUBTASKS — admin-quests modal
+// ==========================================
+const _A_STATUS_SUBTASK = {
+    todo:        { label: 'A Fazer',      color: '#2c3e50' },
+    in_progress: { label: 'Em Progresso', color: '#e67e22' },
+    done:        { label: 'Concluída',    color: '#27ae60' }
+};
+
+function renderAdminSubtasks(quest) {
+    const section = document.getElementById('qdm-a-subtasks');
+    if (!section) return;
+
+    if (quest.parent_id) {
+        section.style.display = 'none';
+        return;
+    }
+    section.style.display = 'block';
+
+    const addBtn = document.getElementById('qdm-a-subtask-add-btn');
+    if (addBtn) addBtn.style.display = '';
+
+    const progEl = document.getElementById('qdm-a-subtasks-progress');
+    const listEl = document.getElementById('qdm-a-subtask-list');
+    if (!progEl || !listEl) return;
+
+    const subtasks = quest.subtasks || [];
+    const total    = subtasks.length;
+    const done     = subtasks.filter(s => s.status === 'done').length;
+    const pct      = total > 0 ? Math.round((done / total) * 100) : 0;
+
+    progEl.innerHTML = total > 0 ? `
+        <div style="display:flex;justify-content:space-between;font-size:8px;color:#7f8c8d;margin-bottom:4px;">
+            <span>${done} de ${total} concluídas</span><span>${pct}%</span>
+        </div>
+        <div style="background:#1a252f;height:4px;border-radius:2px;overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:${pct===100?'#27ae60':'#3498db'};"></div>
+        </div>` : '<div style="font-size:8px;color:#7f8c8d;">Nenhuma subtask ainda.</div>';
+
+    listEl.innerHTML = subtasks.map(s => {
+        const st       = _A_STATUS_SUBTASK[s.status] || _A_STATUS_SUBTASK.todo;
+        const assignee = s.assigned_to ? (s.assigned_to.nome || s.assigned_to.username) : 'Nenhum herói responsável';
+        return `
+        <div onclick="openQuestDetail('${s._id}')" data-cy="btn-open-subtask"
+             style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#0d1b2a;border:1px solid #2c3e50;margin-bottom:4px;cursor:pointer;"
+             onmouseover="this.style.background='#162538';this.style.borderColor='#3498db';"
+             onmouseout="this.style.background='#0d1b2a';this.style.borderColor='#2c3e50';">
+            <span style="background:${st.color};font-size:7px;padding:2px 6px;color:#fff;white-space:nowrap;flex-shrink:0;">${st.label}</span>
+            <span style="flex:1;font-size:8px;color:#ecf0f1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_aEsc(s.title)}</span>
+            <span style="font-size:7px;color:#7f8c8d;white-space:nowrap;flex-shrink:0;">👤 ${_aEsc(assignee)}</span>
+        </div>`;
+    }).join('');
+}
+
+window.adminToggleSubtaskForm = async () => {
+    const form = document.getElementById('qdm-a-subtask-form');
+    if (!form) return;
+    const opening = form.style.display === 'none';
+    form.style.display = opening ? 'flex' : 'none';
+    if (!opening) return;
+
+    const sel = document.getElementById('qdm-a-subtask-assignee-select');
+    if (!sel || sel.options.length > 1) return;
+    try {
+        const res = await fetch(`${API_URL}/admin/roster`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!res.ok) return;
+        const players = await res.json();
+        sel.innerHTML = '<option value="">👤 Sem atribuição</option>' +
+            players.map(p => `<option value="${p._id}">${p.nome || p.username}</option>`).join('');
+    } catch {}
+};
+
+window.adminCreateSubtask = async () => {
+    const title      = document.getElementById('qdm-a-subtask-title-input')?.value.trim();
+    const assignee   = document.getElementById('qdm-a-subtask-assignee-select')?.value;
+    const xp_reward  = parseInt(document.getElementById('qdm-a-subtask-xp-input')?.value || '0', 10) || 0;
+    const coin_reward = parseInt(document.getElementById('qdm-a-subtask-gold-input')?.value || '0', 10) || 0;
+    if (!title) { showToast('Informe o título da subtask.', 'error'); return; }
+
+    try {
+        const res = await fetch(`${API_URL}/quests/${_adminDetailQuestId}/subtasks`, {
+            method:  'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ title, assigned_to: assignee || null, xp_reward, coin_reward })
+        });
+        const data = await res.json();
+        if (!res.ok) { showToast(data.message || 'Erro ao criar subtask.', 'error'); return; }
+
+        document.getElementById('qdm-a-subtask-title-input').value = '';
+        const xpEl   = document.getElementById('qdm-a-subtask-xp-input');
+        const goldEl = document.getElementById('qdm-a-subtask-gold-input');
+        if (xpEl)   xpEl.value   = '0';
+        if (goldEl) goldEl.value = '0';
+        document.getElementById('qdm-a-subtask-form').style.display = 'none';
+        showToast('Subtask criada!', 'success');
+
+        // Atualiza o painel sem fechar o modal
+        const freshRes = await fetch(`${API_URL}/quests/${_adminDetailQuestId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (freshRes.ok) renderAdminSubtasks(await freshRes.json());
+    } catch (err) {
+        showToast('Erro de conexão.', 'error');
     }
 };

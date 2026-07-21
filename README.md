@@ -166,6 +166,7 @@ net stop MongoDB
 |---|---|
 | Criar missão | Botão "+ Nova Missão" no board principal (só visível pro líder) — título, descrição, SLA, responsável (restrito a membros da própria guilda), checklist inicial e tamanho (Pequena/Média/Grande, define XP/Gold) |
 | Editar missão | No modal de detalhes: título, descrição, SLA, tamanho e checklist editáveis inline; checklist com click-to-edit (clique no item pra editar o texto, adicionar/remover itens) |
+| Criar subtask | Botão "+ Subtask" no modal de quest (visível ao líder de guilda) — título, responsável, XP e Gold configuráveis; breadcrumb de quest pai quando visualizando subtask |
 | Rascunho local | Edições ficam só na memória do navegador até clicar SALVAR; modal de confirmação avisa se o usuário tentar fechar/cancelar com alterações pendentes |
 | Excluir missão | Restrito a quests da própria guilda que não estejam `in_progress` |
 | Isolamento de guilda | Líder só enxerga/gerencia quests e atribui responsáveis dentro da própria guilda — validado no middleware `isAdminOrGuildLeader`, nunca confiando no front-end |
@@ -225,12 +226,12 @@ net stop MongoDB
 | Tela | Feature |
 |---|---|
 | **Dashboard** | Métricas da sprint com seletor (todas as sprints, padrão: ativa), desempenho por facção, totais gerais; header fixo ao scrollar |
-| **Missões** | CRUD de quests, filtros por facção/sprint/status, paginação, atribuição, cópia |
+| **Missões** | CRUD de quests, filtros por facção/sprint/status, paginação, atribuição, cópia; seção SUBTASKS com progresso, criação inline (título, responsável, XP, Gold), badge SUB na tabela e breadcrumb de quest pai |
 | **Membros (Roster)** | Recrutamento, edição, paginação, ícone 👑 para líderes de guilda |
 | **Sprints** | Criação de sprints, board kanban, gráfico burndown (linha ideal para toda a sprint, linha real até hoje com dias futuros em null); dashboard selecionável por sprint (qualquer sprint, não só a ativa); top performers com avatar e XP; quests do backlog para adicionar à sprint ativa |
 | **Loot** | CRUD de itens da loja |
 | **Métricas** | Gráficos de maldição, economia, SLA e CSAT com Canvas puro |
-| **Board da Sprint** | Visão admin do kanban com filtro de guilda server-side (`?guild_id=`); estado persiste na sessão; cards compactos com scroll por coluna; modal de detalhes com edição, checklist e comentários; kanban do player exibe apenas quests de sprints ativas |
+| **Board da Sprint** | Visão admin do kanban com filtro de guilda server-side (`?guild_id=`); estado persiste na sessão; cards compactos com scroll por coluna; modal de detalhes com edição, checklist (inclui adicionar itens inline), comentários e subtasks (XP, Gold, breadcrumb pai, seta ↗ maior); badge `[done/total]` no card; kanban do player exibe apenas quests de sprints ativas |
 
 > Todas as telas do painel compartilham `admin-header.js` (header + nav gerados dinamicamente, aba ativa detectada pela URL) e `notifications.js` (sino com polling de 30s).
 

@@ -134,6 +134,7 @@
 
             <div style="padding-right:52px;">
                 <div id="qdm-a-type-badge"></div>
+                <div id="qdm-a-parent-breadcrumb" style="display:none;margin-bottom:6px;"></div>
                 <h2 id="qdm-a-title" class="quest-modal-title" style="margin:6px 0 12px;"></h2>
             </div>
 
@@ -224,6 +225,45 @@
                 </div>
             </div>
 
+            <!-- Subtasks -->
+            <div id="qdm-a-subtasks" style="margin-bottom:14px;" data-cy="section-admin-subtasks">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <div style="font-size:8px;color:#7f8c8d;letter-spacing:1px;">SUBTASKS</div>
+                    <button type="button" id="qdm-a-subtask-add-btn" data-cy="btn-admin-add-subtask"
+                            onclick="adminToggleSubtaskForm()"
+                            style="background:#8e44ad;border:none;color:#fff;font-family:'Press Start 2P',cursive;font-size:7px;padding:4px 8px;cursor:pointer;">+ Subtask</button>
+                </div>
+                <div id="qdm-a-subtasks-progress" style="margin-bottom:8px;"></div>
+                <div id="qdm-a-subtask-form" style="display:none;background:#0d1b2a;border:1px solid #2c3e50;padding:10px;margin-bottom:8px;gap:6px;flex-direction:column;">
+                    <input type="text" id="qdm-a-subtask-title-input" class="pixel-input" data-cy="input-admin-subtask-title"
+                           placeholder="Título da subtask..." style="font-size:9px;padding:6px;width:100%;box-sizing:border-box;"
+                           onkeydown="if(event.key==='Enter'){event.preventDefault();adminCreateSubtask();}">
+                    <select id="qdm-a-subtask-assignee-select" data-cy="select-admin-subtask-assignee"
+                            style="font-family:'Press Start 2P',cursive;font-size:8px;padding:6px;background:#1a252f;color:#ecf0f1;border:2px solid #2c3e50;width:100%;outline:none;">
+                        <option value="">👤 Sem atribuição</option>
+                    </select>
+                    <div style="display:flex;gap:6px;">
+                        <div style="flex:1;">
+                            <div style="font-size:7px;color:#7f8c8d;margin-bottom:3px;">XP</div>
+                            <input type="number" id="qdm-a-subtask-xp-input" data-cy="input-admin-subtask-xp" min="0" value="0"
+                                   style="width:100%;box-sizing:border-box;font-family:'Press Start 2P',cursive;font-size:8px;padding:5px;background:#1a252f;color:#2ecc71;border:2px solid #2c3e50;outline:none;">
+                        </div>
+                        <div style="flex:1;">
+                            <div style="font-size:7px;color:#7f8c8d;margin-bottom:3px;">Gold</div>
+                            <input type="number" id="qdm-a-subtask-gold-input" data-cy="input-admin-subtask-gold" min="0" value="0"
+                                   style="width:100%;box-sizing:border-box;font-family:'Press Start 2P',cursive;font-size:8px;padding:5px;background:#1a252f;color:#f1c40f;border:2px solid #2c3e50;outline:none;">
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:6px;">
+                        <button type="button" data-cy="btn-admin-confirm-subtask" onclick="adminCreateSubtask()"
+                                style="background:#27ae60;border:none;color:#fff;font-family:'Press Start 2P',cursive;font-size:7px;padding:6px 10px;cursor:pointer;flex:1;">CRIAR</button>
+                        <button type="button" onclick="adminToggleSubtaskForm()"
+                                style="background:#7f8c8d;border:none;color:#fff;font-family:'Press Start 2P',cursive;font-size:7px;padding:6px 10px;cursor:pointer;">✕</button>
+                    </div>
+                </div>
+                <div id="qdm-a-subtask-list"></div>
+            </div>
+
             <!-- Rodapé de ações da edição -->
             <div id="qdm-a-edit-actions" style="display:none;gap:8px;margin-bottom:14px;">
                 <button type="button" class="btn-pixel" data-cy="btn-admin-save-edit" style="flex:1;background:#27ae60;" onclick="adminSaveEdit()">SALVAR</button>
@@ -244,6 +284,20 @@
                             onclick="submitAdminComment()"
                             style="font-size:8px;padding:8px 12px;background:#2980b9;flex-shrink:0;">Enviar</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmação — alterações não salvas -->
+    <div id="adminUnsavedModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)adminCancelDiscard()">
+        <div class="modal-content" style="max-width:340px;text-align:center;">
+            <h2 class="section-title" style="text-align:center;">⚠️ ALTERAÇÕES NÃO SALVAS</h2>
+            <p style="font-size:10px;color:#ecf0f1;line-height:1.7;margin-bottom:20px;">
+                Você tem alterações não salvas. Sair agora vai descartar tudo.
+            </p>
+            <div style="display:flex;gap:10px;">
+                <button class="btn-pixel" style="flex:1;background:#7f8c8d;" data-cy="btn-admin-keep-editing" onclick="adminCancelDiscard()">CONTINUAR EDITANDO</button>
+                <button class="btn-pixel" style="flex:1;background:#c0392b;" data-cy="btn-admin-discard-edit" onclick="adminConfirmDiscard()">SAIR SEM SALVAR</button>
             </div>
         </div>
     </div>
