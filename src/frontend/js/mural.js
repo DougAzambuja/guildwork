@@ -824,6 +824,7 @@ function toggleQuestEditMode(on) {
     }
 
     document.getElementById('qdm-edit-form').style.display        = on ? 'block' : 'none';
+    document.getElementById('qdm-edit-actions').style.display     = on ? 'flex'  : 'none';
     document.getElementById('qdm-title').style.display            = on ? 'none'  : '';
     document.getElementById('qdm-rewards-section').style.display  = on ? 'none'  : '';
     document.getElementById('qdm-assignee-section').style.display = on ? 'none'  : '';
