@@ -194,7 +194,7 @@ function renderPerfil(p, me) {
     card.innerHTML = `
         <div class="perfil-header">
             <div class="perfil-avatar-wrap">
-                <img class="perfil-avatar" id="perfilAvatarImg"
+                <img class="perfil-avatar${p.is_cursed ? ' curse-avatar' : ''}" id="perfilAvatarImg"
                      src="${p.avatar_url || 'assets/imgs/caneca_pixel.jpg'}" alt="Avatar" data-cy="perfil-avatar">
                 <div class="perfil-level-badge">Lv.${p.level}</div>
             </div>

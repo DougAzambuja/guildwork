@@ -14,6 +14,7 @@
             if (!res.ok) { logout(); return; }
             const p = await res.json();
             document.getElementById('topAvatar').src = p.avatar_url || DEFAULT_AVATAR;
+            applyCurseAvatarClass(document.getElementById('topAvatar'), p.is_cursed);
             document.getElementById('topName').textContent = p.nome || p.username;
             document.getElementById('topLevel').textContent = `Lvl ${p.level} · ${p.faction || '—'}`;
         } catch {

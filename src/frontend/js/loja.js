@@ -74,6 +74,7 @@ async function loadPlayerProfile() {
                 faction:          player.faction  || '—',
                 quests_completed: player.quests_completed || 0,
                 achievements:     player.achievements     || [],
+                is_cursed:        player.is_cursed         || false,
             };
 
             renderPlayerProfile();
@@ -92,7 +93,7 @@ function renderPlayerProfile() {
     const card = document.getElementById('shopProfile');
     if (!card) return;
 
-    const { nome, avatar_url, level, xp, coins, faction, quests_completed } = playerData;
+    const { nome, avatar_url, level, xp, coins, faction, quests_completed, is_cursed } = playerData;
     const xpMax = xpParaProximoNivel(level);
     const xpPct = Math.min(100, Math.round((xp / xpMax) * 100));
 
@@ -100,7 +101,7 @@ function renderPlayerProfile() {
 
     card.innerHTML = `
         <div class="profile-avatar-wrap">
-            <img class="profile-avatar" src="${avatar_url || 'assets/imgs/caneca_pixel.jpg'}" alt="Avatar">
+            <img class="profile-avatar${is_cursed ? ' curse-avatar' : ''}" src="${avatar_url || 'assets/imgs/caneca_pixel.jpg'}" alt="Avatar">
             <div class="profile-level-badge">Lv.${level}</div>
         </div>
 
