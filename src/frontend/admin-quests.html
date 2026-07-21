@@ -126,73 +126,72 @@
         </div>
     </div>
 
-    <!-- Modal de Edição da Quest -->
-    <div id="questEditModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeEditQuest()">
-        <div class="modal-content" style="max-width:480px;width:95%;max-height:88vh;overflow-y:auto;">
-            <h2 class="section-title" style="margin-bottom:16px;">✏️ EDITAR QUEST</h2>
-            <form id="questEditForm" data-cy="form-edit-quest">
-                <input type="hidden" id="editQuestId">
+
+    <!-- Modal de Detalhe da Quest (Admin) -->
+    <div id="questAdminDetailModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeQuestDetail()">
+        <div class="modal-content" style="max-width:540px;width:95%;max-height:88vh;overflow-y:auto;position:relative;">
+            <button class="btn-pixel" style="position:absolute;top:14px;right:14px;font-size:10px;padding:7px 11px;background:#2c3e50;z-index:2;" data-cy="btn-close-quest-detail" onclick="closeQuestDetail()">✕</button>
+
+            <div style="padding-right:52px;">
+                <div id="qdm-a-type-badge"></div>
+                <h2 id="qdm-a-title" class="quest-modal-title" style="margin:6px 0 12px;"></h2>
+            </div>
+
+            <!-- Controles do admin -->
+            <div id="qdm-a-controls" style="display:flex;gap:8px;margin-bottom:12px;">
+                <button type="button" class="btn-pixel" data-cy="btn-admin-edit-quest" style="flex:1;font-size:8px;background:#2980b9;" onclick="adminToggleEditMode(true)">✏️ EDITAR</button>
+            </div>
+
+            <!-- Formulário de edição (admin) — título, tipo, XP/Gold, SLA, guilda, sprint, labels -->
+            <div id="qdm-a-edit-form" style="display:none;margin-bottom:14px;">
                 <div class="forge-group">
-                    <label for="editQuestTitle">Título</label>
-                    <input type="text" id="editQuestTitle" class="pixel-input" data-cy="input-edit-quest-title" required autocomplete="off">
+                    <label>Título</label>
+                    <input type="text" id="qdm-a-edit-title" class="pixel-input" data-cy="input-admin-edit-title" style="width:100%;box-sizing:border-box;">
                 </div>
-                <div class="forge-group">
-                    <label for="editQuestType">Tipo</label>
-                    <select id="editQuestType" class="pixel-input" data-cy="select-edit-quest-type">
+                <div class="forge-group" style="margin-top:10px;">
+                    <label>Tipo</label>
+                    <select id="qdm-a-edit-type" class="pixel-input" data-cy="select-admin-edit-type" style="width:100%;box-sizing:border-box;">
                         <option value="normal">Normal</option>
                         <option value="urgent">Urgente</option>
                         <option value="support">Suporte</option>
                         <option value="jira">Jira</option>
                     </select>
                 </div>
-                <div style="display:flex;gap:10px;">
+                <div style="display:flex;gap:10px;margin-top:10px;">
                     <div class="forge-group" style="flex:1;">
-                        <label for="editQuestXp">XP</label>
-                        <input type="number" id="editQuestXp" class="pixel-input" data-cy="input-edit-quest-xp" min="1" required>
+                        <label>XP</label>
+                        <input type="number" id="qdm-a-edit-xp" class="pixel-input" data-cy="input-admin-edit-xp" min="1" style="width:100%;box-sizing:border-box;">
                     </div>
                     <div class="forge-group" style="flex:1;">
-                        <label for="editQuestCoins">Gold</label>
-                        <input type="number" id="editQuestCoins" class="pixel-input" data-cy="input-edit-quest-gold" min="1" required>
+                        <label>Gold</label>
+                        <input type="number" id="qdm-a-edit-coins" class="pixel-input" data-cy="input-admin-edit-gold" min="1" style="width:100%;box-sizing:border-box;">
                     </div>
                 </div>
-                <div class="forge-group">
-                    <label for="editQuestSla">SLA (Segundos) — vazio = sem limite</label>
-                    <input type="number" id="editQuestSla" class="pixel-input" data-cy="input-edit-quest-sla" min="1">
+                <div class="forge-group" style="margin-top:10px;">
+                    <label>SLA (segundos) — vazio = sem limite</label>
+                    <input type="number" id="qdm-a-edit-sla" class="pixel-input" data-cy="input-admin-edit-sla" min="1" style="width:100%;box-sizing:border-box;">
                 </div>
-                <div class="forge-group">
-                    <label for="editQuestFaction">Guilda</label>
-                    <select id="editQuestFaction" class="pixel-input" data-cy="select-edit-quest-faction">
+                <div class="forge-group" style="margin-top:10px;">
+                    <label>Guilda</label>
+                    <select id="qdm-a-edit-faction" class="pixel-input" data-cy="select-admin-edit-faction" style="width:100%;box-sizing:border-box;">
                         <option value="Produto">📦 Produto</option>
                         <option value="Suporte">🎧 Suporte</option>
                         <option value="Customer Service">📣 Customer Service</option>
                     </select>
                 </div>
-                <div class="forge-group">
-                    <label for="editQuestSprint">Sprint</label>
-                    <select id="editQuestSprint" class="pixel-input" data-cy="select-edit-quest-sprint">
+                <div class="forge-group" style="margin-top:10px;">
+                    <label>Sprint</label>
+                    <select id="qdm-a-edit-sprint" class="pixel-input" data-cy="select-admin-edit-sprint" style="width:100%;box-sizing:border-box;">
                         <option value="">🗂️ Sem sprint (Backlog)</option>
                     </select>
                 </div>
-                <div class="forge-group">
-                    <label for="editQuestLabels">Labels (separadas por vírgula)</label>
-                    <input type="text" id="editQuestLabels" class="pixel-input" data-cy="input-edit-quest-labels" placeholder="Ex: bug, ux, p1">
+                <div class="forge-group" style="margin-top:10px;">
+                    <label>Labels (separadas por vírgula)</label>
+                    <input type="text" id="qdm-a-edit-labels" class="pixel-input" data-cy="input-admin-edit-labels" placeholder="Ex: bug, ux, p1" style="width:100%;box-sizing:border-box;">
                 </div>
-                <div style="display:flex;gap:8px;margin-top:16px;">
-                    <button type="button" class="btn-pixel" onclick="closeEditQuest()" style="flex:1;background:#7f8c8d;" data-cy="btn-cancel-edit-quest">CANCELAR</button>
-                    <button type="submit" class="btn-pixel" style="flex:1;background:#27ae60;" data-cy="btn-save-edit-quest">SALVAR QUEST</button>
-                </div>
-            </form>
-        </div>
-    </div>
+            </div>
 
-    <!-- Modal de Detalhe da Quest (Admin) -->
-    <div id="questAdminDetailModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeQuestDetail()">
-        <div class="modal-content" style="max-width:540px;width:95%;max-height:88vh;overflow-y:auto;">
-
-            <div id="qdm-a-type-badge"></div>
-            <h2 id="qdm-a-title" class="quest-modal-title" style="margin:6px 0 12px;"></h2>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+            <div id="qdm-a-info-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
                 <div style="background:#0d1b2a;padding:10px;border-radius:2px;">
                     <div style="font-size:7px;color:#7f8c8d;margin-bottom:3px;">GUILDA</div>
                     <div id="qdm-a-faction" style="font-size:10px;color:#ecf0f1;"></div>
@@ -216,10 +215,23 @@
                 <div style="font-size:8px;color:#7f8c8d;letter-spacing:1px;margin-bottom:8px;">CHECKLIST</div>
                 <div id="qdm-a-checklist-progress" style="margin-bottom:8px;"></div>
                 <div id="qdm-a-checklist-items"></div>
+                <div id="qdm-a-checklist-add-row" style="display:none;gap:6px;margin-top:8px;">
+                    <input type="text" id="qdm-a-checklist-add-input" class="pixel-input" data-cy="input-admin-add-checklist-item"
+                           placeholder="Novo item..." style="flex:1;font-size:9px;padding:6px;"
+                           onkeydown="if(event.key==='Enter'){event.preventDefault();adminAddChecklistItem();}">
+                    <button type="button" data-cy="btn-admin-add-checklist-item" onclick="adminAddChecklistItem()"
+                            style="background:#2980b9;border:none;color:#fff;font-size:15px;padding:6px 10px;cursor:pointer;">+ Item</button>
+                </div>
+            </div>
+
+            <!-- Rodapé de ações da edição -->
+            <div id="qdm-a-edit-actions" style="display:none;gap:8px;margin-bottom:14px;">
+                <button type="button" class="btn-pixel" data-cy="btn-admin-save-edit" style="flex:1;background:#27ae60;" onclick="adminSaveEdit()">SALVAR</button>
+                <button type="button" class="btn-pixel" data-cy="btn-admin-cancel-edit" style="flex:1;background:#7f8c8d;" onclick="adminCancelEdit()">CANCELAR</button>
             </div>
 
             <!-- Timeline de atividade + comentários -->
-            <div style="border-top:1px solid #2c3e50;padding-top:12px;">
+            <div id="qdm-a-activity-section" style="border-top:1px solid #2c3e50;padding-top:12px;">
                 <div style="font-size:8px;color:#7f8c8d;letter-spacing:1px;margin-bottom:8px;">ATIVIDADE</div>
                 <div id="qdm-a-comments" style="max-height:200px;overflow-y:auto;margin-bottom:10px;"></div>
                 <div style="display:flex;gap:8px;">
@@ -233,8 +245,21 @@
                             style="font-size:8px;padding:8px 12px;background:#2980b9;flex-shrink:0;">Enviar</button>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <button class="btn-pixel" onclick="closeQuestDetail()" style="width:100%;margin-top:14px;background:#7f8c8d;">FECHAR</button>
+    <!-- Modal de confirmação — excluir missão -->
+    <div id="deleteConfirmModal" class="modal-overlay" style="display:none;">
+        <div class="modal-content" style="max-width:340px;text-align:center;">
+            <div style="font-size:28px;margin-bottom:10px;">🗑️</div>
+            <h2 class="section-title" style="text-align:center;">EXCLUIR MISSÃO?</h2>
+            <p id="deleteConfirmMessage" style="font-size:10px;color:#ecf0f1;line-height:1.7;margin-bottom:20px;">
+                Esta ação não pode ser desfeita.
+            </p>
+            <div style="display:flex;gap:10px;">
+                <button class="btn-pixel" style="flex:1;background:#7f8c8d;" data-cy="btn-cancel-delete-quest" onclick="closeDeleteConfirmModal()">CANCELAR</button>
+                <button class="btn-pixel" style="flex:1;background:#c0392b;" data-cy="btn-confirm-delete-quest" onclick="confirmDeleteQuest()">EXCLUIR</button>
+            </div>
         </div>
     </div>
 

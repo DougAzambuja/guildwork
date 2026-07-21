@@ -56,7 +56,7 @@ async function loadSprintsSelect() {
 
         const sprintOpts = '<option value="">🗂️ Sem sprint (Backlog)</option>' +
             sprints.map(s => `<option value="${s._id}">${s.name}</option>`).join('');
-        const editSprintSelect = document.getElementById('editQuestSprint');
+        const editSprintSelect = document.getElementById('qdm-a-edit-sprint');
         if (editSprintSelect) editSprintSelect.innerHTML = sprintOpts;
     } catch (err) {
         console.error('Erro ao carregar sprints:', err);
@@ -218,9 +218,9 @@ function renderQuestPage(quests) {
         const factionIcon = FACTION_BADGE[q.faction] || '🏰';
         const canReset    = q.status === 'in_progress';
         const detailBtn   = `<button class="btn-pixel" style="${BTN_ICON}background:#2980b9;" title="Ver detalhes" data-cy="btn-quest-detail" onclick="openQuestDetail('${q._id}')">👁</button>`;
-        const editBtn     = `<button class="btn-pixel" style="${BTN_ICON}background:#8e44ad;" title="Editar quest" data-cy="btn-edit-quest" onclick="openEditQuest('${q._id}')">✏️</button>`;
+        const editBtn     = `<button class="btn-pixel" style="${BTN_ICON}background:#8e44ad;" title="Editar quest" data-cy="btn-edit-quest" onclick="openQuestDetail('${q._id}', true)">✏️</button>`;
         const resetBtn    = `<button class="btn-pixel" style="${BTN_ICON}background:#e67e22;${!canReset ? 'opacity:.35;cursor:not-allowed;' : ''}" title="Resetar quest" data-cy="btn-reset-quest" onclick="resetQuest('${q._id}')" ${!canReset ? 'disabled' : ''}>↺</button>`;
-        const deleteBtn   = `<button class="btn-pixel btn-delete" style="${BTN_ICON}" title="Excluir quest" data-cy="btn-delete-quest" onclick="deleteQuest('${q._id}')">🗑</button>`;
+        const deleteBtn   = `<button class="btn-pixel btn-delete" style="${BTN_ICON}" title="Excluir quest" data-cy="btn-delete-quest" onclick="deleteQuest('${q._id}', '${_aEsc(q.title).replace(/'/g, "\\'")}')">🗑</button>`;
 
         let slaDisplay = '—';
         if (q.sla_seconds && q.status === 'in_progress' && q.started_at) {
@@ -308,6 +308,10 @@ const _A_STATUS = {
 const _A_FACTION_ICON = { Produto: '📦', Suporte: '🎧', 'Customer Service': '📣' };
 
 let _adminDetailQuestId = null;
+let _adminEditingChecklistItemId = null;
+let _adminLastQuest = null;
+let _adminEditMode = false;
+let _adminChecklistDraft = null;
 
 function _aEsc(str) {
     return String(str || '')
@@ -325,8 +329,11 @@ function _aTimeAgo(iso) {
     return 'agora';
 }
 
-window.openQuestDetail = async (questId) => {
+window.openQuestDetail = async (questId, startInEditMode) => {
     _adminDetailQuestId = questId;
+    _adminEditingChecklistItemId = null;
+    _adminEditMode = false;
+    _adminChecklistDraft = null;
     const modal = document.getElementById('questAdminDetailModal');
     if (!modal) return;
 
@@ -340,23 +347,35 @@ window.openQuestDetail = async (questId) => {
         });
         if (!res.ok) return;
         renderAdminQuestDetail(await res.json());
+        if (startInEditMode) window.adminToggleEditMode(true);
     } catch (err) {
         console.error('Erro ao carregar detalhe:', err);
     }
 };
 
 window.closeQuestDetail = () => {
+    if (_adminEditMode && _adminHasUnsavedEdits()) {
+        if (!confirm('Você tem alterações não salvas nesta missão. Sair mesmo assim?')) return;
+    }
+
     const modal = document.getElementById('questAdminDetailModal');
     if (modal) modal.style.display = 'none';
     _adminDetailQuestId = null;
+    _adminEditingChecklistItemId = null;
+    _adminEditMode = false;
+    _adminChecklistDraft = null;
+    _adminLastQuest = null;
 };
 
 function renderAdminQuestDetail(quest) {
+    _adminLastQuest = quest;
+    const editing = _adminEditMode;
+
     const typeBadge = document.getElementById('qdm-a-type-badge');
     if (typeBadge) typeBadge.innerHTML = `<span class="kanban-type-badge badge-${quest.type || 'normal'}" style="font-size:9px;">${(quest.type || 'NORMAL').toUpperCase()}</span>`;
 
     const titleEl = document.getElementById('qdm-a-title');
-    if (titleEl) titleEl.textContent = quest.title;
+    if (titleEl) { titleEl.textContent = quest.title; titleEl.style.display = editing ? 'none' : ''; }
 
     const factionEl = document.getElementById('qdm-a-faction');
     if (factionEl) factionEl.textContent = `${_A_FACTION_ICON[quest.faction] || '🏰'} ${quest.faction || 'Produto'}`;
@@ -373,36 +392,70 @@ function renderAdminQuestDetail(quest) {
     const slaEl = document.getElementById('qdm-a-sla');
     if (slaEl) slaEl.textContent = quest.sla_seconds ? formatAdminSla(quest.sla_seconds) : '—';
 
-    // Checklist
+    // Alterna entre visão de leitura e formulário de edição unificado (título, tipo,
+    // XP/Gold, SLA, guilda, sprint, labels) — igual ao padrão do líder de guilda.
+    const controls   = document.getElementById('qdm-a-controls');
+    const editForm    = document.getElementById('qdm-a-edit-form');
+    const infoGrid    = document.getElementById('qdm-a-info-grid');
+    const activitySec = document.getElementById('qdm-a-activity-section');
+    const editActions = document.getElementById('qdm-a-edit-actions');
+    if (controls)   controls.style.display   = editing ? 'none' : 'flex';
+    if (editForm)   editForm.style.display   = editing ? 'block' : 'none';
+    if (infoGrid)   infoGrid.style.display   = editing ? 'none' : 'grid';
+    if (activitySec) activitySec.style.display = editing ? 'none' : 'block';
+    if (editActions) editActions.style.display = editing ? 'flex' : 'none';
+
+    // Checklist — modo de edição igual ao do líder de guilda: EDITAR mostra
+    // remover/adicionar/renomear num rascunho local, só persiste no SALVAR.
     const checklistSection = document.getElementById('qdm-a-checklist');
-    const items = quest.checklist || [];
-    if (items.length && checklistSection) {
+    const items = editing ? (_adminChecklistDraft || []) : (quest.checklist || []);
+    if (checklistSection) {
         checklistSection.style.display = 'block';
-        const done = items.filter(i => i.done).length;
-        const pct  = Math.round((done / items.length) * 100);
+
+        const addRow = document.getElementById('qdm-a-checklist-add-row');
+        if (addRow) addRow.style.display = editing ? 'flex' : 'none';
 
         const progressEl = document.getElementById('qdm-a-checklist-progress');
-        if (progressEl) progressEl.innerHTML = `
-            <div style="display:flex;justify-content:space-between;font-size:8px;color:#7f8c8d;margin-bottom:4px;">
-                <span>${done}/${items.length} itens</span><span>${pct}%</span>
-            </div>
-            <div style="background:#0d1b2a;height:6px;border-radius:2px;overflow:hidden;">
-                <div style="height:100%;background:#27ae60;width:${pct}%;"></div>
-            </div>`;
+        if (progressEl) {
+            if (items.length) {
+                const done = items.filter(i => i.done).length;
+                const pct  = Math.round((done / items.length) * 100);
+                progressEl.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;font-size:8px;color:#7f8c8d;margin-bottom:4px;">
+                        <span>${done}/${items.length} itens</span><span>${pct}%</span>
+                    </div>
+                    <div style="background:#0d1b2a;height:6px;border-radius:2px;overflow:hidden;">
+                        <div style="height:100%;background:#27ae60;width:${pct}%;"></div>
+                    </div>`;
+            } else {
+                progressEl.innerHTML = '';
+            }
+        }
 
         const itemsEl = document.getElementById('qdm-a-checklist-items');
-        if (itemsEl) itemsEl.innerHTML = items.map(item => `
+        if (itemsEl) itemsEl.innerHTML = items.map(item => {
+            const isEditingThis = editing && item._id === _adminEditingChecklistItemId;
+            const textCell = isEditingThis
+                ? `<input type="text" class="pixel-input" data-cy="input-admin-checklist-item-text"
+                       data-item-id="${item._id}" data-original="${_aEsc(item.text)}"
+                       value="${_aEsc(item.text)}"
+                       style="flex:1;font-size:9px;padding:5px 6px;color:#1a1a1a;"
+                       onblur="adminSaveChecklistItemText(this)"
+                       onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">`
+                : `<span ${editing ? `data-cy="text-admin-checklist-item" onclick="adminStartEditChecklistItemText('${item._id}')" style="cursor:pointer;` : `style="`}flex:1;font-size:9px;color:${item.done ? '#7f8c8d' : '#ecf0f1'};text-decoration:${item.done ? 'line-through' : 'none'};">${_aEsc(item.text)}</span>`;
+
+            const toggleAllowed = !item._isNew;
+
+            return `
             <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #1a252f;">
-                <input type="checkbox" ${item.done ? 'checked' : ''}
+                <input type="checkbox" ${item.done ? 'checked' : ''} ${!toggleAllowed ? 'disabled' : ''}
                        data-cy="checkbox-admin-checklist-item"
                        onchange="adminToggleChecklistItem('${quest._id}','${item._id}',this)"
-                       style="cursor:pointer;accent-color:#27ae60;flex-shrink:0;">
-                <span style="font-size:9px;color:${item.done ? '#7f8c8d' : '#ecf0f1'};text-decoration:${item.done ? 'line-through' : 'none'};">
-                    ${_aEsc(item.text)}
-                </span>
-            </div>`).join('');
-    } else if (checklistSection) {
-        checklistSection.style.display = 'none';
+                       style="cursor:${toggleAllowed ? 'pointer' : 'default'};accent-color:#27ae60;flex-shrink:0;">
+                ${textCell}
+                ${editing ? `<button type="button" data-cy="btn-admin-remove-checklist-item" onclick="adminRemoveChecklistItem('${item._id}')" style="background:#c0392b;border:none;color:#fff;font-size:13px;padding:8px 14px;cursor:pointer;flex-shrink:0;">Remover</button>` : ''}
+            </div>`;
+        }).join('');
     }
 
     renderAdminComments(quest.comments || []);
@@ -458,11 +511,217 @@ window.adminToggleChecklistItem = async (questId, itemId, checkbox) => {
         const detailRes = await fetch(`${API_URL}/quests/${questId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (detailRes.ok) renderAdminQuestDetail(await detailRes.json());
+        if (detailRes.ok) {
+            const fresh = await detailRes.json();
+            // "Concluído" é operacional, não faz parte do rascunho — mas sincroniza
+            // o rascunho pra não mostrar um "done" antigo se estiver em edição.
+            if (_adminChecklistDraft) {
+                const draftItem = _adminChecklistDraft.find(i => i._id === itemId);
+                const freshItem = (fresh.checklist || []).find(i => i._id === itemId);
+                if (draftItem && freshItem) draftItem.done = freshItem.done;
+            }
+            renderAdminQuestDetail(fresh);
+        }
     } catch (err) {
         checkbox.checked = !checkbox.checked;
         console.error(err);
     }
+};
+
+// — Edição unificada (admin): título, tipo, XP/Gold, SLA, guilda, sprint, labels e
+// checklist, tudo no mesmo EDITAR/SALVAR/CANCELAR — igual ao padrão do líder de guilda.
+// Checklist fica em rascunho local (_adminChecklistDraft); nada vai pro backend até SALVAR.
+window.adminToggleEditMode = (on) => {
+    _adminEditMode = on;
+    _adminEditingChecklistItemId = null;
+    const quest = _adminLastQuest;
+    if (!quest) return;
+
+    if (on) {
+        document.getElementById('qdm-a-edit-title').value    = quest.title;
+        document.getElementById('qdm-a-edit-type').value     = quest.type || 'normal';
+        document.getElementById('qdm-a-edit-xp').value       = quest.xp_reward;
+        document.getElementById('qdm-a-edit-coins').value    = quest.coin_reward;
+        document.getElementById('qdm-a-edit-sla').value      = quest.sla_seconds || '';
+        document.getElementById('qdm-a-edit-faction').value  = quest.faction || 'Produto';
+        document.getElementById('qdm-a-edit-labels').value   = (quest.labels || []).join(', ');
+        const sprintId = quest.sprint_id ? (quest.sprint_id._id || quest.sprint_id) : '';
+        document.getElementById('qdm-a-edit-sprint').value   = sprintId;
+
+        _adminChecklistDraft = (quest.checklist || []).map(i => ({ _id: i._id, text: i.text, done: i.done }));
+    } else {
+        _adminChecklistDraft = null;
+    }
+
+    renderAdminQuestDetail(quest);
+};
+
+function _adminFieldsAreDirty() {
+    const quest = _adminLastQuest;
+    if (!quest) return false;
+
+    const titleVal = document.getElementById('qdm-a-edit-title').value.trim();
+    const typeVal  = document.getElementById('qdm-a-edit-type').value;
+    const xpVal    = parseInt(document.getElementById('qdm-a-edit-xp').value);
+    const coinsVal = parseInt(document.getElementById('qdm-a-edit-coins').value);
+    const slaRaw   = document.getElementById('qdm-a-edit-sla').value;
+    const slaVal   = slaRaw ? parseInt(slaRaw) : null;
+    const factionVal = document.getElementById('qdm-a-edit-faction').value;
+    const sprintVal  = document.getElementById('qdm-a-edit-sprint').value || null;
+    const labelsVal  = document.getElementById('qdm-a-edit-labels').value.trim();
+
+    const questSprintId = quest.sprint_id ? (quest.sprint_id._id || quest.sprint_id) : null;
+    const questLabels   = (quest.labels || []).join(', ');
+
+    return titleVal   !== (quest.title || '') ||
+           typeVal     !== (quest.type || 'normal') ||
+           xpVal       !== quest.xp_reward ||
+           coinsVal    !== quest.coin_reward ||
+           slaVal      !== (quest.sla_seconds || null) ||
+           factionVal  !== (quest.faction || 'Produto') ||
+           sprintVal   !== questSprintId ||
+           labelsVal   !== questLabels;
+}
+
+function _adminChecklistDraftIsDirty() {
+    if (!_adminChecklistDraft) return false;
+    const original = _adminLastQuest?.checklist || [];
+    if (original.length !== _adminChecklistDraft.length) return true;
+
+    return _adminChecklistDraft.some(draftItem => {
+        if (draftItem._isNew) return true;
+        const orig = original.find(o => o._id === draftItem._id);
+        return !orig || orig.text !== draftItem.text;
+    });
+}
+
+function _adminHasUnsavedEdits() {
+    return _adminFieldsAreDirty() || _adminChecklistDraftIsDirty();
+}
+
+window.adminCancelEdit = () => {
+    if (_adminHasUnsavedEdits() && !confirm('Descartar as alterações desta missão?')) return;
+    window.adminToggleEditMode(false);
+};
+
+window.adminSaveEdit = async () => {
+    if (!_adminDetailQuestId) return;
+
+    const title = document.getElementById('qdm-a-edit-title').value.trim();
+    if (!title) { showToast('Título não pode ficar vazio.', 'error'); return; }
+
+    const slaVal = document.getElementById('qdm-a-edit-sla').value;
+    const labelsRaw = document.getElementById('qdm-a-edit-labels').value || '';
+    const payload = {
+        title,
+        type:        document.getElementById('qdm-a-edit-type').value,
+        faction:     document.getElementById('qdm-a-edit-faction').value,
+        xp_reward:   parseInt(document.getElementById('qdm-a-edit-xp').value),
+        coin_reward: parseInt(document.getElementById('qdm-a-edit-coins').value),
+        sla_seconds: slaVal ? parseInt(slaVal) : null,
+        sprint_id:   document.getElementById('qdm-a-edit-sprint').value || null,
+        labels:      labelsRaw.split(',').map(l => l.trim()).filter(Boolean)
+    };
+
+    try {
+        const res = await fetch(`${API_URL}/quests/${_adminDetailQuestId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) { showToast(data.message || 'Erro ao atualizar missão.', 'error'); return; }
+
+        _adminLastQuest = data;
+
+        const checklistOk = await _adminCommitChecklistDraft();
+        showToast(checklistOk ? 'Missão atualizada!' : 'Missão atualizada, mas houve erro ao salvar o checklist.', checklistOk ? 'success' : 'error');
+
+        window.adminToggleEditMode(false);
+        await renderAdminQuests(1);
+    } catch (err) {
+        console.error(err);
+        showToast('Erro de conexão.', 'error');
+    }
+};
+
+async function _adminCommitChecklistDraft() {
+    if (!_adminChecklistDraft || !_adminDetailQuestId) return true;
+
+    const original = _adminLastQuest?.checklist || [];
+    const add    = _adminChecklistDraft.filter(i => i._isNew).map(i => i.text);
+    const remove = original.filter(o => !_adminChecklistDraft.some(d => d._id === o._id)).map(o => o._id);
+    const update = _adminChecklistDraft
+        .filter(d => !d._isNew)
+        .filter(d => {
+            const orig = original.find(o => o._id === d._id);
+            return orig && orig.text !== d.text;
+        })
+        .map(d => ({ id: d._id, text: d.text }));
+
+    if (!add.length && !remove.length && !update.length) return true;
+
+    try {
+        const res = await fetch(`${API_URL}/quests/${_adminDetailQuestId}/checklist`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ add, remove, update })
+        });
+        const data = await res.json();
+        if (!res.ok) return false;
+
+        if (_adminLastQuest) _adminLastQuest.checklist = data.checklist;
+        return true;
+    } catch (err) {
+        console.error(err);
+        return false;
+    }
+}
+
+window.adminAddChecklistItem = () => {
+    const input = document.getElementById('qdm-a-checklist-add-input');
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+
+    if (!_adminChecklistDraft) _adminChecklistDraft = [];
+    _adminChecklistDraft.push({
+        _id: `temp_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        text, done: false, _isNew: true
+    });
+
+    if (_adminLastQuest) renderAdminQuestDetail(_adminLastQuest);
+
+    const freshInput = document.getElementById('qdm-a-checklist-add-input');
+    if (freshInput) freshInput.focus();
+};
+
+window.adminRemoveChecklistItem = (itemId) => {
+    if (!_adminChecklistDraft) return;
+    _adminChecklistDraft = _adminChecklistDraft.filter(i => i._id !== itemId);
+    if (_adminLastQuest) renderAdminQuestDetail(_adminLastQuest);
+};
+
+window.adminStartEditChecklistItemText = (itemId) => {
+    _adminEditingChecklistItemId = itemId;
+    if (_adminLastQuest) renderAdminQuestDetail(_adminLastQuest);
+
+    const input = document.querySelector(`#qdm-a-checklist-items input[data-item-id="${itemId}"]`);
+    if (input) { input.focus(); input.select(); }
+};
+
+window.adminSaveChecklistItemText = (inputEl) => {
+    const itemId  = inputEl.dataset.itemId;
+    const newText = inputEl.value.trim();
+
+    _adminEditingChecklistItemId = null;
+
+    if (newText && _adminChecklistDraft) {
+        const draftItem = _adminChecklistDraft.find(i => i._id === itemId);
+        if (draftItem) draftItem.text = newText;
+    }
+
+    if (_adminLastQuest) renderAdminQuestDetail(_adminLastQuest);
 };
 
 window.submitAdminComment = async () => {
@@ -497,84 +756,31 @@ window.submitAdminComment = async () => {
 };
 
 // ==========================================
-// 7. MODAL DE EDIÇÃO DA QUEST
+// 7. EDIÇÃO DA QUEST — unificada dentro do modal de detalhes (ver adminToggleEditMode)
 // ==========================================
-window.openEditQuest = async (questId) => {
-    try {
-        const res = await fetch(`${API_URL}/quests/${questId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!res.ok) return;
-        const q = await res.json();
 
-        document.getElementById('editQuestId').value      = q._id;
-        document.getElementById('editQuestTitle').value   = q.title;
-        document.getElementById('editQuestType').value    = q.type || 'normal';
-        document.getElementById('editQuestXp').value      = q.xp_reward;
-        document.getElementById('editQuestCoins').value   = q.coin_reward;
-        document.getElementById('editQuestSla').value     = q.sla_seconds || '';
-        document.getElementById('editQuestFaction').value = q.faction || 'Produto';
-        document.getElementById('editQuestLabels').value  = (q.labels || []).join(', ');
+let _pendingDeleteQuestId = null;
 
-        const sprintId = q.sprint_id ? (q.sprint_id._id || q.sprint_id) : '';
-        document.getElementById('editQuestSprint').value  = sprintId;
+window.deleteQuest = (questId, questTitle) => {
+    _pendingDeleteQuestId = questId;
 
-        document.getElementById('questEditModal').style.display = 'flex';
-    } catch (err) {
-        console.error(err);
-        showToast('Erro ao carregar quest para edição.', 'error');
-    }
+    const msgEl = document.getElementById('deleteConfirmMessage');
+    if (msgEl) msgEl.textContent = questTitle
+        ? `Excluir "${questTitle}" permanentemente? Esta ação não pode ser desfeita.`
+        : 'Excluir esta quest permanentemente? Esta ação não pode ser desfeita.';
+
+    document.getElementById('deleteConfirmModal').style.display = 'flex';
 };
 
-window.closeEditQuest = () => {
-    document.getElementById('questEditModal').style.display = 'none';
+window.closeDeleteConfirmModal = () => {
+    document.getElementById('deleteConfirmModal').style.display = 'none';
+    _pendingDeleteQuestId = null;
 };
 
-const questEditForm = document.getElementById('questEditForm');
-if (questEditForm) {
-    questEditForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const questId   = document.getElementById('editQuestId').value;
-        const labelsRaw = document.getElementById('editQuestLabels').value || '';
-        const slaVal    = document.getElementById('editQuestSla').value;
-
-        const payload = {
-            title:       document.getElementById('editQuestTitle').value.trim(),
-            type:        document.getElementById('editQuestType').value,
-            faction:     document.getElementById('editQuestFaction').value,
-            xp_reward:   parseInt(document.getElementById('editQuestXp').value),
-            coin_reward: parseInt(document.getElementById('editQuestCoins').value),
-            sla_seconds: slaVal ? parseInt(slaVal) : null,
-            sprint_id:   document.getElementById('editQuestSprint').value || null,
-            labels:      labelsRaw.split(',').map(l => l.trim()).filter(Boolean)
-        };
-
-        try {
-            const res = await fetch(`${API_URL}/quests/${questId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(payload)
-            });
-            if (res.ok) {
-                showToast('Quest atualizada com sucesso!');
-                closeEditQuest();
-                await renderAdminQuests(1);
-            } else {
-                const err = await res.json();
-                showToast(`Erro: ${err.message}`, 'error');
-            }
-        } catch (err) {
-            console.error(err);
-            showToast('Erro de conexão com o servidor.', 'error');
-        }
-    });
-}
-
-window.deleteQuest = async (questId) => {
-    if (!confirm('Excluir esta quest permanentemente? Esta ação não pode ser desfeita.')) return;
+window.confirmDeleteQuest = async () => {
+    const questId = _pendingDeleteQuestId;
+    document.getElementById('deleteConfirmModal').style.display = 'none';
+    if (!questId) return;
 
     try {
         const res = await fetch(`${API_URL}/quests/${questId}`, {
@@ -592,6 +798,8 @@ window.deleteQuest = async (questId) => {
     } catch (err) {
         console.error(err);
         showToast('Erro de conexão com o servidor.', 'error');
+    } finally {
+        _pendingDeleteQuestId = null;
     }
 };
 

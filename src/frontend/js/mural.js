@@ -879,12 +879,26 @@ window.saveQuestEdit = async () => {
     }
 };
 
-window.deleteQuestFromModal = async () => {
+window.deleteQuestFromModal = () => {
     if (!_modalQuestId) return;
 
     const deleteBtn = document.getElementById('qdm-btn-delete');
     if (deleteBtn.disabled) return;
-    if (!confirm('Tem certeza que deseja excluir esta missão?')) return;
+
+    const quest = questCache.get(_modalQuestId);
+    const msgEl = document.getElementById('deleteConfirmMessage');
+    if (msgEl) msgEl.textContent = quest ? `Excluir "${quest.title}"? Esta ação não pode ser desfeita.` : 'Esta ação não pode ser desfeita.';
+
+    document.getElementById('deleteConfirmModal').style.display = 'flex';
+};
+
+window.closeDeleteConfirmModal = () => {
+    document.getElementById('deleteConfirmModal').style.display = 'none';
+};
+
+window.confirmDeleteQuest = async () => {
+    document.getElementById('deleteConfirmModal').style.display = 'none';
+    if (!_modalQuestId) return;
 
     try {
         const res  = await fetch(`${API_URL}/quests/${_modalQuestId}`, {
