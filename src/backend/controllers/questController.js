@@ -28,24 +28,46 @@ function xpParaProximoNivel(level) {
 // GET /api/quests — Retorna quests de sprints ativas na facção do jogador (+ quests atribuídas a ele)
 exports.getQuests = async (req, res) => {
     try {
+        const now = new Date();
         const [user, activeSprints] = await Promise.all([
             User.findById(req.user.id).select('faction').lean(),
-            Sprint.find({ status: 'active' }).select('_id').lean()
+            Sprint.find({
+                start_date: { $lte: now },
+                end_date:   { $gte: now },
+                status:     { $nin: ['cancelled'] }
+            }).select('_id').lean()
         ]);
 
         const activeSprintIds = activeSprints.map(s => s._id);
 
-        const quests = await Quest.find({
+        const rawQuests = await Quest.find({
             is_active: true,
             $or: [
-                // Quests da facção do jogador em sprints ativas
                 { faction: user.faction, sprint_id: { $in: activeSprintIds } },
-                // Quests atribuídas diretamente a ele (independente de sprint/facção)
                 { assigned_to: req.user.id }
             ]
         })
             .populate('assigned_to', 'nome username avatar_url')
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean();
+
+        // Contadores de subtasks em lote
+        const parentIds  = rawQuests.map(q => q._id);
+        const childStats = await Quest.find({ parent_id: { $in: parentIds } })
+            .select('parent_id status').lean();
+
+        const doneByParent = {};
+        childStats.forEach(c => {
+            const pid = String(c.parent_id);
+            if (!doneByParent[pid]) doneByParent[pid] = { total: 0, done: 0 };
+            doneByParent[pid].total++;
+            if (c.status === 'done') doneByParent[pid].done++;
+        });
+
+        const quests = rawQuests.map(q => {
+            const stat = doneByParent[String(q._id)] || { total: 0, done: 0 };
+            return { ...q, subtasks_total: stat.total, subtasks_done: stat.done };
+        });
 
         res.json(quests);
     } catch (err) {
@@ -575,21 +597,26 @@ exports.getQuestDetail = async (req, res) => {
         const quest = await Quest.findById(req.params.id)
             .populate('assigned_to', 'nome username avatar_url')
             .populate('sprint_id', 'name status')
+            .populate('parent_id', 'title _id')
             .populate('comments.user_id', 'nome username avatar_url')
-            .populate('subtasks', 'title status type faction');
+            .populate({ path: 'subtasks', populate: { path: 'assigned_to', select: 'nome username avatar_url' } });
 
         if (!quest) return res.status(404).json({ message: 'Quest não encontrada.' });
 
         if (req.user.role !== 'admin') {
             const user = await User.findById(req.user.id).select('faction');
-            const isAssigned   = quest.assigned_to && quest.assigned_to._id.toString() === req.user.id;
-            const sameFaction  = quest.faction === user.faction;
+            const isAssigned  = quest.assigned_to && quest.assigned_to._id.toString() === req.user.id;
+            const sameFaction = quest.faction === user.faction;
             if (!isAssigned && !sameFaction) {
                 return res.status(403).json({ message: 'Acesso negado.' });
             }
         }
 
-        res.json(quest);
+        const obj           = quest.toObject();
+        obj.subtasks_total  = obj.subtasks.length;
+        obj.subtasks_done   = obj.subtasks.filter(s => s.status === 'done').length;
+
+        res.json(obj);
     } catch (err) {
         res.status(500).json({ message: 'Erro ao buscar quest.', error: err.message });
     }
@@ -732,6 +759,64 @@ exports.updateSubtasks = async (req, res) => {
         res.json({ subtasks: quest.subtasks });
     } catch (err) {
         res.status(500).json({ message: 'Erro ao atualizar subtasks.', error: err.message });
+    }
+};
+
+/**
+ * POST /api/quests/:id/subtasks — Cria uma subtask nova vinculada ao parent.
+ * Body: { title, assigned_to? }
+ * Regras: parent não pode ser subtask (máx 1 nível).
+ */
+exports.createSubtask = async (req, res) => {
+    try {
+        const parent = await Quest.findById(req.params.id);
+        if (!parent) return res.status(404).json({ message: 'Quest pai não encontrada.' });
+
+        if (parent.parent_id) {
+            return res.status(400).json({ message: 'Subtasks não podem ter outras subtasks (máx 1 nível).' });
+        }
+
+        const { title, assigned_to, xp_reward, coin_reward } = req.body;
+        if (!title?.trim()) return res.status(400).json({ message: 'Título obrigatório.' });
+
+        const subtask = await Quest.create({
+            title:       title.trim(),
+            xp_reward:   Number(xp_reward)   || 0,
+            coin_reward: Number(coin_reward)  || 0,
+            faction:     parent.faction,
+            sprint_id:   parent.sprint_id || null,
+            parent_id:   parent._id,
+            assigned_to: assigned_to || null,
+            is_active:   true
+        });
+
+        parent.subtasks.push(subtask._id);
+        await parent.save();
+
+        await subtask.populate('assigned_to', 'nome username avatar_url');
+        res.status(201).json(subtask);
+    } catch (err) {
+        res.status(500).json({ message: 'Erro ao criar subtask.', error: err.message });
+    }
+};
+
+/**
+ * GET /api/quests/:id/subtasks — Lista subtasks de uma quest com detalhe completo.
+ */
+exports.getSubtasks = async (req, res) => {
+    try {
+        const quest = await Quest.findById(req.params.id)
+            .populate({ path: 'subtasks', populate: { path: 'assigned_to', select: 'nome username avatar_url' } });
+
+        if (!quest) return res.status(404).json({ message: 'Quest não encontrada.' });
+
+        res.json({
+            subtasks:       quest.subtasks,
+            subtasks_total: quest.subtasks.length,
+            subtasks_done:  quest.subtasks.filter(s => s.status === 'done').length
+        });
+    } catch (err) {
+        res.status(500).json({ message: 'Erro ao buscar subtasks.', error: err.message });
     }
 };
 

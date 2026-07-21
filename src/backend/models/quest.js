@@ -79,7 +79,12 @@ const QuestSchema = new mongoose.Schema({
         created_at: { type: Date, default: Date.now }
     }],
 
-    // Referências a outras quests vinculadas (relacionamento recursivo por referência)
+    // Hierarquia: quest pai referencia filhas; subtask aponta para o pai
+    parent_id: {
+        type:    mongoose.Schema.Types.ObjectId,
+        ref:     'Quest',
+        default: null
+    },
     subtasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Quest' }]
 
 }, { timestamps: true });

@@ -21,6 +21,19 @@ function resolveStatus(sprint) {
 }
 
 /**
+ * Persiste o status resolvido no banco caso tenha mudado.
+ * Garante que Sprint.find({ status: 'active' }) seja confiável
+ * sem depender de edição manual ou cron job.
+ */
+async function syncStatus(sprint) {
+    const resolved = resolveStatus(sprint);
+    if (resolved !== sprint.status) {
+        await Sprint.updateOne({ _id: sprint._id }, { status: resolved });
+    }
+    return resolved;
+}
+
+/**
  * Calcula o health score da sprint.
  * Compara % de conclusão de quests vs % de tempo decorrido.
  * on_track: conclusão >= tempo decorrido
@@ -53,9 +66,27 @@ async function buildSprintAnalytics(sprint, filterFaction = null) {
     const questFilter = { sprint_id: sprint._id };
     if (filterFaction) questFilter.faction = filterFaction;
 
-    const quests = await Quest.find(questFilter)
+    const rawQuests = await Quest.find(questFilter)
         .populate('assigned_to', 'nome username avatar_url')
         .lean();
+
+    // Busca o status das subtasks em lote para montar os contadores no card
+    const parentIds  = rawQuests.map(q => q._id);
+    const childStats = await Quest.find({ parent_id: { $in: parentIds } })
+        .select('parent_id status').lean();
+
+    const doneByParent = {};
+    childStats.forEach(c => {
+        const pid = String(c.parent_id);
+        if (!doneByParent[pid]) doneByParent[pid] = { total: 0, done: 0 };
+        doneByParent[pid].total++;
+        if (c.status === 'done') doneByParent[pid].done++;
+    });
+
+    const quests = rawQuests.map(q => {
+        const stat = doneByParent[String(q._id)] || { total: 0, done: 0 };
+        return { ...q, subtasks_total: stat.total, subtasks_done: stat.done };
+    });
 
     const total      = quests.length;
     const done       = quests.filter(q => q.status === 'done').length;
@@ -133,9 +164,9 @@ exports.getSprints = async (req, res) => {
     try {
         const sprints = await Sprint.find().sort({ start_date: -1 }).lean();
 
-        // Resolve status automático para cada sprint e conta quests
+        // Resolve e persiste status automático para cada sprint
         const result = await Promise.all(sprints.map(async sprint => {
-            const status = resolveStatus(sprint);
+            const status = await syncStatus(sprint);
             const [total, done] = await Promise.all([
                 Quest.countDocuments({ sprint_id: sprint._id }),
                 Quest.countDocuments({ sprint_id: sprint._id, status: 'done' })
@@ -170,7 +201,10 @@ exports.getActiveSprint = async (req, res) => {
 
         if (!sprint) return res.json(null);
 
-        const analytics = await buildSprintAnalytics(sprint);
+        const [, analytics] = await Promise.all([
+            syncStatus(sprint),   // garante 'active' persistido
+            buildSprintAnalytics(sprint)
+        ]);
         res.json({ sprint: { ...sprint, status: 'active' }, ...analytics });
     } catch (err) {
         res.status(500).json({ message: 'Erro ao buscar sprint ativa.', error: err.message });
@@ -198,9 +232,12 @@ exports.getSprintById = async (req, res) => {
             filterFaction = guild.faction_key;
         }
 
-        const analytics = await buildSprintAnalytics(sprint, filterFaction);
+        const [status, analytics] = await Promise.all([
+            syncStatus(sprint),
+            buildSprintAnalytics(sprint, filterFaction)
+        ]);
         res.json({
-            sprint:      { ...sprint, status: resolveStatus(sprint) },
+            sprint:      { ...sprint, status },
             guild_filter: filterFaction || null,
             ...analytics
         });

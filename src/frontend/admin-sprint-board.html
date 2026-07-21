@@ -312,6 +312,7 @@
             <div class="bqd-section" style="display:flex;justify-content:space-between;align-items:flex-start;">
                 <div style="flex:1;min-width:0;margin-right:12px;">
                     <div id="bqd-type-badge" style="margin-bottom:6px;"></div>
+                    <div id="bqd-parent-breadcrumb" style="display:none;margin-bottom:6px;"></div>
                     <h2 id="bqd-title" class="section-title" style="margin:0;border:none;font-size:9px;word-break:break-word;"></h2>
                 </div>
                 <button class="btn-pixel" style="font-size:6px;padding:4px 8px;background:#2c3e50;flex-shrink:0;" data-cy="btn-close-board-quest-detail" onclick="closeBoardQuestDetail()">✕ FECHAR</button>
@@ -365,14 +366,64 @@
             </div>
 
             <!-- Checklist -->
-            <div id="bqd-checklist-section" class="bqd-section" style="display:none;">
-                <div class="bqd-label">☑ CHECKLIST</div>
+            <div id="bqd-checklist-section" class="bqd-section">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <div class="bqd-label" style="margin:0;">☑ CHECKLIST</div>
+                </div>
                 <div id="bqd-checklist-progress" style="margin-bottom:8px;"></div>
                 <div id="bqd-checklist-items"></div>
+                <div style="display:flex;gap:6px;margin-top:8px;">
+                    <input type="text" id="bqd-checklist-new-item" data-cy="input-bqd-checklist-new"
+                           placeholder="Novo item..."
+                           style="flex:1;font-family:'Press Start 2P',cursive;font-size:7px;padding:5px;background:#1a252f;color:#ecf0f1;border:2px solid #2c3e50;outline:none;"
+                           onkeydown="if(event.key==='Enter'){event.preventDefault();bqdAddChecklistItem();}">
+                    <button type="button" data-cy="btn-bqd-add-checklist-item" onclick="bqdAddChecklistItem()"
+                            style="background:#27ae60;border:none;color:#fff;font-family:'Press Start 2P',cursive;font-size:7px;padding:5px 10px;cursor:pointer;">+ ADD</button>
+                </div>
+            </div>
+
+            <!-- Subtasks -->
+            <div id="bqd-subtasks-section" class="bqd-section" data-cy="section-bqd-subtasks">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <div class="bqd-label" style="margin:0;">🔗 SUBTASKS</div>
+                    <button type="button" id="bqd-subtask-add-btn" data-cy="btn-bqd-add-subtask"
+                            onclick="bqdToggleSubtaskForm()"
+                            style="background:#8e44ad;border:none;color:#fff;font-family:'Press Start 2P',cursive;font-size:7px;padding:4px 8px;cursor:pointer;">+ Subtask</button>
+                </div>
+                <div id="bqd-subtasks-progress" style="margin-bottom:8px;"></div>
+                <div id="bqd-subtask-form" style="display:none;background:#0d1b2a;border:1px solid #2c3e50;padding:10px;margin-bottom:8px;">
+                    <input type="text" id="bqd-subtask-title" data-cy="input-bqd-subtask-title"
+                           placeholder="Título da subtask..."
+                           style="width:100%;box-sizing:border-box;font-family:'Press Start 2P',cursive;font-size:8px;padding:6px;background:#1a252f;color:#ecf0f1;border:2px solid #2c3e50;margin-bottom:6px;outline:none;"
+                           onkeydown="if(event.key==='Enter'){event.preventDefault();bqdCreateSubtask();}">
+                    <select id="bqd-subtask-assignee" data-cy="select-bqd-subtask-assignee"
+                            style="width:100%;font-family:'Press Start 2P',cursive;font-size:8px;padding:6px;background:#1a252f;color:#ecf0f1;border:2px solid #2c3e50;margin-bottom:6px;outline:none;">
+                        <option value="">👤 Sem atribuição</option>
+                    </select>
+                    <div style="display:flex;gap:6px;margin-bottom:6px;">
+                        <div style="flex:1;">
+                            <div style="font-size:7px;color:#7f8c8d;margin-bottom:3px;">XP</div>
+                            <input type="number" id="bqd-subtask-xp" data-cy="input-bqd-subtask-xp" min="0" value="0"
+                                   style="width:100%;box-sizing:border-box;font-family:'Press Start 2P',cursive;font-size:7px;padding:5px;background:#1a252f;color:#2ecc71;border:2px solid #2c3e50;outline:none;">
+                        </div>
+                        <div style="flex:1;">
+                            <div style="font-size:7px;color:#7f8c8d;margin-bottom:3px;">Gold</div>
+                            <input type="number" id="bqd-subtask-gold" data-cy="input-bqd-subtask-gold" min="0" value="0"
+                                   style="width:100%;box-sizing:border-box;font-family:'Press Start 2P',cursive;font-size:7px;padding:5px;background:#1a252f;color:#f1c40f;border:2px solid #2c3e50;outline:none;">
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:6px;">
+                        <button type="button" data-cy="btn-bqd-confirm-subtask" onclick="bqdCreateSubtask()"
+                                style="flex:1;background:#27ae60;border:none;color:#fff;font-family:'Press Start 2P',cursive;font-size:7px;padding:6px;cursor:pointer;">CRIAR</button>
+                        <button type="button" onclick="bqdToggleSubtaskForm()"
+                                style="background:#7f8c8d;border:none;color:#fff;font-family:'Press Start 2P',cursive;font-size:7px;padding:6px 10px;cursor:pointer;">✕</button>
+                    </div>
+                </div>
+                <div id="bqd-subtask-list"></div>
             </div>
 
             <!-- Comentários / Atividade -->
-            <div>
+            <div id="bqd-activity-section">
                 <div class="bqd-label">💬 COMENTÁRIOS / ATIVIDADE</div>
                 <div id="bqd-comments" class="bqd-comments-list"></div>
                 <div style="display:flex;gap:6px;">

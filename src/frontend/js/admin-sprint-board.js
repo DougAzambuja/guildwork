@@ -213,6 +213,7 @@ function renderQuestCard(q) {
                 <span class="quest-tag xp">+${q.xp_reward || 0} XP</span>
                 <span class="quest-tag gold">💰 ${q.coin_reward || 0}</span>
                 ${assigneeName ? `<span class="quest-tag assignee">👤 ${assigneeName}</span>` : ''}
+                ${(q.subtasks_total > 0) ? `<span class="quest-tag" style="background:#8e44ad;color:#fff;" data-cy="subtask-badge">[${q.subtasks_done || 0}/${q.subtasks_total}]</span>` : ''}
             </div>
             <div class="quest-card-actions">
                 <button class="quest-action-btn detail" data-cy="btn-card-details"
@@ -689,6 +690,17 @@ function renderBoardQuestDetail(quest) {
     const titleEl = document.getElementById('bqd-title');
     if (titleEl) titleEl.textContent = quest.title;
 
+    const parentBreadcrumb = document.getElementById('bqd-parent-breadcrumb');
+    if (parentBreadcrumb) {
+        if (quest.parent_id) {
+            parentBreadcrumb.style.display = 'block';
+            parentBreadcrumb.innerHTML = `<span style="font-size:7px;color:#9b59b6;">↩ Quest pai: <button onclick="openBoardQuestDetail('${quest.parent_id._id}')" style="background:none;border:none;color:#3498db;font-family:'Press Start 2P',cursive;font-size:7px;cursor:pointer;padding:0;text-decoration:underline;">${_bEsc(quest.parent_id.title)}</button></span>`;
+        } else {
+            parentBreadcrumb.style.display = 'none';
+            parentBreadcrumb.innerHTML = '';
+        }
+    }
+
     const st           = _B_STATUS[quest.status] || _B_STATUS.todo;
     const assigneeName = quest.assigned_to ? (quest.assigned_to.nome || quest.assigned_to.username || '—') : '—';
     const slaText      = quest.sla_seconds ? _bFormatSla(quest.sla_seconds) : '—';
@@ -724,19 +736,25 @@ function renderBoardQuestDetail(quest) {
 
     const checklistSection = document.getElementById('bqd-checklist-section');
     const items = quest.checklist || [];
-    if (items.length && checklistSection) {
+    if (checklistSection) {
         checklistSection.style.display = 'block';
-        const done = items.filter(i => i.done).length;
-        const pct  = Math.round((done / items.length) * 100);
 
         const progressEl = document.getElementById('bqd-checklist-progress');
-        if (progressEl) progressEl.innerHTML = `
-            <div style="display:flex;justify-content:space-between;font-size:7px;color:#7f8c8d;margin-bottom:4px;">
-                <span>${done}/${items.length} itens</span><span>${pct}%</span>
-            </div>
-            <div style="background:#0d1b2a;height:5px;border-radius:2px;overflow:hidden;">
-                <div style="height:100%;background:#27ae60;width:${pct}%;"></div>
-            </div>`;
+        if (progressEl) {
+            if (items.length) {
+                const done = items.filter(i => i.done).length;
+                const pct  = Math.round((done / items.length) * 100);
+                progressEl.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;font-size:7px;color:#7f8c8d;margin-bottom:4px;">
+                        <span>${done}/${items.length} itens</span><span>${pct}%</span>
+                    </div>
+                    <div style="background:#0d1b2a;height:5px;border-radius:2px;overflow:hidden;">
+                        <div style="height:100%;background:#27ae60;width:${pct}%;"></div>
+                    </div>`;
+            } else {
+                progressEl.innerHTML = '';
+            }
+        }
 
         const itemsEl = document.getElementById('bqd-checklist-items');
         if (itemsEl) itemsEl.innerHTML = items.map(item => `
@@ -749,12 +767,123 @@ function renderBoardQuestDetail(quest) {
                     ${_bEsc(item.text)}
                 </span>
             </div>`).join('');
-    } else if (checklistSection) {
-        checklistSection.style.display = 'none';
     }
 
+    const activitySection = document.getElementById('bqd-activity-section');
+    if (activitySection) activitySection.style.display = quest.parent_id ? 'none' : '';
+
+    renderBoardSubtasks(quest);
     renderBoardQuestComments(quest.comments || []);
 }
+
+// ==========================================
+// SUBTASKS — board modal
+// ==========================================
+const _BQD_STATUS = {
+    todo:        { label: 'A Fazer',      color: '#2c3e50' },
+    in_progress: { label: 'Em Progresso', color: '#e67e22' },
+    done:        { label: 'Concluída',    color: '#27ae60' }
+};
+
+function renderBoardSubtasks(quest) {
+    const section = document.getElementById('bqd-subtasks-section');
+    if (!section) return;
+
+    if (quest.parent_id) {
+        section.style.display = 'none';
+        return;
+    }
+    section.style.display = '';
+
+    const addBtn = document.getElementById('bqd-subtask-add-btn');
+    if (addBtn) addBtn.style.display = '';
+
+    const progEl = document.getElementById('bqd-subtasks-progress');
+    const listEl = document.getElementById('bqd-subtask-list');
+    if (!progEl || !listEl) return;
+
+    const subtasks = quest.subtasks || [];
+    const total    = subtasks.length;
+    const done     = subtasks.filter(s => s.status === 'done').length;
+    const pct      = total > 0 ? Math.round((done / total) * 100) : 0;
+
+    progEl.innerHTML = total > 0 ? `
+        <div style="display:flex;justify-content:space-between;font-size:8px;color:#7f8c8d;margin-bottom:4px;">
+            <span>${done} de ${total} concluídas</span><span>${pct}%</span>
+        </div>
+        <div style="background:#1a252f;height:4px;border-radius:2px;overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:${pct===100?'#27ae60':'#3498db'};"></div>
+        </div>` : '<div style="font-size:8px;color:#7f8c8d;">Nenhuma subtask ainda.</div>';
+
+    listEl.innerHTML = subtasks.map(s => {
+        const st       = _BQD_STATUS[s.status] || _BQD_STATUS.todo;
+        const assignee = s.assigned_to ? (s.assigned_to.nome || s.assigned_to.username) : 'Nenhum herói responsável';
+        return `
+        <div onclick="openBoardQuestDetail('${s._id}')" data-cy="btn-open-subtask-board"
+             style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#0d1b2a;border:1px solid #2c3e50;margin-bottom:4px;cursor:pointer;"
+             onmouseover="this.style.background='#162538';this.style.borderColor='#3498db';"
+             onmouseout="this.style.background='#0d1b2a';this.style.borderColor='#2c3e50';">
+            <span style="background:${st.color};font-size:7px;padding:2px 6px;color:#fff;white-space:nowrap;flex-shrink:0;">${st.label}</span>
+            <span style="flex:1;font-size:8px;color:#ecf0f1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_bEsc(s.title)}</span>
+            <span style="font-size:7px;color:#7f8c8d;white-space:nowrap;flex-shrink:0;">👤 ${_bEsc(assignee)}</span>
+        </div>`;
+    }).join('');
+}
+
+window.bqdToggleSubtaskForm = async () => {
+    const form = document.getElementById('bqd-subtask-form');
+    if (!form) return;
+    const opening = form.style.display === 'none';
+    form.style.display = opening ? 'block' : 'none';
+    if (!opening) return;
+
+    const sel = document.getElementById('bqd-subtask-assignee');
+    if (!sel || sel.options.length > 1) return;
+    try {
+        const res = await fetch(`${API_URL}/admin/roster`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!res.ok) return;
+        const players = await res.json();
+        sel.innerHTML = '<option value="">👤 Sem atribuição</option>' +
+            players.map(p => `<option value="${p._id}">${p.nome || p.username}</option>`).join('');
+    } catch {}
+};
+
+window.bqdCreateSubtask = async () => {
+    const title      = document.getElementById('bqd-subtask-title')?.value.trim();
+    const assignee   = document.getElementById('bqd-subtask-assignee')?.value;
+    const xp_reward  = parseInt(document.getElementById('bqd-subtask-xp')?.value || '0', 10) || 0;
+    const coin_reward = parseInt(document.getElementById('bqd-subtask-gold')?.value || '0', 10) || 0;
+    if (!title) { showToast('Informe o título da subtask.', 'error'); return; }
+
+    try {
+        const res = await fetch(`${API_URL}/quests/${_boardDetailQuestId}/subtasks`, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body:    JSON.stringify({ title, assigned_to: assignee || null, xp_reward, coin_reward })
+        });
+        const data = await res.json();
+        if (!res.ok) { showToast(data.message || 'Erro ao criar subtask.', 'error'); return; }
+
+        document.getElementById('bqd-subtask-title').value   = '';
+        const xpEl   = document.getElementById('bqd-subtask-xp');
+        const goldEl = document.getElementById('bqd-subtask-gold');
+        if (xpEl)   xpEl.value   = '0';
+        if (goldEl) goldEl.value = '0';
+        document.getElementById('bqd-subtask-form').style.display = 'none';
+        showToast('Subtask criada!', 'success');
+
+        const freshRes = await fetch(`${API_URL}/quests/${_boardDetailQuestId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (freshRes.ok) {
+            const fresh = await freshRes.json();
+            renderBoardSubtasks(fresh);
+        }
+        loadSprintBoard();
+    } catch {
+        showToast('Erro de conexão.', 'error');
+    }
+};
 
 function renderBoardQuestComments(comments) {
     const listEl = document.getElementById('bqd-comments');
@@ -874,6 +1003,30 @@ window.submitBoardQuestEdit = async () => {
         }
     } catch (err) {
         console.error(err);
+        showToast('Erro de conexão.', 'error');
+    }
+};
+
+
+window.bqdAddChecklistItem = async () => {
+    const input = document.getElementById('bqd-checklist-new-item');
+    const text  = input?.value.trim();
+    if (!text || !_boardDetailQuestId) return;
+
+    try {
+        const res = await fetch(`${API_URL}/quests/${_boardDetailQuestId}/checklist`, {
+            method:  'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body:    JSON.stringify({ add: [text] })
+        });
+        if (!res.ok) { showToast('Erro ao salvar item.', 'error'); return; }
+
+        input.value = '';
+        const freshRes = await fetch(`${API_URL}/quests/${_boardDetailQuestId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (freshRes.ok) renderBoardQuestDetail(await freshRes.json());
+    } catch {
         showToast('Erro de conexão.', 'error');
     }
 };
