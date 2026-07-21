@@ -239,10 +239,6 @@
                         <option value="grande">Grande — 450 XP / 50 💰</option>
                     </select>
                 </div>
-                <div style="display:flex; gap:8px; margin-top:12px;">
-                    <button type="button" class="btn-pixel" data-cy="btn-save-edit-guild-quest" style="flex:1; background:#27ae60;" onclick="saveQuestEdit()">SALVAR</button>
-                    <button type="button" class="btn-pixel" data-cy="btn-cancel-edit-guild-quest" style="flex:1; background:#7f8c8d;" onclick="cancelQuestEdit()">CANCELAR</button>
-                </div>
             </div>
 
             <div class="quest-modal-status-row">
@@ -287,6 +283,12 @@
                 <div class="quest-modal-label">CHECKLIST</div>
                 <div id="qdm-checklist-progress" style="margin:6px 0 10px;"></div>
                 <div id="qdm-checklist-items"></div>
+            </div>
+
+            <!-- Rodapé de ações da edição (líder de guilda) -->
+            <div id="qdm-edit-actions" style="display:none; gap:8px; margin-top:14px;">
+                <button type="button" class="btn-pixel" data-cy="btn-save-edit-guild-quest" style="flex:1; background:#27ae60;" onclick="saveQuestEdit()">SALVAR</button>
+                <button type="button" class="btn-pixel" data-cy="btn-cancel-edit-guild-quest" style="flex:1; background:#7f8c8d;" onclick="cancelQuestEdit()">CANCELAR</button>
             </div>
 
             <div style="border-top:1px solid #2c3e50; margin:14px 0 10px;"></div>
