@@ -7,6 +7,18 @@ const notificationService = require('../services/notificationService');
 
 const WIP_LIMIT = 3;
 
+// Faixas de recompensa pré-aprovadas para quests criadas por líder de guilda.
+// O líder escolhe um tamanho — o valor de XP/Gold sempre vem daqui, nunca do
+// que o cliente envia (Server-Side Authority: sem isso, quests de líder ficavam
+// travadas em 0 XP/Gold, mas dar o campo livre pra ele minaria a integridade
+// econômica do sistema).
+const LEADER_QUEST_SIZE_TIERS = {
+    pequena: { xp_reward: 100, coin_reward: 15 },
+    media:   { xp_reward: 250, coin_reward: 30 },
+    grande:  { xp_reward: 450, coin_reward: 50 }
+};
+const DEFAULT_LEADER_QUEST_SIZE = 'pequena';
+
 // XP necessário para avançar do nível N para N+1
 // Progressão linear crescente: early levels são rápidos, late game desacelera gradualmente
 function xpParaProximoNivel(level) {
@@ -386,30 +398,77 @@ exports.adminGetQuests = async (req, res) => {
 };
 
 /**
- * POST /api/quests — Admin cria nova quest.
+ * POST /api/quests — Admin ou líder de guilda cria nova quest.
+ * Líder de guilda: faction/type/sprint_id/labels são forçados a valores seguros;
+ * xp_reward/coin_reward vêm de uma faixa pré-aprovada (LEADER_QUEST_SIZE_TIERS),
+ * nunca de números enviados pelo cliente — Server-Side Authority, o líder não pode
+ * cunhar XP/Gold arbitrário nem publicar quest fora da própria guilda.
  */
 exports.adminCreateQuest = async (req, res) => {
     try {
-        const { title, type, xp_reward, coin_reward, sla_seconds, faction, sprint_id, labels } = req.body;
+        const isLeader = req.user.role !== 'admin';
+        let { title, description, type, xp_reward, coin_reward, sla_seconds, faction, sprint_id, labels, assigned_to, checklist, size } = req.body;
 
-        if (!title || !xp_reward || !coin_reward) {
+        if (!title) {
+            return res.status(400).json({ message: 'Título é obrigatório.' });
+        }
+
+        if (isLeader) {
+            faction     = req.leaderGuild.faction_key;
+            type        = 'normal';
+            labels      = [];
+
+            const tier = LEADER_QUEST_SIZE_TIERS[size] || LEADER_QUEST_SIZE_TIERS[DEFAULT_LEADER_QUEST_SIZE];
+            xp_reward   = tier.xp_reward;
+            coin_reward = tier.coin_reward;
+
+            // Líder não escolhe a sprint — a quest entra direto na sprint ativa da guilda
+            // (senão ficaria invisível: o board só mostra quests em sprints ativas).
+            const activeSprint = await Sprint.findOne({ status: 'active', factions: faction }).select('_id');
+            sprint_id = activeSprint ? activeSprint._id : null;
+        } else if (!xp_reward || !coin_reward) {
             return res.status(400).json({ message: 'Título, XP e Gold são obrigatórios.' });
+        }
+
+        if (assigned_to) {
+            const assignee = await User.findById(assigned_to).select('faction');
+            if (!assignee) return res.status(400).json({ message: 'Aventureiro não encontrado.' });
+            if (isLeader && assignee.faction !== req.leaderGuild.faction_key) {
+                return res.status(403).json({ message: 'Você só pode atribuir quests a membros da sua guilda.' });
+            }
         }
 
         const parsedLabels = Array.isArray(labels)
             ? labels.filter(Boolean)
             : (typeof labels === 'string' ? labels.split(',').map(l => l.trim()).filter(Boolean) : []);
 
+        const parsedChecklist = Array.isArray(checklist)
+            ? checklist
+                .map(item => (typeof item === 'string' ? item : item?.text || ''))
+                .map(text => text.trim())
+                .filter(Boolean)
+                .map(text => ({ text, done: false }))
+            : [];
+
         const quest = await Quest.create({
             title,
+            description: description || '',
             type:        type        || 'normal',
             xp_reward,
             coin_reward,
             sla_seconds: sla_seconds || null,
             faction:     faction     || 'Produto',
             sprint_id:   sprint_id   || null,
-            labels:      parsedLabels
+            labels:      parsedLabels,
+            checklist:   parsedChecklist,
+            assigned_to: assigned_to || null,
+            status:      assigned_to ? 'in_progress' : 'todo',
+            started_at:  assigned_to ? new Date() : null
         });
+
+        if (assigned_to) {
+            notificationService.notifyQuestAssigned(quest, assigned_to).catch(() => {});
+        }
 
         res.status(201).json(quest);
     } catch (err) {
@@ -418,9 +477,11 @@ exports.adminCreateQuest = async (req, res) => {
 };
 
 /**
- * PATCH /api/quests/:id/assign — Admin atribui ou reseta uma quest.
+ * PATCH /api/quests/:id/assign — Admin ou líder de guilda atribui ou reseta uma quest.
  * Body: { userId: ObjectId | null }
  * userId = null → reset para todo, desatribui aventureiro.
+ * Líder de guilda só pode atribuir a membros da própria guilda (a posse da quest em si já
+ * foi validada pelo middleware isAdminOrGuildLeader).
  */
 exports.adminAssignQuest = async (req, res) => {
     try {
@@ -431,6 +492,13 @@ exports.adminAssignQuest = async (req, res) => {
 
         if (userId && quest.status !== 'todo') {
             return res.status(400).json({ message: 'Só é possível atribuir quests com status "todo".' });
+        }
+
+        if (userId && req.user.role !== 'admin') {
+            const assignee = await User.findById(userId).select('faction');
+            if (!assignee || assignee.faction !== req.leaderGuild.faction_key) {
+                return res.status(403).json({ message: 'Você só pode atribuir quests a membros da sua guilda.' });
+            }
         }
 
         if (userId) {
@@ -555,6 +623,40 @@ exports.toggleChecklistItem = async (req, res) => {
 };
 
 /**
+ * PATCH /api/quests/:id/checklist — Admin ou líder de guilda adiciona/remove/renomeia itens do checklist.
+ * Body: { add?: string[] (textos), remove?: string[] (ids dos itens), update?: {id, text}[] (renomear) }
+ */
+exports.updateChecklistItems = async (req, res) => {
+    try {
+        const { add = [], remove = [], update = [] } = req.body;
+        if (!add.length && !remove.length && !update.length) {
+            return res.status(400).json({ message: 'Informe itens para adicionar (add), remover (remove) ou renomear (update).' });
+        }
+
+        const quest = await Quest.findById(req.params.id);
+        if (!quest) return res.status(404).json({ message: 'Quest não encontrada.' });
+
+        remove.forEach(itemId => quest.checklist.pull(itemId));
+
+        update.forEach(({ id, text }) => {
+            const item    = quest.checklist.id(id);
+            const trimmed = String(text || '').trim();
+            if (item && trimmed) item.text = trimmed;
+        });
+
+        add.forEach(text => {
+            const trimmed = String(text || '').trim();
+            if (trimmed) quest.checklist.push({ text: trimmed, done: false });
+        });
+
+        await quest.save();
+        res.json({ checklist: quest.checklist });
+    } catch (err) {
+        res.status(500).json({ message: 'Erro ao atualizar checklist.', error: err.message });
+    }
+};
+
+/**
  * GET /api/quests/:id/comments
  * Retorna o histórico de comentários de uma quest, populado com autor.
  */
@@ -664,22 +766,37 @@ exports.adminCopyQuest = async (req, res) => {
     }
 };
 
-// PATCH /api/quests/:id — Admin edita campos da quest
+// PATCH /api/quests/:id — Admin ou líder de guilda edita campos da quest.
+// Líder de guilda só pode alterar título, descrição e SLA — type/faction/xp_reward/
+// coin_reward/sprint_id/labels enviados por ele são ignorados silenciosamente
+// (Server-Side Authority; a posse da quest já foi validada pelo middleware).
 exports.adminUpdateQuest = async (req, res) => {
     try {
-        const { title, type, faction, xp_reward, coin_reward, sla_seconds, sprint_id, labels } = req.body;
+        const isLeader = req.user.role !== 'admin';
+        const { title, description, type, faction, xp_reward, coin_reward, sla_seconds, sprint_id, labels, size } = req.body;
         const update = {};
         if (title       !== undefined) update.title       = title;
-        if (type        !== undefined) update.type        = type;
-        if (faction     !== undefined) update.faction     = faction;
-        if (xp_reward   !== undefined) update.xp_reward   = xp_reward;
-        if (coin_reward !== undefined) update.coin_reward = coin_reward;
+        if (description !== undefined) update.description = description;
         if (sla_seconds !== undefined) update.sla_seconds = sla_seconds || null;
-        if (sprint_id   !== undefined) update.sprint_id   = sprint_id  || null;
-        if (labels      !== undefined) {
-            update.labels = Array.isArray(labels)
-                ? labels.filter(Boolean)
-                : (typeof labels === 'string' ? labels.split(',').map(l => l.trim()).filter(Boolean) : []);
+
+        if (isLeader) {
+            // Líder pode reajustar o tamanho depois de criada — sempre pela faixa
+            // pré-aprovada, nunca por valor bruto vindo do cliente.
+            if (size !== undefined && LEADER_QUEST_SIZE_TIERS[size]) {
+                update.xp_reward   = LEADER_QUEST_SIZE_TIERS[size].xp_reward;
+                update.coin_reward = LEADER_QUEST_SIZE_TIERS[size].coin_reward;
+            }
+        } else {
+            if (type        !== undefined) update.type        = type;
+            if (faction     !== undefined) update.faction     = faction;
+            if (xp_reward   !== undefined) update.xp_reward   = xp_reward;
+            if (coin_reward !== undefined) update.coin_reward = coin_reward;
+            if (sprint_id   !== undefined) update.sprint_id   = sprint_id  || null;
+            if (labels      !== undefined) {
+                update.labels = Array.isArray(labels)
+                    ? labels.filter(Boolean)
+                    : (typeof labels === 'string' ? labels.split(',').map(l => l.trim()).filter(Boolean) : []);
+            }
         }
 
         const quest = await Quest.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
@@ -690,11 +807,18 @@ exports.adminUpdateQuest = async (req, res) => {
     }
 };
 
-// DELETE /api/quests/:id — Admin remove uma quest permanentemente
+// DELETE /api/quests/:id — Admin ou líder de guilda remove uma quest permanentemente.
+// Quests em progresso não podem ser removidas (evita perder trabalho em andamento).
 exports.deleteQuest = async (req, res) => {
     try {
-        const quest = await Quest.findByIdAndDelete(req.params.id);
+        const quest = await Quest.findById(req.params.id);
         if (!quest) return res.status(404).json({ message: 'Quest não encontrada.' });
+
+        if (quest.status === 'in_progress') {
+            return res.status(400).json({ message: 'Não é possível remover uma quest em progresso.' });
+        }
+
+        await quest.deleteOne();
         res.json({ message: 'Quest removida com sucesso.' });
     } catch (err) {
         res.status(500).json({ message: 'Erro ao remover quest.', error: err.message });

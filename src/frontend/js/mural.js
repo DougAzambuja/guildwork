@@ -37,8 +37,13 @@ const targetTasks  = 5;
 const activeTimers = new Map();
 const questCache   = new Map();
 
+let isGuildLeader    = false;
+let guildMembers     = [];
+let cqChecklistDraft = [];
+
 document.addEventListener('DOMContentLoaded', async () => {
     await fetchPlayerState();
+    await fetchGuildContext();
     await loadBoard();
     startBoardAutoRefresh();
 });
@@ -130,6 +135,104 @@ async function fetchPlayerState() {
         showToast('Erro de conexão com o servidor.', 'error');
     }
 }
+
+// ==========================================
+// 3b. LIDERANÇA DE GUILDA (criar/editar/excluir missões)
+// ==========================================
+async function fetchGuildContext() {
+    try {
+        const res = await fetch(`${API_URL}/guild`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+
+        const data = await res.json();
+        isGuildLeader = !!data.isLeader;
+        guildMembers  = data.members || [];
+
+        const btnNewQuest = document.getElementById('btnNewQuest');
+        if (btnNewQuest) btnNewQuest.style.display = isGuildLeader ? 'inline-block' : 'none';
+    } catch (err) {
+        console.error('Erro ao verificar liderança de guilda:', err);
+    }
+}
+
+// — Modal de criação de missão —
+window.openCreateQuestModal = () => {
+    const sel = document.getElementById('cqAssignee');
+    sel.innerHTML = '<option value="">Sem atribuição (fica no backlog)</option>' +
+        guildMembers.map(m => `<option value="${m._id}">${_esc(m.nome || m.username)}</option>`).join('');
+
+    document.getElementById('createQuestForm').reset();
+    cqChecklistDraft = [];
+    renderCqChecklistDraft();
+    document.getElementById('createQuestModal').style.display = 'flex';
+};
+
+window.closeCreateQuestModal = () => {
+    document.getElementById('createQuestModal').style.display = 'none';
+};
+
+window.addCreateQuestChecklistItem = () => {
+    const input = document.getElementById('cqChecklistInput');
+    const text  = input.value.trim();
+    if (!text) return;
+    cqChecklistDraft.push(text);
+    input.value = '';
+    renderCqChecklistDraft();
+};
+
+window.removeCreateQuestChecklistItem = (index) => {
+    cqChecklistDraft.splice(index, 1);
+    renderCqChecklistDraft();
+};
+
+function renderCqChecklistDraft() {
+    const container = document.getElementById('cqChecklistDraft');
+    container.innerHTML = cqChecklistDraft.map((text, i) => `
+        <div style="display:flex;align-items:center;gap:8px;background:#34495e;border:2px solid #7f8c8d;padding:6px 10px;font-size:9px;color:#ecf0f1;">
+            <span style="flex:1;">${_esc(text)}</span>
+            <button type="button" style="background:#c0392b;border:none;color:#fff;font-size:8px;padding:3px 8px;cursor:pointer;" onclick="removeCreateQuestChecklistItem(${i})">remover</button>
+        </div>
+    `).join('');
+}
+
+document.getElementById('createQuestForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const slaVal = document.getElementById('cqSla').value;
+    const payload = {
+        title:       document.getElementById('cqTitle').value.trim(),
+        size:        document.getElementById('cqSize').value,
+        description: document.getElementById('cqDescription').value.trim(),
+        sla_seconds: slaVal ? parseInt(slaVal) : null,
+        assigned_to: document.getElementById('cqAssignee').value || null,
+        checklist:   cqChecklistDraft
+    };
+
+    const btn = document.getElementById('btnSubmitCreateQuest');
+    btn.disabled = true;
+
+    try {
+        const res  = await fetch(`${API_URL}/quests`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (!res.ok) { showToast(data.message || 'Erro ao criar missão.', 'error'); return; }
+
+        showToast(`Missão "${data.title}" forjada!`);
+        closeCreateQuestModal();
+        await loadBoard();
+    } catch (err) {
+        console.error(err);
+        showToast('Erro de conexão.', 'error');
+    } finally {
+        btn.disabled = false;
+    }
+});
 
 // ==========================================
 // 4. KANBAN BOARD — CARREGAMENTO
@@ -322,7 +425,26 @@ const STATUS_MAP = {
     done:        { label: 'Concluída',    color: '#27ae60' }
 };
 
+// Espelha as faixas do backend (LEADER_QUEST_SIZE_TIERS em questController.js) só
+// pra pré-selecionar o <select> ao abrir a edição — o valor real de XP/Gold sempre
+// vem do servidor, isso aqui é só apresentação.
+const QUEST_SIZE_TIERS = {
+    pequena: { xp_reward: 100, coin_reward: 15 },
+    media:   { xp_reward: 250, coin_reward: 30 },
+    grande:  { xp_reward: 450, coin_reward: 50 }
+};
+
+function mapRewardsToSize(xp, coin) {
+    const match = Object.entries(QUEST_SIZE_TIERS)
+        .find(([, t]) => t.xp_reward === xp && t.coin_reward === coin);
+    return match ? match[0] : 'pequena';
+}
+
 let _modalQuestId = null;
+let _questEditMode = false;
+let _editingChecklistItemId = null;
+let _pendingUnsavedAction = null; // 'close' | 'cancel'
+let _checklistDraft = null; // rascunho local do checklist durante a edição — só vira PATCH real no SALVAR
 
 function _esc(str) {
     return String(str || '')
@@ -345,7 +467,9 @@ async function openQuestModal(questId) {
     if (!cached) return;
 
     _modalQuestId = questId;
-    _renderModalInfo(cached);
+    _editingChecklistItemId = null;
+    _pendingUnsavedAction = null;
+    toggleQuestEditMode(false); // reseta o modal para modo leitura e renderiza os dados da quest
 
     const checklistSection = document.getElementById('qdm-checklist-section');
     const commentsList     = document.getElementById('qdm-comments-list');
@@ -378,6 +502,26 @@ function _renderModalInfo(quest) {
         `<span class="status-badge" style="background:${st.color}; padding:4px 10px; font-size:8px;">${st.label}</span>`;
     document.getElementById('qdm-xp').textContent    = `+${quest.xp_reward} XP`;
     document.getElementById('qdm-coins').textContent = `+${quest.coin_reward} 💰`;
+
+    const descSection = document.getElementById('qdm-description-section');
+    if (quest.description) {
+        descSection.style.display = 'block';
+        document.getElementById('qdm-description').textContent = quest.description;
+    } else {
+        descSection.style.display = 'none';
+    }
+
+    // Controles do líder de guilda — só para quests da própria guilda
+    const leaderControls = document.getElementById('qdm-leader-controls');
+    const canManage = isGuildLeader && quest.faction === playerData.faction;
+    leaderControls.style.display = canManage ? 'flex' : 'none';
+    if (canManage) {
+        const blocked   = quest.status === 'in_progress';
+        const deleteBtn = document.getElementById('qdm-btn-delete');
+        deleteBtn.disabled  = blocked;
+        deleteBtn.style.opacity = blocked ? '0.5' : '1';
+        deleteBtn.title = blocked ? 'Não é possível excluir uma missão em progresso.' : '';
+    }
 
     const slaEl = document.getElementById('qdm-sla');
     if (!quest.sla_seconds) {
@@ -415,42 +559,71 @@ function _renderModalInfo(quest) {
 }
 
 function _renderModalChecklist(quest) {
-    const section   = document.getElementById('qdm-checklist-section');
+    const section    = document.getElementById('qdm-checklist-section');
     const progressEl = document.getElementById('qdm-checklist-progress');
-    const itemsEl   = document.getElementById('qdm-checklist-items');
+    const itemsEl    = document.getElementById('qdm-checklist-items');
     if (!section) return;
 
-    const items = quest.checklist || [];
-    if (!items.length) { section.style.display = 'none'; return; }
+    const canManage  = _questEditMode && isGuildLeader && quest.faction === playerData.faction;
+    const items      = canManage ? (_checklistDraft || []) : (quest.checklist || []);
 
+    if (!items.length && !canManage) { section.style.display = 'none'; return; }
     section.style.display = 'block';
 
-    const doneCount = items.filter(i => i.done).length;
-    const pct       = Math.round((doneCount / items.length) * 100);
-
-    if (progressEl) progressEl.innerHTML = `
-        <div style="display:flex;justify-content:space-between;font-size:8px;color:#7f8c8d;margin-bottom:4px;">
-            <span>${doneCount} de ${items.length} itens</span><span>${pct}%</span>
-        </div>
-        <div style="background:#0d1b2a;height:6px;border-radius:2px;overflow:hidden;">
-            <div style="height:100%;background:#27ae60;width:${pct}%;transition:width 0.3s;"></div>
-        </div>
-    `;
+    if (items.length) {
+        const doneCount = items.filter(i => i.done).length;
+        const pct       = Math.round((doneCount / items.length) * 100);
+        progressEl.innerHTML = `
+            <div style="display:flex;justify-content:space-between;font-size:8px;color:#7f8c8d;margin-bottom:4px;">
+                <span>${doneCount} de ${items.length} itens</span><span>${pct}%</span>
+            </div>
+            <div style="background:#0d1b2a;height:6px;border-radius:2px;overflow:hidden;">
+                <div style="height:100%;background:#27ae60;width:${pct}%;transition:width 0.3s;"></div>
+            </div>
+        `;
+    } else {
+        progressEl.innerHTML = '';
+    }
 
     const assignedId = quest.assigned_to ? (quest.assigned_to._id || quest.assigned_to).toString() : null;
-    const canToggle  = assignedId === playerData.id;
+    const canToggle   = assignedId === playerData.id;
 
-    if (itemsEl) itemsEl.innerHTML = items.map(item => `
+    itemsEl.innerHTML = items.map(item => {
+        const isEditingThis = canManage && item._id === _editingChecklistItemId;
+        const toggleAllowed = canToggle && !item._isNew; // item novo (ainda não salvo) não pode ser marcado
+
+        const textCell = isEditingThis
+            ? `<input type="text" class="pixel-input" data-cy="input-checklist-item-text"
+                   data-item-id="${item._id}" data-original="${_esc(item.text)}"
+                   value="${_esc(item.text)}"
+                   style="flex:1;font-size:9px;padding:5px 6px;color:#1a1a1a;"
+                   onblur="saveChecklistItemText(this)"
+                   onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">`
+            : `<span ${canManage ? `data-cy="text-checklist-item" onclick="startEditChecklistItemText('${item._id}')" style="cursor:pointer;` : `style="`}flex:1;font-size:9px;color:${item.done ? '#7f8c8d' : '#ecf0f1'};text-decoration:${item.done ? 'line-through' : 'none'};">${_esc(item.text)}</span>`;
+
+        return `
         <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #1a252f;">
-            <input type="checkbox" ${item.done ? 'checked' : ''} ${!canToggle ? 'disabled' : ''}
+            <input type="checkbox" ${item.done ? 'checked' : ''} ${!toggleAllowed ? 'disabled' : ''}
                    data-cy="checkbox-checklist-item"
                    onchange="toggleChecklistItem('${quest._id}','${item._id}',this)"
-                   style="cursor:${canToggle ? 'pointer' : 'default'};accent-color:#27ae60;flex-shrink:0;">
-            <span style="font-size:9px;color:${item.done ? '#7f8c8d' : '#ecf0f1'};text-decoration:${item.done ? 'line-through' : 'none'};">
-                ${_esc(item.text)}
-            </span>
+                   style="cursor:${toggleAllowed ? 'pointer' : 'default'};accent-color:#27ae60;flex-shrink:0;">
+            ${textCell}
+            ${canManage ? `<button type="button" data-cy="btn-remove-checklist-item" onclick="removeChecklistItemEdit('${item._id}')" style="background:#c0392b;border:none;color:#fff;font-size:13px;padding:8px 14px;cursor:pointer;flex-shrink:0;">Remover</button>` : ''}
         </div>
-    `).join('');
+    `;
+    }).join('');
+
+    if (canManage) {
+        itemsEl.innerHTML += `
+            <div style="display:flex;gap:6px;margin-top:8px;">
+                <input type="text" id="qdm-checklist-add-input" class="pixel-input" data-cy="input-add-checklist-item"
+                       placeholder="Novo item..." style="flex:1;font-size:9px;padding:6px;"
+                       onkeydown="if(event.key==='Enter'){event.preventDefault();addChecklistItemEdit();}">
+                <button type="button" data-cy="btn-add-checklist-item" onclick="addChecklistItemEdit()"
+                        style="background:#2980b9;border:none;color:#fff;font-size:15px;padding:6px 10px;cursor:pointer;">+ Item</button>
+            </div>
+        `;
+    }
 }
 
 function _renderModalComments(comments) {
@@ -504,7 +677,18 @@ window.toggleChecklistItem = async (questId, itemId, checkbox) => {
         const detailRes = await fetch(`${API_URL}/quests/${questId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (detailRes.ok) _renderModalChecklist(await detailRes.json());
+        if (detailRes.ok) {
+            const fresh = await detailRes.json();
+            // "Concluído" é operacional (não faz parte do rascunho de edição) — mas
+            // sincroniza o rascunho pra não mostrar um estado antigo se o líder também
+            // for o responsável e estiver com o card em modo de edição.
+            if (_checklistDraft) {
+                const draftItem = _checklistDraft.find(i => i._id === itemId);
+                const freshItem = (fresh.checklist || []).find(i => i._id === itemId);
+                if (draftItem && freshItem) draftItem.done = freshItem.done;
+            }
+            _renderModalChecklist(fresh);
+        }
     } catch (err) {
         checkbox.checked = !checkbox.checked;
         console.error(err);
@@ -542,9 +726,274 @@ window.submitQuestComment = async () => {
     }
 };
 
-function closeQuestModal() {
+// Compara os campos do formulário de edição (título/descrição/SLA) e o rascunho do
+// checklist contra a quest em cache — tudo isso fica "pendurado" localmente até o SALVAR.
+function checklistDraftDiffers() {
+    if (!_checklistDraft) return false;
+    const quest = questCache.get(_modalQuestId);
+    if (!quest) return false;
+
+    const original = quest.checklist || [];
+    if (original.length !== _checklistDraft.length) return true;
+
+    return _checklistDraft.some(draftItem => {
+        if (draftItem._isNew) return true;
+        const orig = original.find(o => o._id === draftItem._id);
+        return !orig || orig.text !== draftItem.text;
+    });
+}
+
+function hasUnsavedQuestEdits() {
+    if (!_questEditMode) return false;
+    const quest = questCache.get(_modalQuestId);
+    if (!quest) return false;
+
+    const titleEl = document.getElementById('qdm-edit-title');
+    const descEl  = document.getElementById('qdm-edit-description');
+    const slaEl   = document.getElementById('qdm-edit-sla');
+    const sizeEl  = document.getElementById('qdm-edit-size');
+    if (!titleEl || !descEl || !slaEl || !sizeEl) return false;
+
+    const titleVal = titleEl.value.trim();
+    const descVal  = descEl.value.trim();
+    const slaRaw   = slaEl.value;
+    const slaVal   = slaRaw ? parseInt(slaRaw) : null;
+    const sizeVal  = sizeEl.value;
+
+    return titleVal !== (quest.title || '') ||
+           descVal  !== (quest.description || '') ||
+           slaVal   !== (quest.sla_seconds || null) ||
+           sizeVal  !== mapRewardsToSize(quest.xp_reward, quest.coin_reward) ||
+           checklistDraftDiffers();
+}
+
+function _forceCloseQuestModal() {
     document.getElementById('questDetailModal').style.display = 'none';
+    toggleQuestEditMode(false);
     _modalQuestId = null;
+    _editingChecklistItemId = null;
+}
+
+function closeQuestModal() {
+    if (hasUnsavedQuestEdits()) {
+        _pendingUnsavedAction = 'close';
+        document.getElementById('unsavedChangesModal').style.display = 'flex';
+        return;
+    }
+    _forceCloseQuestModal();
+}
+
+window.cancelQuestEdit = () => {
+    if (hasUnsavedQuestEdits()) {
+        _pendingUnsavedAction = 'cancel';
+        document.getElementById('unsavedChangesModal').style.display = 'flex';
+        return;
+    }
+    toggleQuestEditMode(false);
+};
+
+window.cancelDiscardQuestEdit = () => {
+    document.getElementById('unsavedChangesModal').style.display = 'none';
+    _pendingUnsavedAction = null;
+};
+
+window.confirmDiscardQuestEdit = () => {
+    document.getElementById('unsavedChangesModal').style.display = 'none';
+    if (_pendingUnsavedAction === 'close')  _forceCloseQuestModal();
+    if (_pendingUnsavedAction === 'cancel') toggleQuestEditMode(false);
+    _pendingUnsavedAction = null;
+};
+
+// — Edição inline (líder de guilda) —
+// No modo de edição, escondemos as seções não-editáveis (recompensa, responsável,
+// atividade) para o modal ficar compacto — só título/descrição/SLA/checklist ficam visíveis.
+function toggleQuestEditMode(on) {
+    _questEditMode = on;
+    const quest = questCache.get(_modalQuestId);
+    if (!quest) return;
+
+    if (on) {
+        document.getElementById('qdm-edit-title').value       = quest.title;
+        document.getElementById('qdm-edit-description').value = quest.description || '';
+        document.getElementById('qdm-edit-sla').value          = quest.sla_seconds || '';
+        document.getElementById('qdm-edit-size').value         = mapRewardsToSize(quest.xp_reward, quest.coin_reward);
+        // Rascunho local do checklist — add/remover/renomear só mexem aqui até o SALVAR
+        _checklistDraft = (quest.checklist || []).map(i => ({ _id: i._id, text: i.text, done: i.done }));
+    } else {
+        _checklistDraft = null;
+    }
+
+    document.getElementById('qdm-edit-form').style.display        = on ? 'block' : 'none';
+    document.getElementById('qdm-title').style.display            = on ? 'none'  : '';
+    document.getElementById('qdm-rewards-section').style.display  = on ? 'none'  : '';
+    document.getElementById('qdm-assignee-section').style.display = on ? 'none'  : '';
+    document.getElementById('qdm-activity-section').style.display = on ? 'none'  : '';
+
+    _renderModalInfo(quest);
+    _renderModalChecklist(quest);
+
+    if (on) {
+        document.getElementById('qdm-description-section').style.display = 'none';
+        document.getElementById('qdm-sla-section').style.display         = 'none';
+        document.getElementById('qdm-started-section').style.display     = 'none';
+    }
+}
+window.toggleQuestEditMode = toggleQuestEditMode;
+
+window.saveQuestEdit = async () => {
+    if (!_modalQuestId) return;
+
+    const title = document.getElementById('qdm-edit-title').value.trim();
+    if (!title) { showToast('Título não pode ficar vazio.', 'error'); return; }
+
+    const slaVal = document.getElementById('qdm-edit-sla').value;
+    const payload = {
+        title,
+        size:        document.getElementById('qdm-edit-size').value,
+        description: document.getElementById('qdm-edit-description').value.trim(),
+        sla_seconds: slaVal ? parseInt(slaVal) : null
+    };
+
+    try {
+        const res  = await fetch(`${API_URL}/quests/${_modalQuestId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (!res.ok) { showToast(data.message || 'Erro ao atualizar missão.', 'error'); return; }
+
+        const quest = { ...questCache.get(data._id), ...data };
+        questCache.set(data._id, quest);
+
+        const checklistOk = await commitChecklistDraft(quest);
+        showToast(checklistOk ? 'Missão atualizada!' : 'Missão atualizada, mas houve erro ao salvar o checklist.', checklistOk ? 'success' : 'error');
+
+        toggleQuestEditMode(false);
+        await loadBoard();
+    } catch (err) {
+        console.error(err);
+        showToast('Erro de conexão.', 'error');
+    }
+};
+
+window.deleteQuestFromModal = async () => {
+    if (!_modalQuestId) return;
+
+    const deleteBtn = document.getElementById('qdm-btn-delete');
+    if (deleteBtn.disabled) return;
+    if (!confirm('Tem certeza que deseja excluir esta missão?')) return;
+
+    try {
+        const res  = await fetch(`${API_URL}/quests/${_modalQuestId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+
+        if (!res.ok) { showToast(data.message || 'Erro ao excluir missão.', 'error'); return; }
+
+        showToast('Missão excluída!', 'error');
+        closeQuestModal();
+        await loadBoard();
+    } catch (err) {
+        console.error(err);
+        showToast('Erro de conexão.', 'error');
+    }
+};
+
+// — Checklist: adicionar/remover/renomear itens no RASCUNHO local (líder de guilda,
+// no modo de edição). Nada disso toca a API — só vira PATCH real quando o usuário
+// clica em SALVAR (ver commitChecklistDraft), pra não perder o item se ele fechar
+// o card sem salvar.
+function _rerenderChecklistFromCache() {
+    const quest = questCache.get(_modalQuestId);
+    if (quest) _renderModalChecklist(quest);
+}
+
+window.addChecklistItemEdit = () => {
+    const input = document.getElementById('qdm-checklist-add-input');
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+
+    if (!_checklistDraft) _checklistDraft = [];
+    _checklistDraft.push({
+        _id: `temp_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        text,
+        done: false,
+        _isNew: true
+    });
+
+    _rerenderChecklistFromCache();
+
+    const freshInput = document.getElementById('qdm-checklist-add-input');
+    if (freshInput) freshInput.focus();
+};
+
+window.removeChecklistItemEdit = (itemId) => {
+    if (!_checklistDraft) return;
+    _checklistDraft = _checklistDraft.filter(i => i._id !== itemId);
+    _rerenderChecklistFromCache();
+};
+
+window.startEditChecklistItemText = (itemId) => {
+    _editingChecklistItemId = itemId;
+    _rerenderChecklistFromCache();
+
+    const input = document.querySelector(`#qdm-checklist-items input[data-item-id="${itemId}"]`);
+    if (input) { input.focus(); input.select(); }
+};
+
+window.saveChecklistItemText = (inputEl) => {
+    const itemId  = inputEl.dataset.itemId;
+    const newText = inputEl.value.trim();
+
+    _editingChecklistItemId = null;
+
+    if (newText && _checklistDraft) {
+        const draftItem = _checklistDraft.find(i => i._id === itemId);
+        if (draftItem) draftItem.text = newText;
+    }
+
+    _rerenderChecklistFromCache();
+};
+
+// Compara o rascunho contra o checklist salvo e envia só a diferença (add/remove/update)
+// num único PATCH — chamado pelo SALVAR do formulário de edição.
+async function commitChecklistDraft(quest) {
+    if (!_checklistDraft) return true;
+
+    const original = quest.checklist || [];
+    const add    = _checklistDraft.filter(i => i._isNew).map(i => i.text);
+    const remove = original.filter(o => !_checklistDraft.some(d => d._id === o._id)).map(o => o._id);
+    const update = _checklistDraft
+        .filter(d => !d._isNew)
+        .filter(d => {
+            const orig = original.find(o => o._id === d._id);
+            return orig && orig.text !== d.text;
+        })
+        .map(d => ({ id: d._id, text: d.text }));
+
+    if (!add.length && !remove.length && !update.length) return true;
+
+    try {
+        const res  = await fetch(`${API_URL}/quests/${_modalQuestId}/checklist`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ add, remove, update })
+        });
+        const data = await res.json();
+        if (!res.ok) return false;
+
+        quest.checklist = data.checklist;
+        questCache.set(_modalQuestId, quest);
+        return true;
+    } catch (err) {
+        console.error(err);
+        return false;
+    }
 }
 
 function formatDate(isoString) {

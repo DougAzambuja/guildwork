@@ -153,7 +153,16 @@ body {
 
 .actions {
     display: flex;
+    align-items: center;
     gap: 15px;
+}
+
+/* Separador visual entre grupos de ações (CTA / navegação / utilidades) */
+.actions-divider {
+    width: 2px;
+    height: 22px;
+    background: #2c3e50;
+    flex-shrink: 0;
 }
 
 .btn-pixel.logout-btn {
@@ -1327,8 +1336,23 @@ body:has(.mural-layout) {
     background: #1a252f;
     color: #ecf0f1;
     max-width: 500px;
+    max-height: 88vh;
+    overflow-y: auto;
     border: 6px solid #f1c40f;
     box-shadow: 16px 16px 0px rgba(0,0,0,0.9);
+}
+
+/* Telas mais baixas (notebooks) — modal de detalhes mais compacto */
+@media (max-height: 750px) {
+    .quest-detail-modal {
+        max-height: 94vh;
+        padding: 16px;
+    }
+    .quest-detail-modal .quest-modal-title { margin: 8px 0; padding-bottom: 8px; }
+    .quest-detail-modal .quest-modal-status-row { margin-bottom: 10px; }
+    .quest-detail-modal .quest-modal-rewards { margin: 8px 0; padding: 10px; }
+    .quest-detail-modal .quest-modal-section { margin: 6px 0; padding: 8px 10px; }
+    .quest-detail-modal #qdm-comments-list { max-height: 100px !important; }
 }
 
 .quest-modal-title {

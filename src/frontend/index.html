@@ -24,9 +24,16 @@
             </div>
 
             <div class="actions">
+                <button class="btn-pixel" id="btnNewQuest" data-cy="btn-new-guild-quest" onclick="openCreateQuestModal()" style="display:none; background:#8e44ad;">+ Nova Missão</button>
+
+                <span class="actions-divider"></span>
+
                 <button class="btn-pixel" id="btnRefreshBoard" onclick="loadBoard()" title="Recarregar board">↻ Atualizar</button>
-                <a href="guild.html" class="btn-pixel" data-cy="link-guilda" style="background:#8e44ad;">🏰 Guilda</a>
-                <a href="loja.html" class="btn-pixel shop-btn" data-cy="link-loja">Ir para Loja</a>
+                <a href="guild.html" class="btn-pixel" data-cy="link-guilda" style="background:#34495e;">🏰 Guilda</a>
+                <a href="loja.html" class="btn-pixel shop-btn" data-cy="link-loja" style="background:#34495e;">🛒 Loja</a>
+
+                <span class="actions-divider"></span>
+
                 <button class="btn-pixel logout-btn" data-cy="btn-logout" onclick="logout()">Sair</button>
             </div>
         </div>
@@ -147,18 +154,108 @@
         </div>
     </div>
 
+    <!-- Modal de Criação de Missão (líder de guilda) -->
+    <div id="createQuestModal" class="modal-overlay" style="display: none;" onclick="if(event.target===this)closeCreateQuestModal()">
+        <div class="modal-content" style="max-width:480px; width:95%; max-height:88vh; overflow-y:auto;">
+            <h2 class="section-title">🗡️ FORJAR MISSÃO DA GUILDA</h2>
+            <form id="createQuestForm" data-cy="form-create-guild-quest">
+                <div class="forge-group">
+                    <label for="cqTitle">Título</label>
+                    <input type="text" id="cqTitle" class="pixel-input" data-cy="input-cq-title" style="width:100%; box-sizing:border-box;" placeholder="Ex: Organizar backlog do time" required autocomplete="off">
+                </div>
+                <div class="forge-group" style="margin-top:12px;">
+                    <label for="cqSize">Tamanho da Missão (define XP/Gold — aprovado pelo Mestre da Guilda)</label>
+                    <select id="cqSize" class="pixel-input" data-cy="select-cq-size" style="width:100%; box-sizing:border-box;">
+                        <option value="pequena">Pequena — 100 XP / 15 💰</option>
+                        <option value="media">Média — 250 XP / 30 💰</option>
+                        <option value="grande">Grande — 450 XP / 50 💰</option>
+                    </select>
+                </div>
+                <div class="forge-group" style="margin-top:12px;">
+                    <label for="cqDescription">Descrição</label>
+                    <textarea id="cqDescription" class="pixel-input" data-cy="input-cq-description" rows="3" style="width:100%; box-sizing:border-box; resize:vertical; font-family:inherit;" placeholder="Detalhes da missão..."></textarea>
+                </div>
+                <div class="forge-group" style="margin-top:12px;">
+                    <label for="cqSla">SLA (Segundos) — deixe vazio para sem tempo limite</label>
+                    <input type="number" id="cqSla" class="pixel-input" data-cy="input-cq-sla" style="width:100%; box-sizing:border-box;" placeholder="Ex: 3600" min="1">
+                </div>
+                <div class="forge-group" style="margin-top:12px;">
+                    <label for="cqAssignee">Atribuir a</label>
+                    <select id="cqAssignee" class="pixel-input" data-cy="select-cq-assignee" style="width:100%; box-sizing:border-box;">
+                        <option value="">Sem atribuição (fica no backlog)</option>
+                    </select>
+                </div>
+                <div class="forge-group" style="margin-top:12px;">
+                    <label>Checklist inicial (opcional)</label>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" id="cqChecklistInput" class="pixel-input" data-cy="input-cq-checklist-item" placeholder="Ex: Validar com o time" autocomplete="off" style="flex:1;">
+                        <button type="button" class="btn-pixel" style="background:#2980b9; font-size:8px;" onclick="addCreateQuestChecklistItem()" data-cy="btn-cq-add-checklist-item">+ Item</button>
+                    </div>
+                    <div id="cqChecklistDraft" style="display:flex; flex-direction:column; gap:6px; margin-top:8px;"></div>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:16px;">
+                    <button type="submit" id="btnSubmitCreateQuest" class="btn-pixel" data-cy="btn-submit-cq" style="flex:1; background-color:#8e44ad; padding:12px;">FORJAR MISSÃO</button>
+                    <button type="button" class="btn-pixel" style="flex:1; background-color:#7f8c8d; padding:12px;" onclick="closeCreateQuestModal()">CANCELAR</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal de Detalhes da Quest -->
     <div id="questDetailModal" class="modal-overlay" style="display: none;" onclick="if(event.target===this)closeQuestModal()">
-        <div class="modal-content quest-detail-modal">
-            <div id="qdm-type-badge"></div>
-            <h2 id="qdm-title" class="quest-modal-title"></h2>
+        <div class="modal-content quest-detail-modal" style="position:relative;">
+            <button class="btn-pixel" style="position:absolute; top:14px; right:14px; font-size:10px; padding:7px 11px; background:#2c3e50; z-index:2;" data-cy="btn-close-quest-detail" onclick="closeQuestModal()">✕</button>
+
+            <div style="padding-right:52px; min-height:48px;">
+                <div id="qdm-type-badge"></div>
+                <h2 id="qdm-title" class="quest-modal-title"></h2>
+            </div>
+
+            <!-- Controles do líder de guilda (só quests da própria guilda) -->
+            <div id="qdm-leader-controls" style="display:none; gap:8px; margin-bottom:12px;">
+                <button type="button" class="btn-pixel" id="qdm-btn-edit" data-cy="btn-edit-guild-quest" style="flex:1; font-size:8px; background:#2980b9;" onclick="toggleQuestEditMode(true)">✏️ EDITAR</button>
+                <button type="button" class="btn-pixel" id="qdm-btn-delete" data-cy="btn-delete-guild-quest" style="flex:1; font-size:8px; background:#c0392b;" onclick="deleteQuestFromModal()">🗑️ EXCLUIR</button>
+            </div>
+
+            <!-- Formulário de edição inline (líder de guilda) -->
+            <div id="qdm-edit-form" style="display:none; margin-bottom:14px;">
+                <div class="forge-group">
+                    <label>Título</label>
+                    <input type="text" id="qdm-edit-title" class="pixel-input" data-cy="input-edit-guild-quest-title" style="width:100%; box-sizing:border-box;">
+                </div>
+                <div class="forge-group" style="margin-top:10px;">
+                    <label>Descrição</label>
+                    <textarea id="qdm-edit-description" class="pixel-input" data-cy="input-edit-guild-quest-description" rows="3" style="width:100%; box-sizing:border-box; resize:vertical; font-family:inherit;"></textarea>
+                </div>
+                <div class="forge-group" style="margin-top:10px;">
+                    <label>SLA (segundos) — vazio = sem limite</label>
+                    <input type="number" id="qdm-edit-sla" class="pixel-input" data-cy="input-edit-guild-quest-sla" style="width:100%; box-sizing:border-box;" min="1">
+                </div>
+                <div class="forge-group" style="margin-top:10px;">
+                    <label>Tamanho da Missão (define XP/Gold)</label>
+                    <select id="qdm-edit-size" class="pixel-input" data-cy="select-edit-guild-quest-size" style="width:100%; box-sizing:border-box;">
+                        <option value="pequena">Pequena — 100 XP / 15 💰</option>
+                        <option value="media">Média — 250 XP / 30 💰</option>
+                        <option value="grande">Grande — 450 XP / 50 💰</option>
+                    </select>
+                </div>
+                <div style="display:flex; gap:8px; margin-top:12px;">
+                    <button type="button" class="btn-pixel" data-cy="btn-save-edit-guild-quest" style="flex:1; background:#27ae60;" onclick="saveQuestEdit()">SALVAR</button>
+                    <button type="button" class="btn-pixel" data-cy="btn-cancel-edit-guild-quest" style="flex:1; background:#7f8c8d;" onclick="cancelQuestEdit()">CANCELAR</button>
+                </div>
+            </div>
 
             <div class="quest-modal-status-row">
                 <span class="quest-modal-label">Status</span>
                 <span id="qdm-status"></span>
             </div>
 
-            <div class="quest-modal-rewards">
+            <div class="quest-modal-section" id="qdm-description-section" style="display:none;">
+                <div class="quest-modal-label">Descrição</div>
+                <div id="qdm-description" class="quest-modal-value"></div>
+            </div>
+
+            <div class="quest-modal-rewards" id="qdm-rewards-section">
                 <div class="quest-modal-reward-item">
                     <div class="quest-modal-label">XP</div>
                     <span class="xp-reward" id="qdm-xp"></span>
@@ -170,7 +267,7 @@
                 </div>
             </div>
 
-            <div class="quest-modal-section">
+            <div class="quest-modal-section" id="qdm-sla-section">
                 <div class="quest-modal-label">SLA</div>
                 <div id="qdm-sla" class="quest-modal-value"></div>
             </div>
@@ -195,7 +292,7 @@
             <div style="border-top:1px solid #2c3e50; margin:14px 0 10px;"></div>
 
             <!-- Timeline de atividade + comentários -->
-            <div class="quest-modal-section">
+            <div class="quest-modal-section" id="qdm-activity-section">
                 <div class="quest-modal-label">ATIVIDADE</div>
                 <div id="qdm-comments-list" style="max-height:180px; overflow-y:auto; margin:8px 0;"></div>
                 <div style="display:flex; gap:8px; margin-top:8px;">
@@ -209,8 +306,20 @@
                             style="font-size:8px;padding:8px 12px;background:#2980b9;flex-shrink:0;">Enviar</button>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <button class="btn-pixel" onclick="closeQuestModal()" style="width:100%;margin-top:16px;background:#7f8c8d;">FECHAR</button>
+    <!-- Modal de confirmação — sair da edição sem salvar título/descrição/SLA -->
+    <div id="unsavedChangesModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width:340px; text-align:center;">
+            <h2 class="section-title" style="text-align:center;">⚠️ ALTERAÇÕES NÃO SALVAS</h2>
+            <p style="font-size:10px; color:#ecf0f1; line-height:1.7; margin-bottom:20px;">
+                Você editou título, descrição ou SLA e ainda não salvou. Sair agora vai descartar essas alterações.
+            </p>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-pixel" style="flex:1; background:#7f8c8d;" data-cy="btn-keep-editing" onclick="cancelDiscardQuestEdit()">CONTINUAR EDITANDO</button>
+                <button class="btn-pixel" style="flex:1; background:#c0392b;" data-cy="btn-discard-quest-edit" onclick="confirmDiscardQuestEdit()">SAIR SEM SALVAR</button>
+            </div>
         </div>
     </div>
 
