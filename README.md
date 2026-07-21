@@ -65,6 +65,7 @@ GUILDWORK/
 9. **Perfil Público:** Cada aventureiro tem uma página de perfil acessível via `/perfil.html#ID` com métricas agregadas (XP total ganho, Gold total, CSAT médio, taxa limpa, streak, conquistas).
 10. **Leaderboard Sazonal:** Ranking semanal por XP ganho na semana corrente (segunda a domingo). Reset implícito — sem cron, calculado via agregação em `QuestCompletion` filtrada por `createdAt >= weekStart`. O jogador logado é destacado na tabela e no pódio.
 11. **Prevenção de Exploit na Loja:** O servidor recalcula o total pelo banco antes de debitar.
+12. **Faixas de Recompensa do Líder:** Líder de guilda cria/edita quests da própria guilda pelo board, mas XP/Gold nunca vêm de valor livre enviado pelo cliente — só de 3 faixas pré-aprovadas no servidor (Pequena: 100 XP/15 Gold, Média: 250 XP/30 Gold, Grande: 450 XP/50 Gold). Facção, tipo, sprint e XP/Gold brutos enviados pelo líder são sempre ignorados silenciosamente pelo backend (`isAdminOrGuildLeader` + validação em `questController`).
 
 ## 🚀 Como Rodar o Projeto
 
@@ -159,6 +160,15 @@ net stop MongoDB
 | Tesouro | Saldo comum, taxa de contribuição automática por missão |
 | Distribuição | Líder pode enviar Gold para qualquer membro da guilda |
 | Link Sazonal | Botão direto para o Leaderboard Sazonal no painel de ranking |
+
+### 👑 Líder de Guilda
+| Feature | Detalhe |
+|---|---|
+| Criar missão | Botão "+ Nova Missão" no board principal (só visível pro líder) — título, descrição, SLA, responsável (restrito a membros da própria guilda), checklist inicial e tamanho (Pequena/Média/Grande, define XP/Gold) |
+| Editar missão | No modal de detalhes: título, descrição, SLA, tamanho e checklist editáveis inline; checklist com click-to-edit (clique no item pra editar o texto, adicionar/remover itens) |
+| Rascunho local | Edições ficam só na memória do navegador até clicar SALVAR; modal de confirmação avisa se o usuário tentar fechar/cancelar com alterações pendentes |
+| Excluir missão | Restrito a quests da própria guilda que não estejam `in_progress` |
+| Isolamento de guilda | Líder só enxerga/gerencia quests e atribui responsáveis dentro da própria guilda — validado no middleware `isAdminOrGuildLeader`, nunca confiando no front-end |
 
 ### 🏆 Leaderboard Sazonal
 | Feature | Detalhe |

@@ -10,7 +10,8 @@ exports.getGuild = async (req, res) => {
 
         if (!guild) return res.status(404).json({ message: 'Guilda não encontrada para sua facção.' });
 
-        const members = await User.find({ faction: user.faction })
+        // Mestre da Guilda (admin) não é um aventureiro — não deve aparecer no ranking de membros
+        const members = await User.find({ faction: user.faction, role: { $ne: 'admin' } })
             .select('nome username avatar_url xp coins level quests_completed is_cursed')
             .sort({ xp: -1 });
 

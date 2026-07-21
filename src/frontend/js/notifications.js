@@ -334,9 +334,15 @@
         const actionsEl = document.querySelector('.actions');
         if (!actionsEl) return;
 
-        // Injeta antes do primeiro filho (antes do botão de logout)
-        const bell = createBellElement();
-        actionsEl.insertBefore(bell, actionsEl.firstChild);
+        // Injeta no grupo de utilidades, logo antes do botão de logout — padrão
+        // Jira/Azure DevOps de agrupar notificações junto da saída/perfil.
+        const bell      = createBellElement();
+        const logoutBtn = actionsEl.querySelector('.logout-btn');
+        if (logoutBtn) {
+            actionsEl.insertBefore(bell, logoutBtn);
+        } else {
+            actionsEl.insertBefore(bell, actionsEl.firstChild);
+        }
 
         initToggle();
         startPolling();

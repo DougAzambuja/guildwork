@@ -6,6 +6,11 @@ const QuestSchema = new mongoose.Schema({
         required: true,
         trim: true // QA Touch: Impede a criação de quests contendo apenas "espaços em branco"
     },
+    description: {
+        type: String,
+        default: '',
+        trim: true
+    },
     type: {
         type: String,
         enum: ['normal', 'urgent', 'support', 'jira'],

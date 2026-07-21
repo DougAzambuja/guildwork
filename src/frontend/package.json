@@ -4,7 +4,10 @@
   "description": "Frontend do OfficeQuest",
   "main": "index.html",
   "scripts": {
-    "dev": "npx serve -l 3000"
+    "dev": "serve -l 3000"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "devDependencies": {
+    "serve": "^14.2.6"
+  }
 }

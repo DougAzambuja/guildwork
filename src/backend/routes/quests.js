@@ -1,6 +1,7 @@
-const router          = require('express').Router();
-const questController = require('../controllers/questController');
-const authMiddleware  = require('../middleware/auth');
+const router               = require('express').Router();
+const questController      = require('../controllers/questController');
+const authMiddleware       = require('../middleware/auth');
+const isAdminOrGuildLeader = require('../middleware/isAdminOrGuildLeader');
 
 const checkAdmin = (req, res, next) => {
     if (req.user?.role === 'admin') return next();
@@ -16,13 +17,16 @@ router.post('/complete',  questController.completeQuest);
 
 // — Rotas Admin —
 router.get('/all',              checkAdmin, questController.adminGetQuests);
-router.post('/',                checkAdmin, questController.adminCreateQuest);
-router.patch('/:id/assign',     checkAdmin, questController.adminAssignQuest);
 router.patch('/:id/transfer',   checkAdmin, questController.adminTransferQuest);
 router.post('/:id/copy',        checkAdmin, questController.adminCopyQuest);
 router.patch('/:id/subtasks',   checkAdmin, questController.updateSubtasks);
-router.patch('/:id',           checkAdmin, questController.adminUpdateQuest);
-router.delete('/:id',          checkAdmin, questController.deleteQuest);
+
+// — Rotas Admin ou Líder de Guilda (restrito à própria guilda — ver middleware) —
+router.post('/',            isAdminOrGuildLeader, questController.adminCreateQuest);
+router.patch('/:id/assign', isAdminOrGuildLeader, questController.adminAssignQuest);
+router.patch('/:id',           isAdminOrGuildLeader, questController.adminUpdateQuest);
+router.patch('/:id/checklist', isAdminOrGuildLeader, questController.updateChecklistItems);
+router.delete('/:id',          isAdminOrGuildLeader, questController.deleteQuest);
 
 // — Detalhe completo e checklist (admin + aventureiro autenticado) —
 router.get('/:id',                         questController.getQuestDetail);
