@@ -915,6 +915,8 @@ exports.moveQuestToColumn = async (req, res) => {
         quest.column_id = column._id;
         quest.status    = column.status_map;
         if (column.status_map === 'in_progress' && !quest.started_at) quest.started_at = new Date();
+        // Ao mover de volta para A Fazer, libera a quest para outros aventureiros
+        if (column.status_map === 'todo') quest.assigned_to = null;
         await quest.save();
         res.json({ quest });
 
@@ -944,6 +946,7 @@ exports.moveQuestColumn = async (req, res) => {
         if (column.status_map === 'in_progress' && !quest.started_at) {
             quest.started_at = new Date();
         }
+        if (column.status_map === 'todo') quest.assigned_to = null;
 
         await quest.save();
         res.json(quest);

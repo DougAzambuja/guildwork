@@ -1192,7 +1192,7 @@ function renderEditColumnsList() {
             <input type="text" value="${col.name}" data-cy="input-col-name-${i}"
                    onchange="_editColumnsData[${i}].name = this.value"
                    style="flex:1;font-family:inherit;font-size:10px;padding:10px 12px;background:#0d1b2a;color:#ecf0f1;border:2px solid #2c3e50;outline:none;">
-            <span style="font-size:7px;padding:4px 8px;background:${tagBg};color:${tagText};white-space:nowrap;flex-shrink:0;border:1px solid ${tagText}55;">${tag}</span>
+            <span style="font-size:7px;padding:4px 8px;background:${tagBg};color:${tagText};white-space:nowrap;flex-shrink:0;min-width:44px;text-align:center;border:1px solid ${tagText}55;">${tag}</span>
             <button onclick="_colDelete(${i})" data-cy="btn-delete-col-${i}"
                     style="background:#c0392b;border:none;color:#fff;font-family:inherit;font-size:9px;padding:7px 10px;cursor:pointer;${delDis ? 'opacity:.35;cursor:not-allowed;' : ''}"
                     ${delDis ? 'disabled' : ''}>✕</button>
