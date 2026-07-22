@@ -90,20 +90,51 @@ function renderBoardKanbanStructure() {
         { _id: 'done',        name: 'Concluídas',   color: '#27ae60', status_map: 'done'        }
     ];
 
-    board.innerHTML = cols.map(col => `
+    board.innerHTML = cols.map(col => {
+        const sortVal = _colSortState[String(col._id)] || '';
+        const sortOpts = [
+            ['', '⇅'],
+            ['title_asc',  'A→Z'],
+            ['title_desc', 'Z→A'],
+            ['xp_desc',    'XP ↓'],
+            ['xp_asc',     'XP ↑'],
+            ['gold_desc',  'Gold ↓'],
+            ['gold_asc',   'Gold ↑'],
+        ].map(([v, l]) => `<option value="${v}"${sortVal === v ? ' selected' : ''}>${l}</option>`).join('');
+        return `
         <div class="kanban-col" id="col-${col._id}" data-col-id="${col._id}">
             <div class="kanban-col-header" style="border-bottom:2px solid ${col.color};">
                 <span class="kanban-col-title" style="color:${col.color};">${col.name.toUpperCase()}</span>
-                <span class="kanban-count" id="count-${col._id}">0</span>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <select class="col-sort-select" data-cy="select-col-sort-${col._id}"
+                            onchange="_setColSort('${col._id}', this.value)">${sortOpts}</select>
+                    <span class="kanban-count" id="count-${col._id}">0</span>
+                </div>
             </div>
-            <div id="cards-${col._id}" class="kanban-cards-body"></div>
-        </div>
-    `).join('');
+            <div id="cards-${col._id}" class="kanban-cards-body" data-col-id="${col._id}"></div>
+        </div>`;
+    }).join('');
 }
 
 // ==========================================
 // 1. CONFIGURAÇÕES
 // ==========================================
+const SORT_FUNCS = {
+    title_asc:  (a, b) => a.title.localeCompare(b.title),
+    title_desc: (a, b) => b.title.localeCompare(a.title),
+    xp_desc:    (a, b) => (b.xp_reward  || 0) - (a.xp_reward  || 0),
+    xp_asc:     (a, b) => (a.xp_reward  || 0) - (b.xp_reward  || 0),
+    gold_desc:  (a, b) => (b.coin_reward || 0) - (a.coin_reward || 0),
+    gold_asc:   (a, b) => (a.coin_reward || 0) - (b.coin_reward || 0),
+};
+
+let _colSortState = {}; // { [colId]: sortKey }
+
+window._setColSort = (colId, value) => {
+    _colSortState[String(colId)] = value;
+    renderKanban();
+};
+
 const HEALTH_CONFIG = {
     on_track: { label: '✅ NO RITMO',  color: '#27ae60' },
     at_risk:  { label: '⚠️ EM RISCO',  color: '#e67e22' },
@@ -272,21 +303,187 @@ function renderKanban() {
     });
 
     cols.forEach(col => {
-        const quests  = byColumn[String(col._id)] || [];
+        const colId   = String(col._id);
+        const quests  = byColumn[colId] || [];
+        const sortKey = _colSortState[colId] || '';
+        const sorted  = sortKey
+            ? [...quests].sort(SORT_FUNCS[sortKey] || (() => 0))
+            : [...quests].sort((a, b) => (a.card_order ?? Infinity) - (b.card_order ?? Infinity));
+
         const countEl = document.getElementById(`count-${col._id}`);
         const cardsEl = document.getElementById(`cards-${col._id}`);
-        if (countEl) countEl.textContent = quests.length;
+        if (countEl) countEl.textContent = sorted.length;
         if (cardsEl) {
-            cardsEl.innerHTML = quests.length
-                ? quests.map(q => renderQuestCard(q)).join('')
+            cardsEl.innerHTML = sorted.length
+                ? sorted.map(q => renderQuestCard(q)).join('')
                 : emptyColumn();
         }
     });
+
+    initBoardDnD();
 }
 
 function emptyColumn() {
     return '<div style="font-size:7px;color:#4a5568;text-align:center;padding:20px 0;">Nenhuma quest</div>';
 }
+
+// ─── Drag-and-drop ────────────────────────────────────────────────────────────
+let _dndBoardReady = false;
+let _dndDraggedId  = null;
+
+function _dndClearIndicators(board) {
+    board.querySelectorAll('.kanban-col.dnd-over').forEach(el => el.classList.remove('dnd-over'));
+    board.querySelectorAll('.quest-card.dnd-before, .quest-card.dnd-after').forEach(el => {
+        el.classList.remove('dnd-before', 'dnd-after');
+    });
+}
+
+function initBoardDnD() {
+    const board = document.getElementById('kanbanBoard');
+    if (!board || _dndBoardReady) return;
+    _dndBoardReady = true;
+
+    board.addEventListener('dragstart', e => {
+        const card = e.target.closest('.quest-card[draggable="true"]');
+        if (!card) return;
+        _dndDraggedId = card.dataset.id;
+        e.dataTransfer.setData('text/plain', card.dataset.id);
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(() => card.classList.add('dragging'), 0);
+    });
+
+    board.addEventListener('dragend', e => {
+        const card = e.target.closest('.quest-card');
+        if (card) card.classList.remove('dragging');
+        _dndClearIndicators(board);
+        _dndDraggedId = null;
+    });
+
+    board.addEventListener('dragover', e => {
+        const col = e.target.closest('.kanban-col');
+        if (!col) return;
+        e.preventDefault();
+
+        const targetCard = e.target.closest('.quest-card');
+
+        if (targetCard && targetCard.dataset.id !== _dndDraggedId) {
+            // Within-column reorder: indicador de inserção
+            board.querySelectorAll('.kanban-col.dnd-over').forEach(el => el.classList.remove('dnd-over'));
+            board.querySelectorAll('.quest-card.dnd-before, .quest-card.dnd-after').forEach(el => {
+                if (el !== targetCard) el.classList.remove('dnd-before', 'dnd-after');
+            });
+            const rect   = targetCard.getBoundingClientRect();
+            const before = e.clientY < rect.top + rect.height / 2;
+            targetCard.classList.toggle('dnd-before', before);
+            targetCard.classList.toggle('dnd-after',  !before);
+        } else {
+            // Mover para outra coluna: destaca a coluna inteira
+            board.querySelectorAll('.quest-card.dnd-before, .quest-card.dnd-after').forEach(el => {
+                el.classList.remove('dnd-before', 'dnd-after');
+            });
+            board.querySelectorAll('.kanban-col.dnd-over').forEach(el => { if (el !== col) el.classList.remove('dnd-over'); });
+            col.classList.add('dnd-over');
+        }
+    });
+
+    board.addEventListener('dragleave', e => {
+        const col = e.target.closest('.kanban-col');
+        if (col && !col.contains(e.relatedTarget)) {
+            col.classList.remove('dnd-over');
+            col.querySelectorAll('.quest-card.dnd-before, .quest-card.dnd-after').forEach(el => {
+                el.classList.remove('dnd-before', 'dnd-after');
+            });
+        }
+    });
+
+    board.addEventListener('drop', async e => {
+        const col = e.target.closest('.kanban-col');
+        if (!col) return;
+        e.preventDefault();
+        _dndClearIndicators(board);
+
+        const questId    = e.dataTransfer.getData('text/plain');
+        const zone       = col.querySelector('.kanban-cards-body');
+        const columnId   = zone?.dataset.colId;
+        if (!questId || !columnId) return;
+
+        const targetCard = e.target.closest('.quest-card');
+        if (targetCard && targetCard.dataset.id !== questId) {
+            // Reorder dentro da coluna (ou mover para coluna + posicionar)
+            const rect         = targetCard.getBoundingClientRect();
+            const insertBefore = e.clientY < rect.top + rect.height / 2;
+            await dndReorderCard(questId, columnId, targetCard.dataset.id, insertBefore);
+        } else {
+            // Mover entre colunas
+            const quest = allQuests.find(q => String(q._id) === String(questId));
+            if (quest && String(quest.column_id) === String(columnId)) return;
+            await dndMoveAdminCard(questId, columnId);
+        }
+    });
+}
+
+async function dndReorderCard(questId, columnId, targetCardId, insertBefore) {
+    const quest = allQuests.find(q => String(q._id) === String(questId));
+    const isCrossColumn = quest && String(quest.column_id) !== String(columnId);
+
+    if (isCrossColumn) {
+        // Mover para outra coluna: não reordena, apenas move
+        await dndMoveAdminCard(questId, columnId);
+        return;
+    }
+
+    // Coleta a ordem atual visível na coluna
+    const cardEls   = document.querySelectorAll(`#cards-${columnId} .quest-card`);
+    const orderedIds = Array.from(cardEls).map(el => el.dataset.id);
+
+    const from = orderedIds.indexOf(questId);
+    if (from !== -1) orderedIds.splice(from, 1);
+
+    let to = orderedIds.indexOf(targetCardId);
+    if (to === -1) return;
+    if (!insertBefore) to++;
+    orderedIds.splice(to, 0, questId);
+
+    try {
+        const updates = orderedIds.map((id, idx) => ({ _id: id, card_order: idx }));
+        const res = await fetch(`${API_URL}/quests/reorder-in-column`, {
+            method:  'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body:    JSON.stringify({ updates })
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            showToast(err.message || 'Erro ao reordenar.', 'error');
+            return;
+        }
+        // Atualiza estado local sem precisar de reload completo
+        orderedIds.forEach((id, idx) => {
+            const q = allQuests.find(q => String(q._id) === id);
+            if (q) q.card_order = idx;
+        });
+        renderKanban();
+    } catch {
+        showToast('Erro de conexão.', 'error');
+    }
+}
+
+async function dndMoveAdminCard(questId, columnId) {
+    try {
+        const res = await fetch(`${API_URL}/quests/${questId}/move-column`, {
+            method:  'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body:    JSON.stringify({ column_id: columnId })
+        });
+        const data = await res.json();
+        if (!res.ok) { showToast(data.message || 'Erro ao mover quest.', 'error'); return; }
+        const col = boardColumns.find(c => String(c._id) === String(columnId));
+        showToast(`Quest movida para "${col?.name || 'coluna'}".`);
+        await loadSprintBoard();
+    } catch {
+        showToast('Erro de conexão.', 'error');
+    }
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 function renderQuestCard(q) {
     const qId          = String(q._id);
@@ -296,7 +493,7 @@ function renderQuestCard(q) {
     const faction      = (q.faction || 'Produto').replace(/'/g, "\\'");
 
     return `
-        <div class="quest-card" data-status="${q.status}" data-cy="quest-card" data-id="${qId}">
+        <div class="quest-card" draggable="true" data-status="${q.status}" data-cy="quest-card" data-id="${qId}">
             <span class="kanban-type-badge badge-${typeKey}" style="margin-bottom:5px;">${(TYPE_LABELS[typeKey] || typeKey).toUpperCase()}</span>
             <div class="quest-card-title">${q.title}</div>
             <div class="quest-card-meta">
@@ -1237,8 +1434,8 @@ function renderEditColumnsList() {
     const total = _editColumnsData.length;
     list.innerHTML = _editColumnsData.map((col, i) => {
         const tag     = i === 0 ? 'INÍCIO' : i === total - 1 ? 'FIM' : 'MEIO';
-        const tagBg   = i === 0 ? '#0e3460' : i === total - 1 ? '#0a3d2b' : '#3d2e00';
-        const tagText = i === 0 ? '#5bc8f5' : i === total - 1 ? '#2ecc71'  : '#f39c12';
+        const tagBg   = i === 0 ? '#0e3460' : i === total - 1 ? '#0a3d2b' : '#2d1b69';
+        const tagText = i === 0 ? '#5bc8f5' : i === total - 1 ? '#2ecc71'  : '#9b59b6';
         const upDis   = i === 0;
         const downDis = i === total - 1;
         const delDis  = total <= 3;
@@ -1253,11 +1450,11 @@ function renderEditColumnsList() {
                         ${downDis ? 'disabled' : ''}>↓</button>
             </div>
             <input type="color" value="${col.color || '#2c3e50'}" data-cy="input-col-color-${i}"
-                   onchange="_editColumnsData[${i}].color = this.value"
+                   oninput="_editColumnsData[${i}].color = this.value"
                    title="Cor da coluna"
                    style="width:32px;height:32px;padding:2px;background:#0d1b2a;border:2px solid #2c3e50;cursor:pointer;flex-shrink:0;">
             <input type="text" value="${col.name}" data-cy="input-col-name-${i}"
-                   onchange="_editColumnsData[${i}].name = this.value"
+                   oninput="_editColumnsData[${i}].name = this.value"
                    style="flex:1;font-family:inherit;font-size:10px;padding:10px 12px;background:#0d1b2a;color:#ecf0f1;border:2px solid #2c3e50;outline:none;">
             <span style="font-size:7px;padding:4px 8px;background:${tagBg};color:${tagText};white-space:nowrap;flex-shrink:0;min-width:44px;text-align:center;border:1px solid ${tagText}55;">${tag}</span>
             <button onclick="_colDelete(${i})" data-cy="btn-delete-col-${i}"
@@ -1300,10 +1497,16 @@ window.saveColumnsEdit = async () => {
         const editIds = new Set(_editColumnsData.filter(c => c._id).map(c => String(c._id)));
         const toDelete = boardColumns.filter(c => !editIds.has(String(c._id)));
         for (const col of toDelete) {
-            await fetch(`${API_URL}/guild/columns/${col._id}`, {
+            const delRes = await fetch(`${API_URL}/guild/columns/${col._id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            if (!delRes.ok) {
+                const err = await delRes.json().catch(() => ({}));
+                showToast(err.message || 'Erro ao excluir coluna.', 'error');
+                if (btn) btn.disabled = false;
+                return;
+            }
         }
 
         for (let i = 0; i < total; i++) {
@@ -1322,7 +1525,7 @@ window.saveColumnsEdit = async () => {
                 await fetch(`${API_URL}/guild/columns`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: col.name, order: col.order, status_map: col.status_map, color: col.color })
+                    body: JSON.stringify({ name: col.name, order: col.order, status_map: col.status_map, color: col.color, guild_id: currentGuildId })
                 });
             }
         }

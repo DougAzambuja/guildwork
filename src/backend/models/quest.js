@@ -86,6 +86,9 @@ const QuestSchema = new mongoose.Schema({
         default: null
     },
 
+    // Posição dentro da coluna kanban — null = sem ordem definida (exibição FIFO)
+    card_order: { type: Number, default: null },
+
     // Hierarquia: quest pai referencia filhas; subtask aponta para o pai
     parent_id: {
         type:    mongoose.Schema.Types.ObjectId,

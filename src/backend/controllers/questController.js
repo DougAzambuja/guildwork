@@ -911,8 +911,9 @@ exports.moveQuestToColumn = async (req, res) => {
             return res.json(_buildCompletionResponse(r));
         }
 
-        quest.column_id = column._id;
-        quest.status    = column.status_map;
+        quest.column_id  = column._id;
+        quest.status     = column.status_map;
+        quest.card_order = null; // reset ao mover entre colunas — aparece no final da coluna de destino
         if (column.status_map === 'in_progress') {
             if (!quest.started_at) quest.started_at = new Date();
             // Quest sem responsável: quem fez o DnD aceita a missão (comportamento idêntico ao botão ACEITAR)
@@ -977,5 +978,23 @@ exports.deleteQuest = async (req, res) => {
         res.json({ message: 'Quest removida com sucesso.' });
     } catch (err) {
         res.status(500).json({ message: 'Erro ao remover quest.', error: err.message });
+    }
+};
+
+// PATCH /api/quests/reorder-in-column — Atualiza card_order em lote para uma coluna
+exports.reorderCardsInColumn = async (req, res) => {
+    try {
+        const { updates } = req.body;
+        if (!Array.isArray(updates) || updates.length === 0) {
+            return res.status(400).json({ message: 'Payload inválido.' });
+        }
+        await Promise.all(
+            updates.map(({ _id, card_order }) =>
+                Quest.updateOne({ _id }, { card_order })
+            )
+        );
+        res.json({ message: 'Ordem atualizada.' });
+    } catch (err) {
+        res.status(500).json({ message: 'Erro interno.', error: err.message });
     }
 };

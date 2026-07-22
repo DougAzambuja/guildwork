@@ -47,7 +47,14 @@ exports.getColumns = async (req, res) => {
 // POST /api/guilds/columns
 exports.createColumn = async (req, res) => {
     try {
-        const { guild, user } = await getGuildForUser(req.user.id);
+        const { guild: userGuild, user } = await getGuildForUser(req.user.id);
+
+        // Admin pode especificar a guilda alvo; player/líder usa a própria
+        let guild = userGuild;
+        if (user.role === 'admin' && req.body.guild_id) {
+            guild = await Guild.findById(req.body.guild_id);
+            if (!guild) return res.status(404).json({ message: 'Guilda não encontrada.' });
+        }
         if (!guild) return res.status(404).json({ message: 'Guilda não encontrada.' });
 
         const isLeader = guild.leader_id && guild.leader_id.toString() === req.user.id;
@@ -82,14 +89,16 @@ exports.createColumn = async (req, res) => {
 exports.updateColumn = async (req, res) => {
     try {
         const { guild, user } = await getGuildForUser(req.user.id);
-        if (!guild) return res.status(404).json({ message: 'Guilda não encontrada.' });
 
-        const isLeader = guild.leader_id && guild.leader_id.toString() === req.user.id;
-        if (user.role !== 'admin' && !isLeader) {
-            return res.status(403).json({ message: 'Apenas admin ou líder pode gerenciar colunas.' });
+        let column;
+        if (user.role === 'admin') {
+            column = await KanbanColumn.findById(req.params.col_id);
+        } else {
+            if (!guild) return res.status(404).json({ message: 'Guilda não encontrada.' });
+            const isLeader = guild.leader_id && guild.leader_id.toString() === req.user.id;
+            if (!isLeader) return res.status(403).json({ message: 'Apenas admin ou líder pode gerenciar colunas.' });
+            column = await KanbanColumn.findOne({ _id: req.params.col_id, guild_id: guild._id });
         }
-
-        const column = await KanbanColumn.findOne({ _id: req.params.col_id, guild_id: guild._id });
         if (!column) return res.status(404).json({ message: 'Coluna não encontrada.' });
 
         const { name, color, order, status_map } = req.body;
@@ -111,14 +120,20 @@ exports.updateColumn = async (req, res) => {
 exports.deleteColumn = async (req, res) => {
     try {
         const { guild, user } = await getGuildForUser(req.user.id);
-        if (!guild) return res.status(404).json({ message: 'Guilda não encontrada.' });
 
-        const isLeader = guild.leader_id && guild.leader_id.toString() === req.user.id;
-        if (user.role !== 'admin' && !isLeader) {
-            return res.status(403).json({ message: 'Apenas admin ou líder pode gerenciar colunas.' });
+        let targetGuildId;
+        if (user.role === 'admin') {
+            const col = await KanbanColumn.findById(req.params.col_id).select('guild_id').lean();
+            if (!col) return res.status(404).json({ message: 'Coluna não encontrada.' });
+            targetGuildId = col.guild_id;
+        } else {
+            if (!guild) return res.status(404).json({ message: 'Guilda não encontrada.' });
+            const isLeader = guild.leader_id && guild.leader_id.toString() === req.user.id;
+            if (!isLeader) return res.status(403).json({ message: 'Apenas admin ou líder pode gerenciar colunas.' });
+            targetGuildId = guild._id;
         }
 
-        const totalColumns = await KanbanColumn.countDocuments({ guild_id: guild._id });
+        const totalColumns = await KanbanColumn.countDocuments({ guild_id: targetGuildId });
         if (totalColumns <= 3) {
             return res.status(400).json({ message: 'A guilda deve ter no mínimo 3 colunas.' });
         }
@@ -128,7 +143,7 @@ exports.deleteColumn = async (req, res) => {
             return res.status(400).json({ message: 'Mova as missões desta coluna antes de removê-la.' });
         }
 
-        await KanbanColumn.deleteOne({ _id: req.params.col_id, guild_id: guild._id });
+        await KanbanColumn.deleteOne({ _id: req.params.col_id });
         res.json({ message: 'Coluna removida.' });
     } catch (err) {
         res.status(500).json({ message: 'Erro interno.', error: err.message });

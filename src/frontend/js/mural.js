@@ -282,7 +282,7 @@ function renderKanbanStructure() {
                 <span class="kanban-col-title">${col.name.toUpperCase()}</span>
                 <div style="display:flex;align-items:center;gap:5px;">
                     <select onchange="setColSort('${col._id}', this.value)"
-                            style="font-family:inherit;font-size:7px;background:#111;color:#f1c40f;border:1px solid #444;padding:2px 3px;cursor:pointer;outline:none;">
+                            style="font-family:inherit;font-size:10px;background:#111;color:#f1c40f;border:1px solid #444;padding:2px 3px;cursor:pointer;outline:none;">
                         <option value="default" ${sortVal==='default'?'selected':''}>⇅</option>
                         <option value="sla"      ${sortVal==='sla'?'selected':''}>SLA</option>
                         <option value="date_new" ${sortVal==='date_new'?'selected':''}>Nova</option>
