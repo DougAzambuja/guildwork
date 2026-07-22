@@ -894,6 +894,33 @@ exports.adminUpdateQuest = async (req, res) => {
 
 // DELETE /api/quests/:id — Admin ou líder de guilda remove uma quest permanentemente.
 // Quests em progresso não podem ser removidas (evita perder trabalho em andamento).
+// PATCH /api/quests/:id/column — Admin ou líder move quest para coluna customizada
+exports.moveQuestColumn = async (req, res) => {
+    try {
+        const { column_id } = req.body;
+        if (!column_id) return res.status(400).json({ message: 'column_id é obrigatório.' });
+
+        const KanbanColumn = require('../models/kanbanColumn');
+        const column = await KanbanColumn.findById(column_id).lean();
+        if (!column) return res.status(404).json({ message: 'Coluna não encontrada.' });
+
+        const quest = await Quest.findById(req.params.id);
+        if (!quest) return res.status(404).json({ message: 'Quest não encontrada.' });
+
+        quest.column_id = column._id;
+        quest.status    = column.status_map;
+
+        if (column.status_map === 'in_progress' && !quest.started_at) {
+            quest.started_at = new Date();
+        }
+
+        await quest.save();
+        res.json(quest);
+    } catch (err) {
+        res.status(500).json({ message: 'Erro interno.', error: err.message });
+    }
+};
+
 exports.deleteQuest = async (req, res) => {
     try {
         const quest = await Quest.findById(req.params.id);

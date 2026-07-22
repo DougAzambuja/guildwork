@@ -276,14 +276,8 @@ function renderPaginationControls(total, limit, page) {
     if (!row) return;
 
     const totalPages = Math.ceil(total / limit);
-
-    if (totalPages <= 1) {
-        row.style.display = 'none';
-        return;
-    }
-
-    const start = (page - 1) * limit + 1;
-    const end   = Math.min(start + limit - 1, total);
+    const start      = (page - 1) * limit + 1;
+    const end        = Math.min(start + limit - 1, total);
 
     row.style.display = 'flex';
 
@@ -292,15 +286,10 @@ function renderPaginationControls(total, limit, page) {
     const pageInfo  = document.getElementById('paginationPageInfo');
     const countInfo = document.getElementById('paginationCountInfo');
 
-    if (prevBtn) {
-        prevBtn.disabled = page <= 1;
-        prevBtn.onclick  = () => goQuestPage(page - 1);
-    }
-    if (nextBtn) {
-        nextBtn.disabled = page >= totalPages;
-        nextBtn.onclick  = () => goQuestPage(page + 1);
-    }
-    if (pageInfo)  pageInfo.textContent  = `Página ${page} de ${totalPages}`;
+    const showNav = totalPages > 1;
+    if (prevBtn)  { prevBtn.style.display  = showNav ? '' : 'none'; prevBtn.disabled = page <= 1;          prevBtn.onclick = () => goQuestPage(page - 1); }
+    if (nextBtn)  { nextBtn.style.display  = showNav ? '' : 'none'; nextBtn.disabled = page >= totalPages; nextBtn.onclick = () => goQuestPage(page + 1); }
+    if (pageInfo) { pageInfo.style.display = showNav ? '' : 'none'; pageInfo.textContent = `Página ${page} de ${totalPages}`; }
     if (countInfo) countInfo.textContent = `${start}–${end} de ${total}`;
 }
 

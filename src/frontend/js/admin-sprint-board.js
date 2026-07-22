@@ -11,6 +11,7 @@ let allQuests      = [];
 let allSprints     = [];
 let allGuilds      = [];
 let sprintFactions = []; // Facções da sprint carregada — filtra as abas de guilda
+let boardColumns   = [];
 // Guarda contra sessionStorage com valor '' ou string 'null' de testes anteriores
 const _rawGuildId  = sessionStorage.getItem('admin_board_guild');
 let currentGuildId = (_rawGuildId && _rawGuildId !== 'null') ? _rawGuildId : null;
@@ -32,10 +33,55 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function showLoadingState() {
-    ['cards-todo', 'cards-in_progress', 'cards-done'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.innerHTML = '<div style="font-size:7px;color:#4a5568;padding:16px 0;text-align:center;">Carregando...</div>';
-    });
+    const board = document.getElementById('kanbanBoard');
+    if (!board) return;
+    if (boardColumns.length) {
+        boardColumns.forEach(col => {
+            const el = document.getElementById(`cards-${col._id}`);
+            if (el) el.innerHTML = '<div style="font-size:7px;color:#4a5568;padding:16px 0;text-align:center;">Carregando...</div>';
+        });
+    } else {
+        board.innerHTML = '<div style="font-size:7px;color:#4a5568;padding:24px;text-align:center;">Carregando board...</div>';
+    }
+}
+
+async function fetchBoardColumns(guildId) {
+    if (!guildId) {
+        // Admin sem guilda selecionada: usa fallback sem chamar API
+        boardColumns = [];
+        renderBoardKanbanStructure();
+        return;
+    }
+    try {
+        const res = await fetch(`${API_URL}/guild/columns?guild_id=${guildId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) boardColumns = await res.json();
+    } catch (err) {
+        console.error('Erro ao buscar colunas do board:', err);
+    }
+    renderBoardKanbanStructure(); // sempre renderiza
+}
+
+function renderBoardKanbanStructure() {
+    const board = document.getElementById('kanbanBoard');
+    if (!board) return;
+
+    const cols = boardColumns.length ? boardColumns : [
+        { _id: 'todo',        name: 'A Fazer',      color: '#3498db', status_map: 'todo'        },
+        { _id: 'in_progress', name: 'Em Progresso', color: '#e67e22', status_map: 'in_progress' },
+        { _id: 'done',        name: 'Concluídas',   color: '#27ae60', status_map: 'done'        }
+    ];
+
+    board.innerHTML = cols.map(col => `
+        <div class="kanban-col" id="col-${col._id}" data-col-id="${col._id}">
+            <div class="kanban-col-header" style="border-bottom:2px solid ${col.color};">
+                <span class="kanban-col-title" style="color:${col.color};">${col.name.toUpperCase()}</span>
+                <span class="kanban-count" id="count-${col._id}">0</span>
+            </div>
+            <div id="cards-${col._id}" class="kanban-cards-body"></div>
+        </div>
+    `).join('');
 }
 
 // ==========================================
@@ -94,6 +140,7 @@ async function loadSprintBoard() {
         allQuests      = Array.isArray(data.quests) ? data.quests : [];
         sprintFactions = Array.isArray(data.sprint.factions) ? data.sprint.factions : [];
 
+        await fetchBoardColumns(currentGuildId);
         renderSprintHeader(data);
         renderKanban();
         // Re-renderiza abas de guilda após conhecer as facções da sprint
@@ -113,10 +160,15 @@ function showError(msg) {
     const titleEl = document.getElementById('sprintTitle');
     if (titleEl) titleEl.textContent = 'Erro ao carregar';
 
-    ['cards-todo', 'cards-in_progress', 'cards-done'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.innerHTML = `<div style="font-size:7px;color:#e74c3c;padding:10px;">${msg}</div>`;
-    });
+    const board = document.getElementById('kanbanBoard');
+    if (board) {
+        const targets = boardColumns.length
+            ? boardColumns.map(col => document.getElementById(`cards-${col._id}`)).filter(Boolean)
+            : [board];
+        targets.forEach(el => {
+            el.innerHTML = `<div style="font-size:7px;color:#e74c3c;padding:10px;">${msg}</div>`;
+        });
+    }
 }
 
 // ==========================================
@@ -174,23 +226,37 @@ function renderSprintHeader({ sprint, metrics }) {
 // 4. KANBAN
 // ==========================================
 function renderKanban() {
-    // allQuests já vem filtrado do servidor quando guild_id está ativo
-    const groups = {
-        todo:        allQuests.filter(q => q.status === 'todo'),
-        in_progress: allQuests.filter(q => q.status === 'in_progress'),
-        done:        allQuests.filter(q => q.status === 'done')
-    };
+    const cols = boardColumns.length ? boardColumns : [
+        { _id: 'todo',        status_map: 'todo'        },
+        { _id: 'in_progress', status_map: 'in_progress' },
+        { _id: 'done',        status_map: 'done'        }
+    ];
 
-    for (const [status, quests] of Object.entries(groups)) {
-        const countEl = document.getElementById(`count-${status}`);
-        const cardsEl = document.getElementById(`cards-${status}`);
+    // Agrupa por column_id (precedência) ou fallback por status
+    const byColumn = {};
+    cols.forEach(col => { byColumn[String(col._id)] = []; });
+
+    allQuests.forEach(q => {
+        const colId = q.column_id ? String(q.column_id) : null;
+        if (colId && byColumn[colId] !== undefined) {
+            byColumn[colId].push(q);
+        } else {
+            const fallback = cols.find(c => c.status_map === q.status);
+            if (fallback) byColumn[String(fallback._id)].push(q);
+        }
+    });
+
+    cols.forEach(col => {
+        const quests  = byColumn[String(col._id)] || [];
+        const countEl = document.getElementById(`count-${col._id}`);
+        const cardsEl = document.getElementById(`cards-${col._id}`);
         if (countEl) countEl.textContent = quests.length;
         if (cardsEl) {
             cardsEl.innerHTML = quests.length
                 ? quests.map(q => renderQuestCard(q)).join('')
                 : emptyColumn();
         }
-    }
+    });
 }
 
 function emptyColumn() {
@@ -1028,5 +1094,126 @@ window.bqdAddChecklistItem = async () => {
         if (freshRes.ok) renderBoardQuestDetail(await freshRes.json());
     } catch {
         showToast('Erro de conexão.', 'error');
+    }
+};
+
+// ==========================================
+// MODAL — EDITAR COLUNAS DO KANBAN
+// ==========================================
+let _editColumnsData = [];
+
+window.openEditColumnsModal = () => {
+    if (!currentGuildId) { showToast('Selecione uma guilda para editar as colunas.', 'error'); return; }
+    _editColumnsData = boardColumns.map(c => ({ ...c }));
+    const guild  = allGuilds.find(g => g._id === currentGuildId);
+    const nameEl = document.getElementById('editColumnsGuildName');
+    if (nameEl) nameEl.textContent = guild ? `// ${guild.name.toUpperCase()}` : '';
+    renderEditColumnsList();
+    document.getElementById('editColumnsModal').style.display = 'flex';
+};
+
+window.closeEditColumnsModal = () => {
+    document.getElementById('editColumnsModal').style.display = 'none';
+};
+
+function renderEditColumnsList() {
+    const list = document.getElementById('editColumnsList');
+    if (!list) return;
+    const total = _editColumnsData.length;
+    list.innerHTML = _editColumnsData.map((col, i) => {
+        const tag     = i === 0 ? 'INÍCIO' : i === total - 1 ? 'FIM' : 'MEIO';
+        const tagBg   = i === 0 ? '#0e3460' : i === total - 1 ? '#0a3d2b' : '#3d2e00';
+        const tagText = i === 0 ? '#5bc8f5' : i === total - 1 ? '#2ecc71'  : '#f39c12';
+        const upDis   = i === 0;
+        const downDis = i === total - 1;
+        const delDis  = total <= 3;
+        return `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:12px 14px;background:#1a252f;border:1px solid #2c3e50;">
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <button onclick="_colMoveUp(${i})"
+                        style="background:#2c3e50;border:none;color:#ecf0f1;font-family:inherit;font-size:9px;padding:3px 8px;cursor:pointer;${upDis ? 'opacity:.35;cursor:not-allowed;' : ''}"
+                        ${upDis ? 'disabled' : ''}>↑</button>
+                <button onclick="_colMoveDown(${i})"
+                        style="background:#2c3e50;border:none;color:#ecf0f1;font-family:inherit;font-size:9px;padding:3px 8px;cursor:pointer;${downDis ? 'opacity:.35;cursor:not-allowed;' : ''}"
+                        ${downDis ? 'disabled' : ''}>↓</button>
+            </div>
+            <input type="text" value="${col.name}" data-cy="input-col-name-${i}"
+                   onchange="_editColumnsData[${i}].name = this.value"
+                   style="flex:1;font-family:inherit;font-size:10px;padding:10px 12px;background:#0d1b2a;color:#ecf0f1;border:2px solid #2c3e50;outline:none;">
+            <span style="font-size:7px;padding:4px 8px;background:${tagBg};color:${tagText};white-space:nowrap;flex-shrink:0;border:1px solid ${tagText}55;">${tag}</span>
+            <button onclick="_colDelete(${i})" data-cy="btn-delete-col-${i}"
+                    style="background:#c0392b;border:none;color:#fff;font-family:inherit;font-size:9px;padding:7px 10px;cursor:pointer;${delDis ? 'opacity:.35;cursor:not-allowed;' : ''}"
+                    ${delDis ? 'disabled' : ''}>✕</button>
+        </div>`;
+    }).join('');
+}
+
+window.addNewColumn = () => {
+    _editColumnsData.push({ _id: null, name: 'Nova Coluna', order: _editColumnsData.length + 1, color: '#2c3e50', status_map: 'in_progress' });
+    renderEditColumnsList();
+};
+
+window._colMoveUp = (i) => {
+    if (i <= 0) return;
+    [_editColumnsData[i - 1], _editColumnsData[i]] = [_editColumnsData[i], _editColumnsData[i - 1]];
+    renderEditColumnsList();
+};
+
+window._colMoveDown = (i) => {
+    if (i >= _editColumnsData.length - 1) return;
+    [_editColumnsData[i], _editColumnsData[i + 1]] = [_editColumnsData[i + 1], _editColumnsData[i]];
+    renderEditColumnsList();
+};
+
+window._colDelete = (i) => {
+    if (_editColumnsData.length <= 3) return;
+    _editColumnsData.splice(i, 1);
+    renderEditColumnsList();
+};
+
+window.saveColumnsEdit = async () => {
+    if (!currentGuildId) { showToast('Selecione uma guilda antes de editar colunas.', 'error'); return; }
+    const btn = document.querySelector('[data-cy="btn-save-columns"]');
+    if (btn) btn.disabled = true;
+    const total = _editColumnsData.length;
+    try {
+        // Deleta colunas que existiam no banco mas foram removidas localmente
+        const editIds = new Set(_editColumnsData.filter(c => c._id).map(c => String(c._id)));
+        const toDelete = boardColumns.filter(c => !editIds.has(String(c._id)));
+        for (const col of toDelete) {
+            await fetch(`${API_URL}/guild/columns/${col._id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+        }
+
+        for (let i = 0; i < total; i++) {
+            const col = { ..._editColumnsData[i], order: i + 1 };
+            // colunas existentes mantêm status_map; novas recebem derivação por posição
+            if (!col._id) {
+                col.status_map = i === 0 ? 'todo' : i === total - 1 ? 'done' : 'in_progress';
+            }
+            if (col._id) {
+                await fetch(`${API_URL}/guild/columns/${col._id}`, {
+                    method: 'PATCH',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: col.name, order: col.order, status_map: col.status_map })
+                });
+            } else {
+                await fetch(`${API_URL}/guild/columns`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: col.name, order: col.order, status_map: col.status_map, color: col.color })
+                });
+            }
+        }
+        closeEditColumnsModal();
+        await fetchBoardColumns(currentGuildId);
+        renderKanban();
+        showToast('Colunas atualizadas com sucesso!');
+    } catch {
+        showToast('Erro ao salvar colunas.', 'error');
+    } finally {
+        if (btn) btn.disabled = false;
     }
 };

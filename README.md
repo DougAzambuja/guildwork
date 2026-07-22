@@ -144,7 +144,8 @@ net stop MongoDB
 ### 🎮 Board Kanban (Jogador)
 | Feature | Detalhe |
 |---|---|
-| 3 colunas | A Fazer / Em Progresso / Concluído com WIP limit de 3 |
+| Colunas personalizadas | Guilds configuram suas próprias colunas via modal ⚙️; posição define automaticamente o status (INÍCIO=todo, MEIO=in_progress, FIM=done) — retrocompatível com quests existentes (#72/#73) |
+| 3 colunas padrão | A Fazer / Em Progresso / Concluído criados automaticamente para novas guilds |
 | SLA Timer | Contador regressivo por quest; maldição ao estourar |
 | Modal de Quest | Detalhes, checklist, timeline de atividade e comentários |
 | Auto-refresh | Board atualiza a cada 30s com contador regressivo |
@@ -166,7 +167,7 @@ net stop MongoDB
 |---|---|
 | Criar missão | Botão "+ Nova Missão" no board principal (só visível pro líder) — título, descrição, SLA, responsável (restrito a membros da própria guilda), checklist inicial e tamanho (Pequena/Média/Grande, define XP/Gold) |
 | Editar missão | No modal de detalhes: título, descrição, SLA, tamanho e checklist editáveis inline; checklist com click-to-edit (clique no item pra editar o texto, adicionar/remover itens) |
-| Criar subtask | Botão "+ Subtask" no modal de quest (visível ao líder de guilda) — título, responsável, XP e Gold configuráveis; breadcrumb de quest pai quando visualizando subtask |
+| Criar subtask | Botão "+ Subtask" sempre visível no modal de quest (líder de guilda) — título, responsável, XP e Gold configuráveis; breadcrumb de quest pai quando visualizando subtask |
 | Rascunho local | Edições ficam só na memória do navegador até clicar SALVAR; modal de confirmação avisa se o usuário tentar fechar/cancelar com alterações pendentes |
 | Excluir missão | Restrito a quests da própria guilda que não estejam `in_progress` |
 | Isolamento de guilda | Líder só enxerga/gerencia quests e atribui responsáveis dentro da própria guilda — validado no middleware `isAdminOrGuildLeader`, nunca confiando no front-end |
@@ -231,7 +232,8 @@ net stop MongoDB
 | **Sprints** | Criação de sprints, board kanban, gráfico burndown (linha ideal para toda a sprint, linha real até hoje com dias futuros em null); dashboard selecionável por sprint (qualquer sprint, não só a ativa); top performers com avatar e XP; quests do backlog para adicionar à sprint ativa |
 | **Loot** | CRUD de itens da loja |
 | **Métricas** | Gráficos de maldição, economia, SLA e CSAT com Canvas puro |
-| **Board da Sprint** | Visão admin do kanban com filtro de guilda server-side (`?guild_id=`); estado persiste na sessão; cards compactos com scroll por coluna; modal de detalhes com edição, checklist (inclui adicionar itens inline), comentários e subtasks (XP, Gold, breadcrumb pai, seta ↗ maior); badge `[done/total]` no card; kanban do player exibe apenas quests de sprints ativas |
+| **Board da Sprint** | Visão admin do kanban com filtro de guilda server-side (`?guild_id=`); estado persiste na sessão; cards compactos com scroll por coluna; modal de detalhes com edição, checklist (inclui adicionar itens inline), comentários e subtasks (XP, Gold, breadcrumb pai, seta ↗ maior); badge `[done/total]` no card; kanban do player exibe apenas quests de sprints ativas; **colunas personalizadas por guilda** (#72/#73) — admin edita via modal ⚙️ ao selecionar uma guilda |
+| **Missões (paginação)** | Select de itens por página sempre visível (#99) — botões de navegação ocultados quando tudo cabe em uma página, mas o select permanece acessível |
 
 > Todas as telas do painel compartilham `admin-header.js` (header + nav gerados dinamicamente, aba ativa detectada pela URL) e `notifications.js` (sino com polling de 30s).
 

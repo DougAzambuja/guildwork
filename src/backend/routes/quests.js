@@ -25,7 +25,8 @@ router.patch('/:id/subtasks',   checkAdmin, questController.updateSubtasks);
 
 // — Rotas Admin ou Líder de Guilda (restrito à própria guilda — ver middleware) —
 router.post('/',            isAdminOrGuildLeader, questController.adminCreateQuest);
-router.patch('/:id/assign', isAdminOrGuildLeader, questController.adminAssignQuest);
+router.patch('/:id/assign',  isAdminOrGuildLeader, questController.adminAssignQuest);
+router.patch('/:id/column', isAdminOrGuildLeader, questController.moveQuestColumn);
 router.patch('/:id',           isAdminOrGuildLeader, questController.adminUpdateQuest);
 router.patch('/:id/checklist', isAdminOrGuildLeader, questController.updateChecklistItems);
 router.delete('/:id',          isAdminOrGuildLeader, questController.deleteQuest);

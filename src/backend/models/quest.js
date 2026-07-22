@@ -79,6 +79,13 @@ const QuestSchema = new mongoose.Schema({
         created_at: { type: Date, default: Date.now }
     }],
 
+    // Coluna kanban customizada — null = fallback para status canônico
+    column_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'KanbanColumn',
+        default: null
+    },
+
     // Hierarquia: quest pai referencia filhas; subtask aponta para o pai
     parent_id: {
         type:    mongoose.Schema.Types.ObjectId,
