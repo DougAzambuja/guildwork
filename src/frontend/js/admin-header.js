@@ -9,6 +9,7 @@
         { id: 'roster',    label: '🛡️ Membros',   href: 'admin-roster.html',  cy: 'tab-roster'    },
         { id: 'sprints',   label: '🏃 Sprints',    href: 'admin-sprints.html', cy: 'tab-sprints'   },
         { id: 'metrics',   label: '📊 Métricas',   href: 'admin-metrics.html', cy: 'tab-metrics'   },
+        { id: 'profile',   label: '👤 Perfil',     href: 'admin-profile.html', cy: 'tab-profile'   },
     ];
 
     function detectActiveTab() {
@@ -16,8 +17,9 @@
         if (p.includes('admin-quests'))   return 'quests';
         if (p.includes('admin-loot'))     return 'loot';
         if (p.includes('admin-roster'))   return 'roster';
-        if (p.includes('admin-sprint'))   return 'sprints'; // admin-sprints e admin-sprint-board
+        if (p.includes('admin-sprint'))   return 'sprints';
         if (p.includes('admin-metrics'))  return 'metrics';
+        if (p.includes('admin-profile'))  return 'profile';
         return 'dashboard';
     }
 
@@ -25,8 +27,10 @@
         const el = document.getElementById('admin-header');
         if (!el) return;
 
-        const activeTab = detectActiveTab();
-        const adminName = localStorage.getItem('guild_user') || 'Mestre da Guilda';
+        const activeTab  = detectActiveTab();
+        const adminName  = localStorage.getItem('guild_user')       || 'Mestre da Guilda';
+        const adminUser  = localStorage.getItem('guild_username')    || 'admin';
+        const adminAvatar= localStorage.getItem('guild_avatar')      || (typeof dicebearUrl === 'function' ? dicebearUrl(adminUser) : '');
 
         const navLinks = TABS.map(t =>
             `<a href="${t.href}" class="admin-tab${t.id === activeTab ? ' active' : ''}" data-cy="${t.cy}">${t.label}</a>`
@@ -35,7 +39,12 @@
         el.innerHTML = `
             <div class="top-bar">
                 <div class="player-info">
-                    <div class="avatar" style="background-color:#f1c40f;display:flex;align-items:center;justify-content:center;font-size:8px;text-align:center;">DM</div>
+                    <a href="admin-profile.html" style="display:contents;" title="Editar perfil">
+                        <img src="${adminAvatar}" alt="avatar"
+                             class="avatar" data-cy="admin-avatar"
+                             style="width:40px;height:40px;object-fit:cover;cursor:pointer;border:2px solid #f1c40f;image-rendering:pixelated;"
+                             onerror="this.src='${typeof dicebearUrl === 'function' ? dicebearUrl(adminUser) : ''}'">
+                    </a>
                     <div class="stats">
                         <h1 id="playerName" data-cy="admin-name">${adminName}</h1>
                         <div style="font-size:10px;color:#7f8c8d;">Centro de Comando</div>

@@ -19,13 +19,14 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
 
         if (response.ok) {
             // Salva o token JWT para as próximas requisições protegidas
-            localStorage.setItem('guild_token', data.token);
-            localStorage.setItem('guild_role',  data.user.role);
+            localStorage.setItem('guild_token',    data.token);
+            localStorage.setItem('guild_role',     data.user.role);
+            localStorage.setItem('guild_user',     data.user.nome);
+            localStorage.setItem('guild_username', data.user.username);
+            const rawAvatar = data.user.avatar_url || '';
+            const isLocalPath = rawAvatar.startsWith('assets/');
+            localStorage.setItem('guild_avatar', isLocalPath ? '' : rawAvatar);
 
-            // FIX: backend retorna 'nome', não 'name'
-            localStorage.setItem('guild_user', data.user.nome);
-
-            // Chaves com prefixo de usuário para o admin conseguir ler separado
             localStorage.setItem('guild_active_user',            `player_${usernameInput}`);
             localStorage.setItem(`guild_user_${usernameInput}`,  data.user.nome);
 

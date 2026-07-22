@@ -116,16 +116,28 @@ exports.getLeaderboard = async (req, res) => {
     }
 };
 
-// PUT /api/players/profile — atualiza perfil (nome, avatar)
+// PUT /api/players/profile — atualiza perfil (nome, avatar, senha)
 exports.updateProfile = async (req, res) => {
     try {
-        const { nome, avatar_url } = req.body;
-        const user = await User.findByIdAndUpdate(
-            req.user.id,
-            { nome, avatar_url },
-            { returnDocument: 'after' }
-        ).select('-password');
-        res.json(user);
+        const { nome, avatar_url, currentPassword, newPassword } = req.body;
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ message: 'Usuário não encontrado.' });
+
+        if (nome)              user.nome       = nome;
+        if (avatar_url !== undefined) user.avatar_url = avatar_url;
+
+        if (newPassword) {
+            if (!currentPassword) return res.status(400).json({ message: 'Senha atual é obrigatória.' });
+            const valid = await user.comparePassword(currentPassword);
+            if (!valid) return res.status(400).json({ message: 'Senha atual incorreta.' });
+            if (newPassword.length < 3) return res.status(400).json({ message: 'Nova senha deve ter pelo menos 3 caracteres.' });
+            user.password = newPassword;
+        }
+
+        await user.save();
+        const result = user.toObject();
+        delete result.password;
+        res.json(result);
     } catch (err) {
         res.status(500).json({ message: 'Erro interno.', error: err.message });
     }
