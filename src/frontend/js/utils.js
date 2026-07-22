@@ -4,6 +4,10 @@
 
 function xpParaProximoNivel(level) { return 200 * (level + 1) + 300; }
 
+function dicebearUrl(seed) {
+    return `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(seed || 'adventurer')}&backgroundColor=1a252f`;
+}
+
 const GUILD_ICONS = { Produto: '📦', Suporte: '🎧', 'Customer Service': '📣' };
 
 const ALL_ACHIEVEMENTS = [

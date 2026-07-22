@@ -34,6 +34,8 @@ const AVATAR_CLASSES = [
     { src: 'assets/imgs/caneta_pixel.jpg',  label: 'Escudeiro de QA' },
 ];
 
+let _dicebearUsername = '';
+
 async function initPerfil() {
     const id = window.location.hash.slice(1);
 
@@ -95,7 +97,8 @@ function renderPerfil(p, me) {
     const guildIcon = GUILD_ICONS[p.faction] || '🏰';
     const unlockedKeys = new Set((p.achievements || []).map(a => a.key));
 
-    pendingAvatar = p.avatar_url || 'assets/imgs/caneca_pixel.jpg';
+    pendingAvatar = p.avatar_url || dicebearUrl(p.username);
+    _dicebearUsername = p.username || '';
 
     // Banner de maldição
     let curseBanner = '';
@@ -177,7 +180,16 @@ function renderPerfil(p, me) {
                 </div>
 
                 <div style="margin-bottom:16px;">
-                    <div style="font-size:8px;color:#7f8c8d;letter-spacing:1px;margin-bottom:6px;">OU USE UMA URL PERSONALIZADA</div>
+                    <div style="font-size:8px;color:#7f8c8d;letter-spacing:1px;margin-bottom:8px;">⚡ DICEBEAR (PIXEL ART)</div>
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                        <img id="dicebearPreview" src="${typeof dicebearUrl === 'function' ? dicebearUrl(p.username) : ''}"
+                             style="width:48px;height:48px;border:2px solid #2c3e50;image-rendering:pixelated;flex-shrink:0;" alt="DiceBear">
+                        <button onclick="useDicebearPerfil()" data-cy="btn-dicebear-perfil"
+                                style="font-family:'Press Start 2P',cursive;font-size:7px;padding:7px 10px;background:#2c3e50;color:#3498db;border:2px solid #3498db;cursor:pointer;">
+                            ⚡ Usar DiceBear
+                        </button>
+                    </div>
+                    <div style="font-size:7px;color:#7f8c8d;letter-spacing:1px;margin-bottom:6px;">OU URL PERSONALIZADA</div>
                     <input type="text" id="perfilAvatarUrl" class="pixel-input"
                            placeholder="Cole o link de uma imagem..."
                            style="width:100%;box-sizing:border-box;" data-cy="input-perfil-avatar-url"
@@ -195,7 +207,7 @@ function renderPerfil(p, me) {
         <div class="perfil-header">
             <div class="perfil-avatar-wrap">
                 <img class="perfil-avatar${p.is_cursed ? ' curse-avatar' : ''}" id="perfilAvatarImg"
-                     src="${p.avatar_url || 'assets/imgs/caneca_pixel.jpg'}" alt="Avatar" data-cy="perfil-avatar">
+                     src="${p.avatar_url || dicebearUrl(p.username)}" alt="Avatar" data-cy="perfil-avatar">
                 <div class="perfil-level-badge">Lv.${p.level}</div>
             </div>
             <div class="perfil-info">
@@ -209,7 +221,7 @@ function renderPerfil(p, me) {
                     <div class="perfil-xp-fill" style="width:${xpPct}%"></div>
                 </div>
                 <div style="font-size:7px;color:#7f8c8d;margin-top:4px;letter-spacing:1px;">
-                    Faltam ${(xpMax - (p.xp || 0)).toLocaleString('pt-BR')} XP para o próximo nível
+                    ${xpMax - (p.xp || 0) > 0 ? `Faltam ${(xpMax - (p.xp || 0)).toLocaleString('pt-BR')} XP para o próximo nível` : '⬆️ Pronto para subir de nível!'}
                 </div>
             </div>
         </div>
@@ -260,6 +272,21 @@ function renderPerfil(p, me) {
     document.title = `GuildWork - ${p.nome || p.username}`;
 }
 
+window.useDicebearPerfil = () => {
+    const randomSuffix = Math.random().toString(36).slice(2, 7);
+    const url = typeof dicebearUrl === 'function' ? dicebearUrl(_dicebearUsername + '_' + randomSuffix) : '';
+    if (!url) return;
+    pendingAvatar = url;
+    isDirty = true;
+    const smallPreview = document.getElementById('dicebearPreview');
+    if (smallPreview) smallPreview.src = url;
+    const urlInput = document.getElementById('perfilAvatarUrl');
+    if (urlInput) urlInput.value = url;
+    document.querySelectorAll('.perfil-avatar-opt').forEach(el => {
+        el.style.borderColor = '#2c3e50';
+    });
+};
+
 window.onAvatarUrlInput = (val) => {
     if (!val.trim()) return;
     isDirty = true;
@@ -284,14 +311,18 @@ window.saveHero = async () => {
             body: JSON.stringify({ nome, avatar_url: pendingAvatar })
         });
 
+        const data = await res.json();
         if (res.ok) {
-            const updated = await res.json();
             isDirty = false;
             const nomeDisplay = document.querySelector('[data-cy="perfil-nome"]');
-            if (nomeDisplay) nomeDisplay.textContent = updated.nome;
+            if (nomeDisplay) nomeDisplay.textContent = data.nome;
+            const mainAvatar = document.getElementById('perfilAvatarImg');
+            if (mainAvatar) mainAvatar.src = data.avatar_url || pendingAvatar;
+            localStorage.setItem('guild_user',   data.nome || data.username);
+            localStorage.setItem('guild_avatar', data.avatar_url || '');
             showToast('Herói salvo com sucesso! ⚔️');
         } else {
-            showToast('Erro ao salvar. Tente novamente.', 'error');
+            showToast(`❌ ${data.message || 'Erro ao salvar.'}`, 'error');
         }
     } catch {
         showToast('Erro de conexão.', 'error');

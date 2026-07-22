@@ -24,7 +24,7 @@ let playerData = {
     isCursed:    false,
     curseType:   null,
     name:        'Aventureiro',
-    avatar:      'assets/imgs/caneca_pixel.jpg',
+    avatar:      dicebearUrl('adventurer'),
     activeBuff:     null,
     csatStreak:     0,
     achievements:   [],
@@ -113,7 +113,7 @@ async function fetchPlayerState() {
                 isCursed:   data.is_cursed        || false,
                 curseType:  data.curse_type       || null,
                 name:       data.nome             || data.username,
-                avatar:     data.avatar_url       || 'assets/imgs/caneca_pixel.jpg',
+                avatar:     data.avatar_url       || dicebearUrl(data.username),
                 activeBuff: data.buff_type ? {
                     type:      data.buff_type,
                     expiresAt: data.buff_expires_at       || null,
@@ -546,9 +546,9 @@ function renderInProgressCard(quest) {
     const assignee     = quest.assigned_to;
     const isMyQuest    = assignee && assignee._id === playerData.id;
     const assigneeName = assignee ? (assignee.nome || assignee.username) : '— Sem responsável';
-    const assigneeAv   = assignee && assignee.avatar_url
+    const assigneeAv   = (assignee && assignee.avatar_url)
         ? assignee.avatar_url
-        : 'assets/imgs/caneca_pixel.jpg';
+        : dicebearUrl(assignee?.username);
 
     const slaHtml = quest.sla_seconds
         ? `<div class="kanban-sla-timer" id="sla-${quest._id}">SLA: calculando...</div>`
@@ -740,7 +740,7 @@ function _renderModalInfo(quest) {
     const assigneeEl = document.getElementById('qdm-assignee');
     const assignee   = quest.assigned_to;
     if (assignee) {
-        const av   = assignee.avatar_url || 'assets/imgs/caneca_pixel.jpg';
+        const av   = assignee.avatar_url || dicebearUrl(assignee.username);
         const name = assignee.nome || assignee.username;
         assigneeEl.innerHTML = `
             <img class="kanban-assignee-avatar" src="${av}" alt="" style="border-color:#f1c40f;">

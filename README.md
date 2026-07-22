@@ -31,7 +31,7 @@ GUILDWORK/
 │   └── frontend/
 │       ├── assets/imgs/            # Sprites e texturas pixel art
 │       ├── css/style.css           # CSS modularizado por componente
-│       ├── js/                     # mural.js, guild.js, loja.js, perfil.js, leaderboard.js, admin-*.js, admin-header.js (header compartilhado do painel), notifications.js, utils.js (constantes compartilhadas)
+│       ├── js/                     # mural.js, guild.js, loja.js, perfil.js, leaderboard.js, admin-*.js, admin-header.js, admin-profile.js, notifications.js, utils.js (dicebearUrl + constantes)
 │       ├── index.html              # Board Kanban (jogador)
 │       ├── guild.html              # Tela da Guilda (ranking + link para perfil público)
 │       ├── loja.html               # Loja de itens
@@ -44,7 +44,8 @@ GUILDWORK/
 │       ├── admin-metrics.html      # Métricas e Dashboards
 │       ├── admin-sprints.html      # Gestão de Sprints
 │       ├── admin-loot.html         # Gestão da Loja
-│       └── admin-sprint-board.html # Board Kanban da Sprint (admin)
+│       ├── admin-sprint-board.html # Board Kanban da Sprint (admin)
+│       └── admin-profile.html      # Perfil do Admin (nome, avatar DiceBear, senha)
 ├── .gitignore
 └── docker-compose.yml              # MongoDB local (opcional — profile: local-db)
 ```
@@ -264,6 +265,7 @@ net stop MongoDB
 | **Métricas** | Gráficos de maldição, economia, SLA e CSAT com Canvas puro |
 | **Board da Sprint** | Visão admin do kanban com filtro de guilda server-side (`?guild_id=`); estado persiste na sessão; cards compactos com scroll por coluna; modal de detalhes com edição, checklist (inclui adicionar itens inline), comentários e subtasks (XP, Gold, breadcrumb pai, seta ↗ maior); badge `[done/total]` no card; kanban do player exibe apenas quests de sprints ativas; **colunas personalizadas por guilda** (#72/#73) — admin edita via modal ⚙️ ao selecionar uma guilda; **seletor de coluna no modal** (#103) — admin move qualquer quest para qualquer coluna (bypass de in_progress para done); **color picker nas colunas** (#102) — cor persiste no PATCH; stale column_id corrigido (#102); **responsável limpo ao mover para A Fazer** (#108) — quest fica disponível para qualquer aventureiro aceitar; validação client-side no modal do líder impede mover todo→done exibindo toast antes de fechar o modal; **seletor de responsável no modal** (#108) — admin e líder trocam o aventureiro sem mover o card; layout admin limitado a 1440px centrado (#106); **board admin com scroll horizontal interno** — colunas rolam dentro do container sem vazar (#106); **DnD para Em Progresso auto-atribui** quem moveu quando assigned_to era null — mesmo comportamento do botão ACEITAR (#108) |
 | **Missões (paginação)** | Select de itens por página sempre visível (#99) — botões de navegação ocultados quando tudo cabe em uma página, mas o select permanece acessível |
+| **Perfil do Admin (#114)** | Tela `/admin-profile.html` — editar nome, avatar (DiceBear pixel art gerado pelo username ou URL personalizada) e alterar senha; header atualiza ao vivo sem reload |
 
 > Todas as telas do painel compartilham `admin-header.js` (header + nav gerados dinamicamente, aba ativa detectada pela URL) e `notifications.js` (sino com polling de 30s).
 
@@ -273,4 +275,4 @@ net stop MongoDB
 
 * **Boss Fight de Sprint (#30/#31):** Evento especial ao fechar uma sprint com metas cumpridas.
 * **Árvore de Talentos (#32/#33):** Bônus passivos por facção desbloqueados com XP.
-* **Avatares Pixelados (#57):** Estudo de ferramentas (DiceBear, Morphic, Piskel) para geração procedural de personagens.
+* **Avatares Pixelados (#57) ✅:** DiceBear pixel-art integrado — `dicebearUrl(username)` em `utils.js` gera URL para `api.dicebear.com/9.x/pixel-art/svg`; avatares aparecem no mural, leaderboard, modal de quest, tela de perfil do aventureiro e perfil do admin.
