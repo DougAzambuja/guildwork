@@ -1092,6 +1092,12 @@ body:has(.mural-layout) {
     text-align: left;
 }
 
+/* Admin: 10 colunas na tabela de quests — padding compacto para caber sem scroll */
+.admin-page .users-table th,
+.admin-page .users-table td {
+    padding: 8px 10px;
+}
+
 .users-table th {
     background-color: #34495e;
     color: #f1c40f;

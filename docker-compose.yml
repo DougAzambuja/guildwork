@@ -3,11 +3,12 @@ services:
     image: mongo:latest
     container_name: guildwork_db
     restart: no
+    profiles: ["local-db"]   # só sobe com: docker compose --profile local-db up
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
-      - ./mongo-init:/docker-entrypoint-initdb.d # 👈 Linha nova adicionada aqui!
+      - ./mongo-init:/docker-entrypoint-initdb.d
     environment:
       MONGO_INITDB_ROOT_USERNAME: guild_admin
       MONGO_INITDB_ROOT_PASSWORD: guild_password
