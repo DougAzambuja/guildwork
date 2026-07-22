@@ -24,6 +24,9 @@ router.get('/:id/subtasks',     questController.getSubtasks);
 router.post('/:id/subtasks',    isAdminOrGuildLeader, questController.createSubtask);
 router.patch('/:id/subtasks',   checkAdmin, questController.updateSubtasks);
 
+// — Rota de reordenação de cards (antes de /:id para evitar colisão) —
+router.patch('/reorder-in-column', checkAdmin, questController.reorderCardsInColumn);
+
 // — Rotas Admin ou Líder de Guilda (restrito à própria guilda — ver middleware) —
 router.post('/',            isAdminOrGuildLeader, questController.adminCreateQuest);
 router.patch('/:id/assign',  isAdminOrGuildLeader, questController.adminAssignQuest);

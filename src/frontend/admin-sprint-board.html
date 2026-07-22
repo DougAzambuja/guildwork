@@ -74,7 +74,6 @@
             border: 2px solid #2c3e50;
             border-radius: 2px;
             padding: 10px;
-            min-height: 200px;
         }
         .kanban-col-header {
             display: flex;
@@ -83,21 +82,26 @@
             margin-bottom: 10px;
             padding-bottom: 8px;
             border-bottom: 2px solid #2c3e50;
+            background: #181a25;
         }
         .kanban-col-title {
             font-size: 8px;
             font-weight: bold;
         }
         .kanban-count {
-            font-size: 7px;
-            color: #7f8c8d;
-            background: #2c3e50;
-            padding: 2px 6px;
-            border-radius: 2px;
+            font-size: 9px;
+            height: 26px;
+            line-height: 26px;
+            color: #3498db;
+            background: #0d1b2a;
+            padding: 0 8px;
+            border: 1px solid #2980b9;
+            box-sizing: border-box;
+            display: inline-block;
         }
 
         .kanban-cards-body {
-            max-height: 480px;
+            height: 520px;
             overflow-y: auto;
             padding-right: 2px;
         }
@@ -162,6 +166,32 @@
         .quest-action-btn.copy { border-color: #8e44ad; color: #9b59b6; }
         .quest-action-btn.copy:hover { background: #6c3483; color: #f1c40f; }
         .quest-action-btn.remove { border-color: #e74c3c; color: #e74c3c; }
+
+        /* ── Sort select ── */
+        .col-sort-select {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            height: 26px;
+            padding: 0 5px;
+            box-sizing: border-box;
+            background: #0d1b2a;
+            color: #3498db;
+            border: 1px solid #2980b9;
+            cursor: pointer;
+            outline: none;
+        }
+        .col-sort-select:focus { border-color: #5dade2; color: #5dade2; }
+
+        /* ── Drag-and-drop ── */
+        .quest-card[draggable="true"] { cursor: grab; }
+        .quest-card.dragging { opacity: 0.35; border-style: dashed; cursor: grabbing; }
+        .kanban-col.dnd-over {
+            background: rgba(52, 152, 219, 0.07);
+            outline: 3px dashed #3498db;
+            outline-offset: -3px;
+        }
+        .quest-card.dnd-before { border-top: 3px solid #3498db; }
+        .quest-card.dnd-after  { border-bottom: 3px solid #3498db; }
         .quest-action-btn.remove:hover { background: #922b21; color: #fff; }
 
         /* ---- MODAL DETALHE DA QUEST (mais largo) ---- */
@@ -305,7 +335,7 @@
                     <div id="bqd-parent-breadcrumb" style="display:none;margin-bottom:6px;"></div>
                     <h2 id="bqd-title" class="section-title" style="margin:0;border:none;font-size:9px;word-break:break-word;"></h2>
                 </div>
-                <button class="btn-pixel" style="font-size:6px;padding:4px 8px;background:#2c3e50;flex-shrink:0;" data-cy="btn-close-board-quest-detail" onclick="closeBoardQuestDetail()">✕ FECHAR</button>
+                <button class="btn-pixel" style="font-size:10px;padding:4px 10px;background:#c0392b;border-color:#e74c3c;flex-shrink:0;" data-cy="btn-close-board-quest-detail" onclick="closeBoardQuestDetail()">✕</button>
             </div>
 
             <!-- Meta chips -->
