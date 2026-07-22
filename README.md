@@ -6,9 +6,9 @@ Bem-vindo ao GuildWork! Um sistema de gestão de tarefas gamificado que transfor
 
 A arquitetura é leve, stateless e com autoridade no servidor para todas as regras de economia e gamificação:
 
-* **Front-end:** HTML5, CSS3 (variáveis globais e animações customizadas) e Vanilla JavaScript. Estética em Pixel Art servida via `npx serve`.
+* **Front-end:** HTML5, CSS3 (variáveis globais e animações customizadas) e Vanilla JavaScript. Estética em Pixel Art servida via VS Code Live Server.
 * **Back-end:** Node.js (v18+) com Express. Arquitetura RESTful e stateless.
-* **Banco de Dados:** MongoDB via Docker + Mongoose 9.x com schemas estritos.
+* **Banco de Dados:** MongoDB Atlas (M0 free tier, cluster `GuildWork`, sa-east-1) via Mongoose 9.x com schemas estritos. Docker Compose disponível para uso local via profile `local-db`.
 * **Segurança:** JWT (8h de expiração), bcryptjs para hash de senha, validação de todas as regras de negócio exclusivamente no servidor.
 
 ## 📂 Arquitetura de Diretórios
@@ -24,7 +24,9 @@ GUILDWORK/
 │   │   ├── models/                 # Schemas Mongoose (User, Quest, Guild, Sprint, Notification, LootItem...)
 │   │   ├── routes/                 # Roteamento RESTful da API
 │   │   ├── services/               # notificationService (triggers + conquistas)
+│   │   ├── seed-atlas.js           # Seed completo para o Atlas (dados realistas)
 │   │   ├── .env                    # Variáveis de ambiente (NÃO COMMITADO)
+│   │   ├── .env.example            # Template de variáveis de ambiente
 │   │   └── server.js               # Entry point
 │   └── frontend/
 │       ├── assets/imgs/            # Sprites e texturas pixel art
@@ -44,7 +46,7 @@ GUILDWORK/
 │       ├── admin-loot.html         # Gestão da Loja
 │       └── admin-sprint-board.html # Board Kanban da Sprint (admin)
 ├── .gitignore
-└── docker-compose.yml              # MongoDB com autenticação
+└── docker-compose.yml              # MongoDB local (opcional — profile: local-db)
 ```
 
 ## 📜 Regras de Negócio (Core Mechanics)
@@ -69,63 +71,91 @@ GUILDWORK/
 
 ## 🚀 Como Rodar o Projeto
 
-> Você vai precisar de **dois terminais**.
+> Você vai precisar de **um terminal** + **VS Code Live Server**.
 
 ### Pré-requisitos
 - [Node.js](https://nodejs.org/) v18+
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) com WSL2 habilitado (Windows) ou Engine nativa (Linux/Mac)
+- VS Code com extensão [Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer)
+- Acesso ao cluster MongoDB Atlas `GuildWork` (credenciais no `.env`)
 
 ---
 
-### Terminal 1 — Banco de Dados (MongoDB via Docker)
+### Primeira vez em uma máquina nova
 
 ```bash
-docker compose up -d
+# 1. Clone o repositório
+git clone https://github.com/DougAzambuja/guildwork.git
+cd guildwork
+
+# 2. Instale as dependências do backend
+cd src/backend && npm install
+
+# 3. Crie o .env (o arquivo não vai pro git por segurança)
+cp .env.example .env
 ```
 
-> Na primeira execução, o script `mongo-init/init-db.js` cria o banco e contas padrão:
-> - **admin** / senha `123`
-> - **funcionario** / senha `123` (guilda: Produto)
+Edite `src/backend/.env` e preencha com as credenciais reais — peça ao responsável pelo projeto.
 
 ---
 
-### Terminal 2 — Back-end (Node.js / Express)
+### Checklist de início de sessão (uso diário)
 
+**1. Instale as dependências** (apenas na primeira vez):
+```bash
+cd src/backend && npm install
+```
+
+**3. Suba o back-end:**
 ```bash
 cd src/backend
-npm install        # apenas na primeira vez
-npm run dev        # inicia com nodemon (hot-reload)
+npm run dev        # hot-reload via nodemon, porta 3001
 ```
 
-O servidor sobe na porta **3001**.
+Você deve ver:
+```
+✅ MongoDB conectado com sucesso!
+```
 
-> **Crie o arquivo `src/backend/.env`** com:
-> ```env
-> PORT=3001
-> MONGODB_URI=mongodb://guild_admin:guild_password@localhost:27017/guildwork?authSource=admin
-> JWT_SECRET=sua_chave_super_secreta_aqui
-> ```
+**4. Suba o front-end** (escolha uma das opções):
+
+**Opção A — VS Code Live Server** (recomendado):
+- Abra `src/frontend/index.html` no VS Code → botão direito → **Open with Live Server**
+- Acesse **http://127.0.0.1:5500/login.html**
+
+**Opção B — Terminal:**
+```bash
+cd src/frontend
+npm install    # apenas na primeira vez
+npm run dev    # serve estático na porta 3000
+```
+- Acesse **http://localhost:3000/login.html**
 
 ---
 
-### Terminal 3 — Front-end (servidor estático)
+### Logins de acesso
 
-```bash
-cd src/frontend
-npm run dev        # npx serve na porta 3000
-```
+| Usuário | Senha | Papel |
+|---|---|---|
+| `douglas_admin` | `123` | Admin (acesso total) |
+| `daniel_admin` | `123` | Admin (acesso total) |
+| `douglas_produto` | `123` | Líder — Guilda do Produto |
+| `carlos_suporte` | `123` | Líder — Guilda do Suporte |
+| `ana_cs` | `123` | Líder — Customer Service |
+| `maria_produto` | `123` | Funcionária — Produto |
 
-Acesse **http://localhost:3000/login.html** no navegador.
+> Para repopular o Atlas do zero: `cd src/backend && node seed-atlas.js`
 
 ---
 
 ### Resumo rápido
 
-| O quê | Comando |
+| O quê | Como |
 |---|---|
-| MongoDB | `docker compose up -d` (na raiz) |
 | Back-end | `cd src/backend && npm run dev` |
-| Front-end | `cd src/frontend && npm run dev` |
+| Front-end (VS Code) | Live Server em `src/frontend/index.html` → porta 5500 |
+| Front-end (terminal) | `cd src/frontend && npm run dev` → porta 3000 |
+| Seed Atlas | `cd src/backend && node seed-atlas.js` |
+| MongoDB local (opcional) | `docker compose --profile local-db up -d` |
 
 ---
 

@@ -235,8 +235,8 @@ function renderQuestPage(quests) {
         }
 
         const sprintInfo = q.sprint_id
-            ? `<a href="admin-sprint-board.html?id=${q.sprint_id._id}" style="color:#3498db;font-size:8px;text-decoration:none;white-space:nowrap;" title="${q.sprint_id.name}">🏃 ${q.sprint_id.name}</a>`
-            : '<span style="color:#4a5568;font-size:8px;white-space:nowrap;">—</span>';
+            ? `<a href="admin-sprint-board.html?id=${q.sprint_id._id}" style="color:#3498db;font-size:8px;text-decoration:none;" title="${q.sprint_id.name}">🏃 ${truncate(q.sprint_id.name, 16)}</a>`
+            : '<span style="color:#4a5568;font-size:8px;">—</span>';
 
         const labelBadges = (q.labels || []).length
             ? ' ' + q.labels.map(l => `<span style="background:#2c3e50;color:#bdc3c7;font-size:7px;padding:1px 5px;border-radius:2px;">${l}</span>`).join(' ')
