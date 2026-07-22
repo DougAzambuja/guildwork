@@ -62,11 +62,11 @@
         .kanban-board::-webkit-scrollbar-thumb:hover { background: #2980b9; }
         .kanban-board .kanban-col {
             flex: 1;
-            min-width: 220px;
+            min-width: 280px;
         }
         @media (max-width: 800px) {
             .kanban-board { flex-direction: column; }
-            .kanban-board .kanban-col { min-width: 0; }
+            .kanban-board .kanban-col { flex: 1 1 auto; min-width: 0; }
         }
 
         .kanban-col {
@@ -217,7 +217,7 @@
         }
     </style>
 </head>
-<body>
+<body class="admin-page">
     <div id="admin-header"></div>
 
     <div class="main-wrapper">
@@ -311,6 +311,18 @@
             <!-- Meta chips -->
             <div class="bqd-section">
                 <div id="bqd-meta" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+            </div>
+
+            <!-- Responsável -->
+            <div id="bqd-assignee-section" class="bqd-section" style="display:none;">
+                <div class="bqd-label">👤 RESPONSÁVEL</div>
+                <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+                    <select id="bqd-assignee-select" data-cy="select-admin-assignee"
+                            style="flex:1;font-family:'Press Start 2P',cursive;font-size:8px;padding:8px 6px;background:#0d1b2a;color:#ecf0f1;border:2px solid #2c3e50;outline:none;cursor:pointer;"></select>
+                    <button class="btn-pixel" data-cy="btn-admin-save-assignee"
+                            onclick="saveAdminQuestAssignee()"
+                            style="font-size:7px;padding:8px 14px;background:#27ae60;flex-shrink:0;">✔ SALVAR</button>
+                </div>
             </div>
 
             <!-- Mover para coluna -->

@@ -848,6 +848,24 @@ body:has(.mural-layout) {
 /* =========================================
    11. PAINEL DO MESTRE DA GUILDA (ADMIN)
    ========================================= */
+
+/* Contenção de largura — todas as telas admin ficam limitadas a 1440px
+   centrados, sem afetar o board do jogador (index.html não tem .admin-page) */
+.admin-page .main-wrapper {
+    max-width: 1440px;
+    padding: 20px 32px;
+}
+
+/* Sprint board: board preenche o container com flex:1 nas colunas (≤4 cabem
+   sem scroll); a partir de 5 colunas o min-width:280px causa overflow e o
+   scroll aparece. Sobrescreve o width:max-content do board do jogador. */
+.admin-page .kanban-board {
+    width: 100%;
+}
+.admin-page [data-cy="board-kanban-section"] {
+    overflow-x: auto;
+}
+
 .admin-layout {
     display: flex;
     flex-direction: column;

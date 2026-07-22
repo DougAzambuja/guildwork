@@ -488,10 +488,6 @@ exports.adminAssignQuest = async (req, res) => {
 
         if (!quest) return res.status(404).json({ message: 'Quest não encontrada.' });
 
-        if (userId && quest.status !== 'todo') {
-            return res.status(400).json({ message: 'Só é possível atribuir quests com status "todo".' });
-        }
-
         if (userId && req.user.role !== 'admin') {
             const assignee = await User.findById(userId).select('faction');
             if (!assignee || assignee.faction !== req.leaderGuild.faction_key) {
@@ -500,11 +496,14 @@ exports.adminAssignQuest = async (req, res) => {
         }
 
         if (userId) {
+            const wasInProgress = quest.status === 'in_progress';
             quest.assigned_to = userId;
-            quest.status      = 'in_progress';
-            quest.started_at  = new Date();
+            if (!wasInProgress) {
+                quest.status     = 'in_progress';
+                quest.started_at = new Date();
+            }
             const assignee = await User.findById(userId).select('nome username');
-            quest.comments.push({ user_id: userId, text: `Missão atribuída a ${assignee?.nome || assignee?.username || 'aventureiro'}`, type: 'activity' });
+            quest.comments.push({ user_id: req.user.id, text: `Responsável alterado para ${assignee?.nome || assignee?.username || 'aventureiro'}`, type: 'activity' });
         } else {
             const previousAssignee = quest.assigned_to;
             quest.assigned_to = null;
@@ -914,11 +913,21 @@ exports.moveQuestToColumn = async (req, res) => {
 
         quest.column_id = column._id;
         quest.status    = column.status_map;
-        if (column.status_map === 'in_progress' && !quest.started_at) quest.started_at = new Date();
+        if (column.status_map === 'in_progress') {
+            if (!quest.started_at) quest.started_at = new Date();
+            // Quest sem responsável: quem fez o DnD aceita a missão (comportamento idêntico ao botão ACEITAR)
+            if (!quest.assigned_to) {
+                quest.assigned_to = req.user.id;
+                quest.comments.push({ user_id: req.user.id, text: `${user.nome || user.username || 'Aventureiro'} aceitou a missão`, type: 'activity' });
+            }
+        }
         // Ao mover de volta para A Fazer, libera a quest para outros aventureiros
         if (column.status_map === 'todo') quest.assigned_to = null;
         await quest.save();
-        res.json({ quest });
+        const populated = await Quest.findById(quest._id)
+            .populate('assigned_to', 'nome username avatar_url')
+            .lean();
+        res.json({ quest: populated });
 
     } catch (err) {
         res.status(500).json({ message: 'Erro interno.', error: err.message });
