@@ -1358,18 +1358,23 @@ window.moveCardFromModal = async () => {
     if (!questId || !columnId) return;
 
     const targetCol = kanbanColumns.find(c => String(c._id) === String(columnId));
+    const quest     = questCache.get(questId);
+
+    // Valida antes de fechar o modal — erro visível enquanto o modal ainda está aberto
+    if (targetCol?.status_map === 'done' && quest?.status !== 'in_progress') {
+        showToast('A quest precisa estar em progresso para ser concluída.', 'error');
+        return;
+    }
+
     let csatScore = null;
-    if (targetCol?.status_map === 'done') {
-        const quest = questCache.get(questId);
-        if (quest?.type === 'support') {
-            const nota    = prompt('⭐ Qual foi a nota CSAT do cliente? (1 a 5)');
-            const notaNum = parseInt(nota);
-            if (isNaN(notaNum) || notaNum < 1 || notaNum > 5) {
-                showToast('Nota inválida! Digite um número de 1 a 5.', 'error');
-                return;
-            }
-            csatScore = notaNum;
+    if (targetCol?.status_map === 'done' && quest?.type === 'support') {
+        const nota    = prompt('⭐ Qual foi a nota CSAT do cliente? (1 a 5)');
+        const notaNum = parseInt(nota);
+        if (isNaN(notaNum) || notaNum < 1 || notaNum > 5) {
+            showToast('Nota inválida! Digite um número de 1 a 5.', 'error');
+            return;
         }
+        csatScore = notaNum;
     }
 
     closeQuestModal();
@@ -1917,7 +1922,7 @@ function renderPlayerColumnsList() {
                    oninput="_playerEditCols[${i}].color = this.value"
                    title="Cor da coluna"
                    style="width:32px;height:32px;padding:2px;border:2px solid #34495e;background:#111;cursor:pointer;flex-shrink:0;">
-            <span style="font-size:7px;padding:4px 8px;background:${tagColor};color:#fff;white-space:nowrap;flex-shrink:0;">${tag}</span>
+            <span style="font-size:7px;padding:4px 8px;background:${tagColor};color:#fff;white-space:nowrap;flex-shrink:0;min-width:44px;text-align:center;">${tag}</span>
             <button onclick="_playerColDelete(${i})"
                     class="btn-pixel" style="font-size:9px;padding:7px 10px;background:#c0392b;${delDis ? 'opacity:.35;cursor:not-allowed;' : ''}"
                     ${delDis ? 'disabled' : ''}>✕</button>
