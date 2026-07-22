@@ -313,6 +313,18 @@
                 <div id="bqd-meta" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
             </div>
 
+            <!-- Mover para coluna -->
+            <div id="bqd-move-section" class="bqd-section" style="display:none;">
+                <div class="bqd-label">🔀 MOVER PARA COLUNA</div>
+                <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+                    <select id="bqd-move-column-select" data-cy="select-admin-move-column"
+                            style="flex:1;font-family:'Press Start 2P',cursive;font-size:8px;padding:8px 6px;background:#0d1b2a;color:#ecf0f1;border:2px solid #2c3e50;outline:none;cursor:pointer;"></select>
+                    <button class="btn-pixel" data-cy="btn-admin-move-column"
+                            onclick="moveAdminCardToColumn()"
+                            style="font-size:7px;padding:8px 14px;background:#8e44ad;flex-shrink:0;">➤ MOVER</button>
+                </div>
+            </div>
+
             <!-- Editar Quest -->
             <div class="bqd-section">
                 <div class="bqd-label">✏️ EDITAR QUEST</div>
