@@ -239,11 +239,16 @@ function renderKanban() {
     allQuests.forEach(q => {
         const colId = q.column_id ? String(q.column_id) : null;
         if (colId && byColumn[colId] !== undefined) {
-            byColumn[colId].push(q);
-        } else {
-            const fallback = cols.find(c => c.status_map === q.status);
-            if (fallback) byColumn[String(fallback._id)].push(q);
+            const targetCol = cols.find(c => String(c._id) === colId);
+            // Dado podre: quest in_progress cujo column_id ainda aponta para coluna todo
+            const isStale = q.status === 'in_progress' && targetCol?.status_map === 'todo';
+            if (!isStale) {
+                byColumn[colId].push(q);
+                return;
+            }
         }
+        const fallback = cols.find(c => c.status_map === q.status);
+        if (fallback) byColumn[String(fallback._id)].push(q);
     });
 
     cols.forEach(col => {
@@ -747,6 +752,36 @@ window.closeBoardQuestDetail = () => {
     _boardDetailQuestId = null;
 };
 
+window.moveAdminCardToColumn = async () => {
+    const questId  = _boardDetailQuestId;
+    const columnId = document.getElementById('bqd-move-column-select')?.value;
+    if (!questId || !columnId) return;
+
+    const btn = document.querySelector('[data-cy="btn-admin-move-column"]');
+    if (btn) btn.disabled = true;
+
+    try {
+        const res = await fetch(`${API_URL}/quests/${questId}/move-column`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ column_id: columnId })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            showToast(data.message || 'Erro ao mover quest.', 'error');
+            return;
+        }
+        const col = boardColumns.find(c => String(c._id) === String(columnId));
+        showToast(`Quest movida para "${col?.name || 'coluna'}".`);
+        closeBoardQuestDetail();
+        await loadSprintBoard();
+    } catch {
+        showToast('Erro de conexão.', 'error');
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+};
+
 function renderBoardQuestDetail(quest) {
     const typeBadge = document.getElementById('bqd-type-badge');
     if (typeBadge) {
@@ -799,6 +834,19 @@ function renderBoardQuestDetail(quest) {
     if (editSla)     editSla.value     = quest.sla_seconds || '';
     if (editFaction) editFaction.value = quest.faction || 'Produto';
     if (editLabels)  editLabels.value  = (quest.labels || []).join(', ');
+
+    // Seletor de coluna — visível quando há colunas carregadas e quest não está done
+    const moveSection = document.getElementById('bqd-move-section');
+    const moveSelect  = document.getElementById('bqd-move-column-select');
+    if (moveSection && moveSelect && boardColumns.length > 0) {
+        const currentColId = quest.column_id ? String(quest.column_id) : null;
+        moveSelect.innerHTML = boardColumns.map(col =>
+            `<option value="${col._id}" ${String(col._id) === currentColId ? 'selected' : ''}>${col.name}${String(col._id) === currentColId ? ' (atual)' : ''}</option>`
+        ).join('');
+        moveSection.style.display = '';
+    } else if (moveSection) {
+        moveSection.style.display = 'none';
+    }
 
     const checklistSection = document.getElementById('bqd-checklist-section');
     const items = quest.checklist || [];
@@ -1137,6 +1185,10 @@ function renderEditColumnsList() {
                         style="background:#2c3e50;border:none;color:#ecf0f1;font-family:inherit;font-size:9px;padding:3px 8px;cursor:pointer;${downDis ? 'opacity:.35;cursor:not-allowed;' : ''}"
                         ${downDis ? 'disabled' : ''}>↓</button>
             </div>
+            <input type="color" value="${col.color || '#2c3e50'}" data-cy="input-col-color-${i}"
+                   onchange="_editColumnsData[${i}].color = this.value"
+                   title="Cor da coluna"
+                   style="width:32px;height:32px;padding:2px;background:#0d1b2a;border:2px solid #2c3e50;cursor:pointer;flex-shrink:0;">
             <input type="text" value="${col.name}" data-cy="input-col-name-${i}"
                    onchange="_editColumnsData[${i}].name = this.value"
                    style="flex:1;font-family:inherit;font-size:10px;padding:10px 12px;background:#0d1b2a;color:#ecf0f1;border:2px solid #2c3e50;outline:none;">
@@ -1197,7 +1249,7 @@ window.saveColumnsEdit = async () => {
                 await fetch(`${API_URL}/guild/columns/${col._id}`, {
                     method: 'PATCH',
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: col.name, order: col.order, status_map: col.status_map })
+                    body: JSON.stringify({ name: col.name, order: col.order, status_map: col.status_map, color: col.color })
                 });
             } else {
                 await fetch(`${API_URL}/guild/columns`, {

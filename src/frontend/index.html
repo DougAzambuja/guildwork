@@ -259,6 +259,19 @@
                 <div id="qdm-started" class="quest-modal-value"></div>
             </div>
 
+            <!-- Mover para coluna -->
+            <div class="quest-modal-section" id="qdm-move-column-section" style="display:none;">
+                <div class="quest-modal-label">MOVER PARA</div>
+                <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+                    <select id="qdm-move-column-select" data-cy="select-move-column"
+                            style="flex:1;font-family:'Press Start 2P',cursive;font-size:9px;padding:8px 6px;background:#0d1b2a;color:#ecf0f1;border:2px solid #2c3e50;outline:none;cursor:pointer;">
+                    </select>
+                    <button class="btn-pixel" data-cy="btn-move-column"
+                            onclick="moveCardFromModal()"
+                            style="font-size:8px;padding:8px 14px;background:#8e44ad;flex-shrink:0;">➤ MOVER</button>
+                </div>
+            </div>
+
             <!-- Checklist -->
             <div class="quest-modal-section" id="qdm-checklist-section" style="display:none;">
                 <div class="quest-modal-label">CHECKLIST</div>

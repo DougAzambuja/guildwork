@@ -43,6 +43,7 @@ let cqChecklistDraft = [];
 let kanbanColumns    = [];
 let colSortState     = {};   // { [colId]: 'default'|'sla'|'date_new'|'date_old'|'type'|'alpha' }
 let boardFilterPlayer = null; // null = sem filtro
+let _boardDndReady   = false; // garante que os listeners de DnD são adicionados apenas uma vez
 let lastBoardQuests   = [];   // cache para re-render sem request
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -292,9 +293,35 @@ function renderKanbanStructure() {
                     <span class="kanban-col-count" id="count-${col._id}">0</span>
                 </div>
             </div>
-            <div class="kanban-col-body" id="col-${col._id}"></div>
+            <div class="kanban-col-body" id="col-${col._id}" data-col-id="${col._id}"></div>
         </div>`;
     }).join('');
+
+    if (!_boardDndReady) {
+        _boardDndReady = true;
+        board.addEventListener('dragover', e => {
+            const body = e.target.closest('.kanban-col-body');
+            if (!body) return;
+            e.preventDefault();
+            body.classList.add('dnd-over');
+        });
+        board.addEventListener('dragleave', e => {
+            const body = e.target.closest('.kanban-col-body');
+            if (body && !body.contains(e.relatedTarget)) body.classList.remove('dnd-over');
+        });
+        board.addEventListener('drop', async e => {
+            const body = e.target.closest('.kanban-col-body');
+            if (!body) return;
+            e.preventDefault();
+            body.classList.remove('dnd-over');
+            const questId  = e.dataTransfer.getData('text/plain');
+            const columnId = body.dataset.colId;
+            if (!questId || !columnId) return;
+            const quest = questCache.get(questId);
+            if (quest && String(quest.column_id) === String(columnId)) return;
+            await moveCardToColumn(questId, columnId);
+        });
+    }
 }
 
 async function loadBoard() {
@@ -382,11 +409,16 @@ function renderBoard(quests) {
     visible.forEach(q => {
         const colId = q.column_id ? String(q.column_id) : null;
         if (colId && byColumn[colId] !== undefined) {
-            byColumn[colId].push(q);
-        } else {
-            const fallback = cols.find(c => c.status_map === q.status);
-            if (fallback) byColumn[String(fallback._id)].push(q);
+            const targetCol = cols.find(c => String(c._id) === colId);
+            // Dado podre: quest in_progress cujo column_id ainda aponta para coluna todo
+            const isStale = q.status === 'in_progress' && targetCol?.status_map === 'todo';
+            if (!isStale) {
+                byColumn[colId].push(q);
+                return;
+            }
         }
+        const fallback = cols.find(c => c.status_map === q.status);
+        if (fallback) byColumn[String(fallback._id)].push(q);
     });
 
     cols.forEach(col => {
@@ -455,6 +487,17 @@ function renderColumn(colId, quests, cardFn) {
     quests.forEach(q => body.appendChild(cardFn(q)));
 }
 
+function _makeDraggable(el, questId) {
+    el.draggable = true;
+    el.dataset.questId = questId;
+    el.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('text/plain', questId);
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(() => el.classList.add('dragging'), 0);
+    });
+    el.addEventListener('dragend', () => el.classList.remove('dragging'));
+}
+
 function renderTodoCard(quest, myWipCount) {
     const el = document.createElement('div');
     const typeClass = quest.type === 'urgent' ? 'urgent' : (quest.type === 'support' ? 'support' : '');
@@ -462,7 +505,8 @@ function renderTodoCard(quest, myWipCount) {
 
     const overWip      = myWipCount >= WIP_LIMIT;
     const csatBlocked  = playerData.curseType === 'csat_low' && quest.type === 'urgent';
-    const cantPickUp   = overWip || csatBlocked;
+    const alreadyTaken = quest.status !== 'todo';
+    const cantPickUp   = overWip || csatBlocked || alreadyTaken;
     const slaInfo = quest.sla_seconds
         ? `<div style="font-size:8px;color:#888;margin-bottom:8px;">SLA: ${formatSla(quest.sla_seconds)}</div>`
         : '';
@@ -489,6 +533,7 @@ function renderTodoCard(quest, myWipCount) {
         </button>
     `;
 
+    _makeDraggable(el, quest._id);
     el.addEventListener('click', () => openQuestModal(quest._id));
     return el;
 }
@@ -511,12 +556,6 @@ function renderInProgressCard(quest) {
 
     const slaBreached = quest.sla_seconds && quest.started_at &&
         (Date.now() - new Date(quest.started_at).getTime()) / 1000 > quest.sla_seconds;
-    const finishBtn = isMyQuest
-        ? `<button class="btn-kanban btn-finish${slaBreached ? ' btn-finish-cursed' : ''}"
-               onclick="finishQuest('${quest._id}', '${quest.type}')">
-               ${slaBreached ? '💀 CONCLUIR (MALDIÇÃO)' : '✅ CONCLUIR'}
-           </button>`
-        : '';
 
     const subtaskBadgeIP = quest.subtasks_total > 0
         ? `<span style="background:#8e44ad;color:#fff;font-size:8px;padding:2px 6px;display:inline-block;margin-bottom:4px;" data-cy="subtask-badge">[${quest.subtasks_done || 0}/${quest.subtasks_total}]</span>`
@@ -535,7 +574,6 @@ function renderInProgressCard(quest) {
             <span>${assigneeName}</span>
         </div>
         ${slaHtml}
-        ${finishBtn.replace('onclick="finishQuest(', 'onclick="event.stopPropagation(); finishQuest(')}
     `;
 
     if (quest.sla_seconds && quest.started_at) {
@@ -543,6 +581,7 @@ function renderInProgressCard(quest) {
         startSlaTimer(quest._id, quest.sla_seconds, quest.started_at, assignedToId);
     }
 
+    _makeDraggable(el, quest._id);
     el.addEventListener('click', () => openQuestModal(quest._id));
     return el;
 }
@@ -566,6 +605,7 @@ function renderDoneCard(quest) {
         <div class="kanban-done-stamp">✅ CONCLUÍDA</div>
     `;
 
+    _makeDraggable(el, quest._id);
     el.addEventListener('click', () => openQuestModal(quest._id));
     return el;
 }
@@ -716,6 +756,20 @@ function _renderModalInfo(quest) {
         document.getElementById('qdm-started').textContent = formatDate(quest.started_at);
     } else {
         startedSection.style.display = 'none';
+    }
+
+    const moveSection = document.getElementById('qdm-move-column-section');
+    const moveSelect  = document.getElementById('qdm-move-column-select');
+    const isOwner     = quest.assigned_to && (quest.assigned_to._id === playerData.id || quest.assigned_to === playerData.id);
+    const canMove     = (isOwner || isGuildLeader) && kanbanColumns.length > 0 && quest.status !== 'done';
+    if (canMove) {
+        const currentColId = quest.column_id ? String(quest.column_id) : null;
+        moveSelect.innerHTML = kanbanColumns.map(col =>
+            `<option value="${col._id}" ${String(col._id) === currentColId ? 'selected' : ''}>${col.name}</option>`
+        ).join('');
+        moveSection.style.display = 'block';
+    } else {
+        moveSection.style.display = 'none';
     }
 }
 
@@ -1205,31 +1259,36 @@ async function pickUpQuest(questId) {
     }
 }
 
-async function finishQuest(questId, questType) {
-    let csatScore = null;
-    if (questType === 'support') {
-        const nota    = prompt('⭐ Qual foi a nota CSAT do cliente? (1 a 5)');
-        const notaNum = parseInt(nota);
-        if (isNaN(notaNum) || notaNum < 1 || notaNum > 5) {
-            showToast('Nota inválida! Digite um número de 1 a 5.', 'error');
-            return;
+async function moveCardToColumn(questId, columnId, csatScore = null) {
+    const targetCol = kanbanColumns.find(c => String(c._id) === String(columnId));
+    if (csatScore === null && targetCol?.status_map === 'done') {
+        const quest = questCache.get(questId);
+        if (quest?.type === 'support') {
+            const nota    = prompt('⭐ Qual foi a nota CSAT do cliente? (1 a 5)');
+            const notaNum = parseInt(nota);
+            if (isNaN(notaNum) || notaNum < 1 || notaNum > 5) {
+                showToast('Nota inválida! Digite um número de 1 a 5.', 'error');
+                return;
+            }
+            csatScore = notaNum;
         }
-        csatScore = notaNum;
     }
 
     try {
-        const res = await fetch(`${API_URL}/quests/complete`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ questId, csatScore })
+        const res = await fetch(`${API_URL}/quests/${questId}/move-column`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ column_id: columnId, csat_score: csatScore })
         });
 
-        if (res.ok) {
-            const data = await res.json();
+        const data = await res.json();
 
+        if (!res.ok) {
+            showToast(data.message || 'Erro ao mover quest.', 'error');
+            return;
+        }
+
+        if (data.updatedState) {
             const wasCurseType    = playerData.curseType;
             playerData.xp         = data.updatedState.xp;
             playerData.coins       = data.updatedState.coins;
@@ -1279,20 +1338,43 @@ async function finishQuest(questId, questType) {
             }
 
             if (data.updatedState.streakBonusXP > 0) {
-                const days = data.updatedState.deliveryStreak;
-                showToast(`🔥 STREAK ${days} DIAS! Bônus de +${data.updatedState.streakBonusXP} XP!`);
+                showToast(`🔥 STREAK ${data.updatedState.deliveryStreak} DIAS! Bônus de +${data.updatedState.streakBonusXP} XP!`);
             }
-
-            await loadBoard();
         } else {
-            const err = await res.json();
-            showToast(err.message || 'Erro ao concluir quest.', 'error');
+            const col = kanbanColumns.find(c => String(c._id) === String(columnId));
+            showToast(`Card movido para "${col?.name || 'coluna'}".`);
         }
+
+        await loadBoard();
     } catch (err) {
         console.error(err);
         showToast('Erro de conexão com o servidor.', 'error');
     }
 }
+
+window.moveCardFromModal = async () => {
+    const questId  = _modalQuestId;
+    const columnId = document.getElementById('qdm-move-column-select')?.value;
+    if (!questId || !columnId) return;
+
+    const targetCol = kanbanColumns.find(c => String(c._id) === String(columnId));
+    let csatScore = null;
+    if (targetCol?.status_map === 'done') {
+        const quest = questCache.get(questId);
+        if (quest?.type === 'support') {
+            const nota    = prompt('⭐ Qual foi a nota CSAT do cliente? (1 a 5)');
+            const notaNum = parseInt(nota);
+            if (isNaN(notaNum) || notaNum < 1 || notaNum > 5) {
+                showToast('Nota inválida! Digite um número de 1 a 5.', 'error');
+                return;
+            }
+            csatScore = notaNum;
+        }
+    }
+
+    closeQuestModal();
+    await moveCardToColumn(questId, columnId, csatScore);
+};
 
 // ==========================================
 // 7. SLA TIMER (conta a partir de started_at)
@@ -1324,12 +1406,6 @@ function startSlaTimer(questId, slaSeconds, startedAt, assignedToId) {
             const isMyQuest = assignedToId && assignedToId.toString() === playerData.id;
             if (isMyQuest) {
                 showToast('🚨 SLA estourado! Completar esta missão aplicará a Maldição do Atraso.', 'error');
-                const card    = timerEl.closest('.kanban-card');
-                const finBtn  = card && card.querySelector('.btn-finish');
-                if (finBtn) {
-                    finBtn.classList.add('btn-finish-cursed');
-                    finBtn.textContent = '💀 CONCLUIR (MALDIÇÃO)';
-                }
             }
             return;
         }
