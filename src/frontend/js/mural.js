@@ -545,7 +545,7 @@ function renderInProgressCard(quest) {
 
     const assignee     = quest.assigned_to;
     const isMyQuest    = assignee && assignee._id === playerData.id;
-    const assigneeName = assignee ? (assignee.nome || assignee.username) : 'Desconhecido';
+    const assigneeName = assignee ? (assignee.nome || assignee.username) : '— Sem responsável';
     const assigneeAv   = assignee && assignee.avatar_url
         ? assignee.avatar_url
         : 'assets/imgs/caneca_pixel.jpg';
@@ -756,6 +756,24 @@ function _renderModalInfo(quest) {
         document.getElementById('qdm-started').textContent = formatDate(quest.started_at);
     } else {
         startedSection.style.display = 'none';
+    }
+
+    // Seletor de troca de responsável — apenas para líderes de guilda
+    const reassignSection = document.getElementById('qdm-reassign-section');
+    const reassignSelect  = document.getElementById('qdm-reassign-select');
+    const canReassign = isGuildLeader && quest.faction === playerData.faction && quest.status !== 'done' && guildMembers.length > 0;
+    if (reassignSection && reassignSelect) {
+        if (canReassign) {
+            const currentAssigneeId = quest.assigned_to ? String(quest.assigned_to._id || quest.assigned_to) : '';
+            reassignSelect.innerHTML =
+                `<option value="">— Sem responsável —</option>` +
+                guildMembers.map(m =>
+                    `<option value="${m._id}" ${String(m._id) === currentAssigneeId ? 'selected' : ''}>${_esc(m.nome || m.username)}</option>`
+                ).join('');
+            reassignSection.style.display = 'block';
+        } else {
+            reassignSection.style.display = 'none';
+        }
     }
 
     const moveSection = document.getElementById('qdm-move-column-section');
@@ -1379,6 +1397,33 @@ window.moveCardFromModal = async () => {
 
     closeQuestModal();
     await moveCardToColumn(questId, columnId, csatScore);
+};
+
+window.saveQuestAssignee = async () => {
+    const questId = _modalQuestId;
+    const userId  = document.getElementById('qdm-reassign-select')?.value || null;
+    if (!questId) return;
+
+    try {
+        const res = await fetch(`${API_URL}/quests/${questId}/assign`, {
+            method:  'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body:    JSON.stringify({ userId: userId || null })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            showToast(data.message || 'Erro ao salvar responsável.', 'error');
+            return;
+        }
+        const memberName = userId
+            ? (guildMembers.find(m => String(m._id) === String(userId))?.nome || '—')
+            : 'nenhum';
+        showToast(`Responsável atualizado: ${memberName}.`);
+        closeQuestModal();
+        await loadBoard();
+    } catch {
+        showToast('Erro de conexão.', 'error');
+    }
 };
 
 // ==========================================

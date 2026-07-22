@@ -254,6 +254,19 @@
                 <div id="qdm-assignee" class="quest-modal-value kanban-assignee"></div>
             </div>
 
+            <!-- Trocar responsável — visível apenas para líder de guilda -->
+            <div class="quest-modal-section" id="qdm-reassign-section" style="display:none;">
+                <div class="quest-modal-label">TROCAR RESPONSÁVEL</div>
+                <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+                    <select id="qdm-reassign-select" data-cy="select-reassign-member"
+                            style="flex:1;font-family:'Press Start 2P',cursive;font-size:9px;padding:8px 6px;background:#0d1b2a;color:#ecf0f1;border:2px solid #2c3e50;outline:none;cursor:pointer;">
+                    </select>
+                    <button class="btn-pixel" data-cy="btn-save-assignee"
+                            onclick="saveQuestAssignee()"
+                            style="font-size:8px;padding:8px 14px;background:#27ae60;flex-shrink:0;">✔ SALVAR</button>
+                </div>
+            </div>
+
             <div class="quest-modal-section" id="qdm-started-section" style="display:none;">
                 <div class="quest-modal-label">Em progresso desde</div>
                 <div id="qdm-started" class="quest-modal-value"></div>

@@ -7,11 +7,12 @@ const params   = new URLSearchParams(window.location.search);
 // Lemos do query param primeiro; sessionStorage é o fallback.
 const sprintId = params.get('id') || sessionStorage.getItem('admin_board_sprint_id') || null;
 
-let allQuests      = [];
-let allSprints     = [];
-let allGuilds      = [];
-let sprintFactions = []; // Facções da sprint carregada — filtra as abas de guilda
-let boardColumns   = [];
+let allQuests        = [];
+let allSprints       = [];
+let allGuilds        = [];
+let sprintFactions   = []; // Facções da sprint carregada — filtra as abas de guilda
+let boardColumns     = [];
+let boardGuildMembers = []; // Membros da guilda selecionada — usado no seletor de responsável
 // Guarda contra sessionStorage com valor '' ou string 'null' de testes anteriores
 const _rawGuildId  = sessionStorage.getItem('admin_board_guild');
 let currentGuildId = (_rawGuildId && _rawGuildId !== 'null') ? _rawGuildId : null;
@@ -61,6 +62,22 @@ async function fetchBoardColumns(guildId) {
         console.error('Erro ao buscar colunas do board:', err);
     }
     renderBoardKanbanStructure(); // sempre renderiza
+}
+
+async function fetchBoardGuildMembers() {
+    if (!currentGuildId) { boardGuildMembers = []; return; }
+    try {
+        const guild = allGuilds.find(g => String(g._id) === String(currentGuildId));
+        if (!guild) { boardGuildMembers = []; return; }
+        const res = await fetch(`${API_URL}/admin/roster`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) { boardGuildMembers = []; return; }
+        const all = await res.json();
+        boardGuildMembers = all.filter(u => u.faction === guild.faction_key);
+    } catch {
+        boardGuildMembers = [];
+    }
 }
 
 function renderBoardKanbanStructure() {
@@ -140,7 +157,10 @@ async function loadSprintBoard() {
         allQuests      = Array.isArray(data.quests) ? data.quests : [];
         sprintFactions = Array.isArray(data.sprint.factions) ? data.sprint.factions : [];
 
-        await fetchBoardColumns(currentGuildId);
+        await Promise.all([
+            fetchBoardColumns(currentGuildId),
+            fetchBoardGuildMembers()
+        ]);
         renderSprintHeader(data);
         renderKanban();
         // Re-renderiza abas de guilda após conhecer as facções da sprint
@@ -782,6 +802,38 @@ window.moveAdminCardToColumn = async () => {
     }
 };
 
+window.saveAdminQuestAssignee = async () => {
+    const questId = _boardDetailQuestId;
+    const userId  = document.getElementById('bqd-assignee-select')?.value || null;
+    if (!questId) return;
+
+    const btn = document.querySelector('[data-cy="btn-admin-save-assignee"]');
+    if (btn) btn.disabled = true;
+
+    try {
+        const res = await fetch(`${API_URL}/quests/${questId}/assign`, {
+            method:  'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body:    JSON.stringify({ userId: userId || null })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            showToast(data.message || 'Erro ao salvar responsável.', 'error');
+            return;
+        }
+        const memberName = userId
+            ? (boardGuildMembers.find(m => String(m._id) === String(userId))?.nome || '—')
+            : 'nenhum';
+        showToast(`Responsável atualizado: ${memberName}.`);
+        closeBoardQuestDetail();
+        await loadSprintBoard();
+    } catch {
+        showToast('Erro de conexão.', 'error');
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+};
+
 function renderBoardQuestDetail(quest) {
     const typeBadge = document.getElementById('bqd-type-badge');
     if (typeBadge) {
@@ -834,6 +886,21 @@ function renderBoardQuestDetail(quest) {
     if (editSla)     editSla.value     = quest.sla_seconds || '';
     if (editFaction) editFaction.value = quest.faction || 'Produto';
     if (editLabels)  editLabels.value  = (quest.labels || []).join(', ');
+
+    // Seletor de responsável — visível quando há membros da guilda carregados
+    const assigneeSection = document.getElementById('bqd-assignee-section');
+    const assigneeSelect  = document.getElementById('bqd-assignee-select');
+    if (assigneeSection && assigneeSelect && boardGuildMembers.length > 0) {
+        const currentAssigneeId = quest.assigned_to ? String(quest.assigned_to._id || quest.assigned_to) : '';
+        assigneeSelect.innerHTML =
+            `<option value="">— Sem responsável —</option>` +
+            boardGuildMembers.map(m =>
+                `<option value="${m._id}" ${String(m._id) === currentAssigneeId ? 'selected' : ''}>${_bEsc(m.nome || m.username)}</option>`
+            ).join('');
+        assigneeSection.style.display = '';
+    } else if (assigneeSection) {
+        assigneeSection.style.display = 'none';
+    }
 
     // Seletor de coluna — visível quando há colunas carregadas e quest não está done
     const moveSection = document.getElementById('bqd-move-section');
