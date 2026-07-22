@@ -40,10 +40,15 @@ const questCache   = new Map();
 let isGuildLeader    = false;
 let guildMembers     = [];
 let cqChecklistDraft = [];
+let kanbanColumns    = [];
+let colSortState     = {};   // { [colId]: 'default'|'sla'|'date_new'|'date_old'|'type'|'alpha' }
+let boardFilterPlayer = null; // null = sem filtro
+let lastBoardQuests   = [];   // cache para re-render sem request
 
 document.addEventListener('DOMContentLoaded', async () => {
     await fetchPlayerState();
     await fetchGuildContext();
+    await fetchKanbanColumns();
     await loadBoard();
     startBoardAutoRefresh();
 });
@@ -235,8 +240,63 @@ document.getElementById('createQuestForm').addEventListener('submit', async (e) 
 });
 
 // ==========================================
-// 4. KANBAN BOARD — CARREGAMENTO
+// 4. KANBAN BOARD — COLUNAS E CARREGAMENTO
 // ==========================================
+async function fetchKanbanColumns() {
+    try {
+        const res = await fetch(`${API_URL}/guild/columns`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) kanbanColumns = await res.json();
+    } catch (err) {
+        console.error('Erro ao buscar colunas do kanban:', err);
+    }
+    renderKanbanStructure(); // sempre renderiza — usa fallback se kanbanColumns vazio
+}
+
+function renderKanbanStructure() {
+    const board = document.getElementById('kanban-board');
+    if (!board) return;
+
+    const cols = kanbanColumns.length ? kanbanColumns : [
+        { _id: 'todo',        name: 'A FAZER',      color: '#2c3e50', status_map: 'todo'        },
+        { _id: 'in-progress', name: 'EM PROGRESSO', color: '#e67e22', status_map: 'in_progress' },
+        { _id: 'done',        name: 'CONCLUÍDO',    color: '#27ae60', status_map: 'done'        }
+    ];
+
+    board.style.minWidth = '';
+
+    const toolbar = document.getElementById('kanban-toolbar');
+    if (toolbar) {
+        toolbar.innerHTML = isGuildLeader
+            ? `<button class="btn-pixel" data-cy="btn-edit-columns" onclick="openPlayerColumnsModal()" style="font-size:15px;padding:8px 14px;background:#8e44ad;border:2px solid #9b59b6;">⚙️</button>`
+            : '';
+    }
+
+    board.innerHTML = cols.map(col => {
+        const sortVal = colSortState[String(col._id)] || 'default';
+        return `
+        <div class="kanban-column" data-col-id="${col._id}">
+            <div class="kanban-col-header" style="border-bottom:2px solid ${col.color};">
+                <span class="kanban-col-title">${col.name.toUpperCase()}</span>
+                <div style="display:flex;align-items:center;gap:5px;">
+                    <select onchange="setColSort('${col._id}', this.value)"
+                            style="font-family:inherit;font-size:7px;background:#111;color:#f1c40f;border:1px solid #444;padding:2px 3px;cursor:pointer;outline:none;">
+                        <option value="default" ${sortVal==='default'?'selected':''}>⇅</option>
+                        <option value="sla"      ${sortVal==='sla'?'selected':''}>SLA</option>
+                        <option value="date_new" ${sortVal==='date_new'?'selected':''}>Nova</option>
+                        <option value="date_old" ${sortVal==='date_old'?'selected':''}>Antiga</option>
+                        <option value="type"     ${sortVal==='type'?'selected':''}>Tipo</option>
+                        <option value="alpha"    ${sortVal==='alpha'?'selected':''}>A-Z</option>
+                    </select>
+                    <span class="kanban-col-count" id="count-${col._id}">0</span>
+                </div>
+            </div>
+            <div class="kanban-col-body" id="col-${col._id}"></div>
+        </div>`;
+    }).join('');
+}
+
 async function loadBoard() {
     try {
         const res = await fetch(`${API_URL}/quests`, {
@@ -258,16 +318,39 @@ async function loadBoard() {
 // ==========================================
 // 4. KANBAN BOARD — RENDERIZAÇÃO
 // ==========================================
+const SORT_FUNCS = {
+    default:  () => 0,
+    sla:      (a, b) => {
+        const dl = q => q.sla_seconds && q.started_at
+            ? new Date(q.started_at).getTime() + q.sla_seconds * 1000
+            : Infinity;
+        return dl(a) - dl(b);
+    },
+    date_new: (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0),
+    date_old: (a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0),
+    type:     (a, b) => {
+        const o = { urgent: 0, support: 1, normal: 2, jira: 3 };
+        return (o[a.type] ?? 9) - (o[b.type] ?? 9);
+    },
+    alpha:    (a, b) => a.title.localeCompare(b.title, 'pt'),
+};
+
 function renderBoard(quests) {
     activeTimers.forEach(id => clearInterval(id));
     activeTimers.clear();
 
-    const todo       = quests.filter(q => q.status === 'todo');
-    const inProgress = quests.filter(q => q.status === 'in_progress');
-    const done       = quests.filter(q => q.status === 'done');
-
+    lastBoardQuests = quests;
     quests.forEach(q => questCache.set(q._id, q));
 
+    // Filtro de player
+    const visible = boardFilterPlayer
+        ? quests.filter(q => {
+            const id = q.assigned_to?._id || q.assigned_to;
+            return String(id) === String(boardFilterPlayer);
+          })
+        : quests;
+
+    const inProgress = visible.filter(q => q.status === 'in_progress');
     const myWipCount = inProgress.filter(q =>
         q.assigned_to && q.assigned_to._id === playerData.id
     ).length;
@@ -279,26 +362,87 @@ function renderBoard(quests) {
     }).length;
 
     currentBoardStats = {
-        todo:       todo.length,
+        todo:       visible.filter(q => q.status === 'todo').length,
         inProgress: inProgress.length,
-        done:       done.length,
+        done:       visible.filter(q => q.status === 'done').length,
         myWip:      myWipCount,
         slaAlerts
     };
 
-    renderColumn('col-todo',        todo,       q => renderTodoCard(q, myWipCount));
-    renderColumn('col-in-progress', inProgress, q => renderInProgressCard(q));
-    renderColumn('col-done',        done,       renderDoneCard);
+    // Agrupa quests por coluna: column_id tem precedência, fallback por status
+    const cols = kanbanColumns.length ? kanbanColumns : [
+        { _id: 'todo',        status_map: 'todo'        },
+        { _id: 'in-progress', status_map: 'in_progress' },
+        { _id: 'done',        status_map: 'done'        }
+    ];
 
-    const countTodo = document.getElementById('count-todo');
-    const countWip  = document.getElementById('count-in-progress');
-    const countDone = document.getElementById('count-done');
-    if (countTodo) countTodo.textContent = todo.length;
-    if (countWip)  countWip.textContent  = inProgress.length;
-    if (countDone) countDone.textContent = done.length;
+    const byColumn = {};
+    cols.forEach(col => { byColumn[String(col._id)] = []; });
 
+    visible.forEach(q => {
+        const colId = q.column_id ? String(q.column_id) : null;
+        if (colId && byColumn[colId] !== undefined) {
+            byColumn[colId].push(q);
+        } else {
+            const fallback = cols.find(c => c.status_map === q.status);
+            if (fallback) byColumn[String(fallback._id)].push(q);
+        }
+    });
+
+    cols.forEach(col => {
+        const sortFn    = SORT_FUNCS[colSortState[String(col._id)]] || SORT_FUNCS.default;
+        const colQuests = [...(byColumn[String(col._id)] || [])].sort(sortFn);
+        const countEl   = document.getElementById(`count-${col._id}`);
+        const bodyEl    = document.getElementById(`col-${col._id}`);
+        if (countEl) countEl.textContent = colQuests.length;
+        if (!bodyEl) return;
+
+        bodyEl.innerHTML = '';
+        if (colQuests.length === 0) {
+            bodyEl.innerHTML = '<div style="font-size:8px;color:#bdc3c7;text-align:center;padding:20px;">Nenhuma missão aqui.</div>';
+            return;
+        }
+        const cardFn = col.status_map === 'todo'        ? (q => renderTodoCard(q, myWipCount))
+                     : col.status_map === 'in_progress' ? (q => renderInProgressCard(q))
+                     : renderDoneCard;
+        colQuests.forEach(q => bodyEl.appendChild(cardFn(q)));
+    });
+
+    updateKanbanFilterBar(quests);
     updateSidebar();
 }
+
+function updateKanbanFilterBar(quests) {
+    const bar = document.getElementById('kanban-filter-bar');
+    if (!bar) return;
+
+    const players = new Map();
+    quests.forEach(q => {
+        const p = q.assigned_to;
+        if (p && p._id) players.set(p._id, p.nome || p.username || 'Aventureiro');
+    });
+
+    if (players.size === 0) { bar.style.display = 'none'; return; }
+
+    const label   = `<span style="font-size:7px;color:#bdc3c7;margin-right:2px;white-space:nowrap;">FILTRAR:</span>`;
+    const allBtn  = `<button class="kanban-filter-btn ${boardFilterPlayer === null ? 'active' : ''}" onclick="setBoardFilter(null)">👥 Todos</button>`;
+    const pBtns   = [...players.entries()].map(([id, name]) =>
+        `<button class="kanban-filter-btn ${boardFilterPlayer === id ? 'active' : ''}" onclick="setBoardFilter('${id}')">${name.split(' ')[0]}</button>`
+    ).join('');
+
+    bar.style.display = 'flex';
+    bar.innerHTML = label + allBtn + pBtns;
+}
+
+window.setColSort = (colId, sortKey) => {
+    colSortState[colId] = sortKey;
+    renderBoard(lastBoardQuests);
+};
+
+window.setBoardFilter = (playerId) => {
+    boardFilterPlayer = (boardFilterPlayer === playerId) ? null : playerId;
+    renderBoard(lastBoardQuests);
+};
 
 function renderColumn(colId, quests, cardFn) {
     const body = document.getElementById(colId);
@@ -1653,5 +1797,123 @@ window.playerCreateSubtask = async () => {
         if (freshRes.ok) _renderPlayerSubtasks(await freshRes.json());
     } catch {
         showToast('Erro de conexão.', 'error');
+    }
+};
+
+// ==========================================
+// MODAL — EDITAR COLUNAS (LÍDER DE GUILDA)
+// ==========================================
+let _playerEditCols = [];
+
+window.openPlayerColumnsModal = () => {
+    _playerEditCols = kanbanColumns.map(c => ({ ...c }));
+    renderPlayerColumnsList();
+    document.getElementById('playerEditColumnsModal').style.display = 'flex';
+};
+
+window.closePlayerColumnsModal = () => {
+    document.getElementById('playerEditColumnsModal').style.display = 'none';
+};
+
+function renderPlayerColumnsList() {
+    const list = document.getElementById('playerEditColumnsList');
+    if (!list) return;
+    const total = _playerEditCols.length;
+    list.innerHTML = _playerEditCols.map((col, i) => {
+        const tag = i === 0 ? 'INÍCIO' : i === total - 1 ? 'FIM' : 'MEIO';
+        const tagColor = i === 0 ? '#2980b9' : i === total - 1 ? '#27ae60' : '#e67e22';
+        const upDis   = i === 0;
+        const downDis = i === total - 1;
+        const delDis  = total <= 3;
+        return `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:12px 14px;background:#1a252f;border:2px solid #34495e;">
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <button onclick="_playerColUp(${i})"
+                        class="btn-pixel" style="font-size:9px;padding:3px 8px;background:#2c3e50;${upDis ? 'opacity:.35;cursor:not-allowed;' : ''}"
+                        ${upDis ? 'disabled' : ''}>↑</button>
+                <button onclick="_playerColDown(${i})"
+                        class="btn-pixel" style="font-size:9px;padding:3px 8px;background:#2c3e50;${downDis ? 'opacity:.35;cursor:not-allowed;' : ''}"
+                        ${downDis ? 'disabled' : ''}>↓</button>
+            </div>
+            <input type="text" value="${col.name}" onchange="_playerEditCols[${i}].name = this.value"
+                   class="pixel-input" style="flex:1;font-size:10px;padding:10px 12px;">
+            <input type="color" value="${col.color || '#2c3e50'}"
+                   oninput="_playerEditCols[${i}].color = this.value"
+                   title="Cor da coluna"
+                   style="width:32px;height:32px;padding:2px;border:2px solid #34495e;background:#111;cursor:pointer;flex-shrink:0;">
+            <span style="font-size:7px;padding:4px 8px;background:${tagColor};color:#fff;white-space:nowrap;flex-shrink:0;">${tag}</span>
+            <button onclick="_playerColDelete(${i})"
+                    class="btn-pixel" style="font-size:9px;padding:7px 10px;background:#c0392b;${delDis ? 'opacity:.35;cursor:not-allowed;' : ''}"
+                    ${delDis ? 'disabled' : ''}>✕</button>
+        </div>`;
+    }).join('');
+}
+
+window.playerAddNewColumn = () => {
+    _playerEditCols.push({ _id: null, name: 'Nova Coluna', order: _playerEditCols.length + 1, color: '#2c3e50', status_map: 'in_progress' });
+    renderPlayerColumnsList();
+};
+
+window._playerColUp = (i) => {
+    if (i <= 0) return;
+    [_playerEditCols[i - 1], _playerEditCols[i]] = [_playerEditCols[i], _playerEditCols[i - 1]];
+    renderPlayerColumnsList();
+};
+
+window._playerColDown = (i) => {
+    if (i >= _playerEditCols.length - 1) return;
+    [_playerEditCols[i], _playerEditCols[i + 1]] = [_playerEditCols[i + 1], _playerEditCols[i]];
+    renderPlayerColumnsList();
+};
+
+window._playerColDelete = (i) => {
+    if (_playerEditCols.length <= 3) return;
+    _playerEditCols.splice(i, 1);
+    renderPlayerColumnsList();
+};
+
+window.savePlayerColumnsEdit = async () => {
+    const btn = document.querySelector('[data-cy="btn-player-save-columns"]');
+    if (btn) btn.disabled = true;
+    try {
+        // Deleta colunas que existiam no banco mas foram removidas localmente
+        const editIds = new Set(_playerEditCols.filter(c => c._id).map(c => String(c._id)));
+        const toDelete = kanbanColumns.filter(c => !editIds.has(String(c._id)));
+        for (const col of toDelete) {
+            await fetch(`${API_URL}/guild/columns/${col._id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+        }
+
+        const total = _playerEditCols.length;
+        for (let i = 0; i < total; i++) {
+            const col = { ..._playerEditCols[i], order: i + 1 };
+            // colunas existentes mantêm status_map; novas recebem derivação por posição
+            if (!col._id) {
+                col.status_map = i === 0 ? 'todo' : i === total - 1 ? 'done' : 'in_progress';
+            }
+            if (col._id) {
+                await fetch(`${API_URL}/guild/columns/${col._id}`, {
+                    method: 'PATCH',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: col.name, order: col.order, status_map: col.status_map, color: col.color })
+                });
+            } else {
+                await fetch(`${API_URL}/guild/columns`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: col.name, order: col.order, status_map: col.status_map, color: col.color || '#2c3e50' })
+                });
+            }
+        }
+        closePlayerColumnsModal();
+        await fetchKanbanColumns();
+        await loadBoard();
+        showToast('Colunas atualizadas com sucesso!');
+    } catch {
+        showToast('Erro ao salvar colunas.', 'error');
+    } finally {
+        if (btn) btn.disabled = false;
     }
 };

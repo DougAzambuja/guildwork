@@ -41,32 +41,13 @@
     <div class="main-wrapper">
         <div class="mural-layout">
             <div class="board-container kanban-mode" id="questBoard" data-cy="quest-board">
-                <div class="kanban-board">
-                    <!-- A FAZER -->
-                    <div class="kanban-column">
-                        <div class="kanban-col-header">
-                            <span class="kanban-col-title">A FAZER</span>
-                            <span class="kanban-col-count" id="count-todo">0</span>
-                        </div>
-                        <div class="kanban-col-body" id="col-todo"></div>
-                    </div>
-
-                    <!-- EM PROGRESSO -->
-                    <div class="kanban-column">
-                        <div class="kanban-col-header">
-                            <span class="kanban-col-title">EM PROGRESSO</span>
-                            <span class="kanban-col-count" id="count-in-progress">0</span>
-                        </div>
-                        <div class="kanban-col-body" id="col-in-progress"></div>
-                    </div>
-
-                    <!-- CONCLUÍDO -->
-                    <div class="kanban-column">
-                        <div class="kanban-col-header">
-                            <span class="kanban-col-title">CONCLUÍDO</span>
-                            <span class="kanban-col-count" id="count-done">0</span>
-                        </div>
-                        <div class="kanban-col-body" id="col-done"></div>
+                <div class="kanban-header" id="kanban-header">
+                    <div id="kanban-filter-bar" class="kanban-filter-bar" style="display:none;"></div>
+                    <div id="kanban-toolbar" style="margin-left:auto;flex-shrink:0;"></div>
+                </div>
+                <div class="kanban-scroll-area">
+                    <div class="kanban-board" id="kanban-board">
+                        <!-- colunas renderizadas dinamicamente por mural.js -->
                     </div>
                 </div>
             </div>
@@ -418,5 +399,26 @@
     <script src="js/utils.js"></script>
     <script src="js/notifications.js"></script>
     <script src="js/mural.js"></script>
+
+    <!-- Modal: Editar Colunas do Kanban (líder de guilda) -->
+    <div id="playerEditColumnsModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closePlayerColumnsModal()">
+        <div class="modal-content" style="max-width:520px;padding:0;overflow:hidden;">
+            <div style="background:#3e2312;border-bottom:3px solid #f1c40f;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                    <div style="font-size:10px;color:#f1c40f;margin-bottom:5px;">⚔️ CONFIGURAR KANBAN</div>
+                    <div style="font-size:7px;color:#c8a165;line-height:1.8;">Organize o fluxo da sua guilda</div>
+                </div>
+                <button class="btn-pixel" onclick="closePlayerColumnsModal()" style="font-size:8px;padding:5px 9px;background:#2c3e50;">✕</button>
+            </div>
+            <div style="padding:20px;">
+                <div id="playerEditColumnsList" style="max-height:400px;overflow-y:auto;margin-bottom:14px;padding-right:4px;"></div>
+                <button class="btn-pixel" data-cy="btn-player-add-column" onclick="playerAddNewColumn()" style="width:100%;font-size:8px;padding:10px;background:#2c3e50;margin-bottom:16px;">+ NOVA COLUNA</button>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn-pixel" onclick="closePlayerColumnsModal()" style="flex:1;font-size:8px;padding:10px;background:#7f8c8d;">CANCELAR</button>
+                    <button class="btn-pixel" data-cy="btn-player-save-columns" onclick="savePlayerColumnsEdit()" style="flex:1;font-size:8px;padding:10px;background:#27ae60;">⚔️ SALVAR</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

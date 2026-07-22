@@ -51,12 +51,22 @@
         }
 
         .kanban-board {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            display: flex;
             gap: 12px;
+            align-items: stretch;
+            overflow-x: auto;
+        }
+        .kanban-board::-webkit-scrollbar { height: 6px; }
+        .kanban-board::-webkit-scrollbar-track { background: #0d1b2a; }
+        .kanban-board::-webkit-scrollbar-thumb { background: #3498db; }
+        .kanban-board::-webkit-scrollbar-thumb:hover { background: #2980b9; }
+        .kanban-board .kanban-col {
+            flex: 1;
+            min-width: 220px;
         }
         @media (max-width: 800px) {
-            .kanban-board { grid-template-columns: 1fr; }
+            .kanban-board { flex-direction: column; }
+            .kanban-board .kanban-col { min-width: 0; }
         }
 
         .kanban-col {
@@ -249,7 +259,10 @@
         <!-- KANBAN BOARD -->
         <div class="dashboard-section" data-cy="board-kanban-section">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
-                <h2 class="section-title" style="margin:0; border:none;">⚔️ BOARD DE MISSÕES</h2>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <h2 class="section-title" style="margin:0; border:none;">⚔️ BOARD DE MISSÕES</h2>
+                    <button class="btn-pixel" data-cy="btn-edit-columns" onclick="openEditColumnsModal()" style="font-size:8px;padding:5px 10px;background:#2c3e50;">⚙️ Colunas</button>
+                </div>
                 <div class="faction-filters" data-cy="guild-filters" id="guildFilters">
                     <button class="faction-filter-btn active" data-cy="filter-all-guilds" onclick="setGuildFilter(null, this)">🏰 Todas</button>
                     <!-- guildas carregadas dinamicamente por loadAllGuilds() -->
@@ -257,30 +270,7 @@
             </div>
 
             <div class="kanban-board" id="kanbanBoard" data-cy="kanban-board">
-                <!-- Todo -->
-                <div class="kanban-col" id="col-todo" data-cy="kanban-col-todo">
-                    <div class="kanban-col-header">
-                        <span class="kanban-col-title" style="color:#3498db;">📋 A FAZER</span>
-                        <span class="kanban-count" id="count-todo" data-cy="count-todo">0</span>
-                    </div>
-                    <div id="cards-todo" class="kanban-cards-body" data-cy="cards-todo"></div>
-                </div>
-                <!-- In Progress -->
-                <div class="kanban-col" id="col-in_progress" data-cy="kanban-col-in-progress">
-                    <div class="kanban-col-header">
-                        <span class="kanban-col-title" style="color:#e67e22;">⚡ EM PROGRESSO</span>
-                        <span class="kanban-count" id="count-in_progress" data-cy="count-in-progress">0</span>
-                    </div>
-                    <div id="cards-in_progress" class="kanban-cards-body" data-cy="cards-in-progress"></div>
-                </div>
-                <!-- Done -->
-                <div class="kanban-col" id="col-done" data-cy="kanban-col-done">
-                    <div class="kanban-col-header">
-                        <span class="kanban-col-title" style="color:#27ae60;">✅ CONCLUÍDAS</span>
-                        <span class="kanban-count" id="count-done" data-cy="count-done">0</span>
-                    </div>
-                    <div id="cards-done" class="kanban-cards-body" data-cy="cards-done"></div>
-                </div>
+                <!-- colunas renderizadas dinamicamente por admin-sprint-board.js -->
             </div>
         </div>
 
@@ -535,5 +525,26 @@
     <script src="js/admin-header.js"></script>
     <script src="js/notifications.js"></script>
     <script src="js/admin-sprint-board.js"></script>
+
+    <!-- Modal: Editar Colunas do Kanban (admin) -->
+    <div id="editColumnsModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeEditColumnsModal()">
+        <div class="modal-content" style="max-width:540px;padding:0;overflow:hidden;">
+            <div style="background:#0d1b2a;border-bottom:3px solid #3498db;padding:16px 20px;display:flex;align-items:flex-start;justify-content:space-between;">
+                <div>
+                    <div style="font-size:10px;color:#3498db;margin-bottom:6px;">⚙️ CONFIGURAR KANBAN</div>
+                    <div id="editColumnsGuildName" style="font-size:7px;color:#5b9fc8;line-height:1.8;">—</div>
+                </div>
+                <button class="btn-pixel" onclick="closeEditColumnsModal()" style="font-size:8px;padding:5px 9px;background:#2c3e50;">✕</button>
+            </div>
+            <div style="padding:20px;">
+                <div id="editColumnsList" style="max-height:400px;overflow-y:auto;margin-bottom:14px;padding-right:4px;"></div>
+                <button class="btn-pixel" data-cy="btn-add-column" onclick="addNewColumn()" style="width:100%;font-size:8px;padding:10px;background:#2c3e50;margin-bottom:16px;">+ NOVA COLUNA</button>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn-pixel" onclick="closeEditColumnsModal()" style="flex:1;font-size:8px;padding:10px;background:#7f8c8d;">CANCELAR</button>
+                    <button class="btn-pixel" data-cy="btn-save-columns" onclick="saveColumnsEdit()" style="flex:1;font-size:8px;padding:10px;background:#2980b9;">⚙️ APLICAR</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
