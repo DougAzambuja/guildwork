@@ -1386,11 +1386,16 @@ body:has(.mural-layout) {
 
 .btn-kanban:active { transform: translate(3px, 3px); box-shadow: none; }
 .btn-pickup { background: #27ae60; color: #fff; }
-.btn-finish { background: #e67e22; color: #fff; }
-.btn-finish-cursed { background: #8e1a1a; color: #ffcccc; animation: curse-pulse 1.2s ease-in-out infinite; }
-.btn-finish-cursed:hover { background: #a52020; }
 .btn-pickup:hover { background: #2ecc71; }
-.btn-finish:hover { background: #f39c12; }
+
+/* Drag-and-drop */
+.kanban-card.dragging { opacity: 0.4; cursor: grabbing; }
+.kanban-card[draggable="true"] { cursor: grab; }
+.kanban-col-body.dnd-over {
+    background: rgba(241, 196, 15, 0.08);
+    outline: 2px dashed #f1c40f;
+    outline-offset: -4px;
+}
 @keyframes curse-pulse {
     0%, 100% { box-shadow: 3px 3px 0 #4a0000; }
     50%       { box-shadow: 3px 3px 0 #ff3333, 0 0 8px rgba(255,50,50,0.5); }

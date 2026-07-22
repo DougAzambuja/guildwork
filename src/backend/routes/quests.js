@@ -11,9 +11,10 @@ const checkAdmin = (req, res, next) => {
 router.use(authMiddleware);
 
 // — Rotas do Jogador —
-router.get('/',           questController.getQuests);
-router.patch('/:id/move', questController.moveQuest);
-router.post('/complete',  questController.completeQuest);
+router.get('/',                  questController.getQuests);
+router.patch('/:id/move',        questController.moveQuest);
+router.patch('/:id/move-column', questController.moveQuestToColumn);
+router.post('/complete',         questController.completeQuest);
 
 // — Rotas Admin —
 router.get('/all',              checkAdmin, questController.adminGetQuests);
