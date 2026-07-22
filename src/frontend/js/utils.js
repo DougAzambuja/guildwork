@@ -4,9 +4,47 @@
 
 function xpParaProximoNivel(level) { return 200 * (level + 1) + 300; }
 
-function dicebearUrl(seed) {
-    return `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(seed || 'adventurer')}&backgroundColor=1a252f`;
+function dicebearUrl(seed, opts = {}) {
+    const base = new URLSearchParams({
+        seed: seed || 'adventurer',
+        backgroundColor: opts.backgroundColor || '1a252f',
+    });
+    let url = `https://api.dicebear.com/9.x/pixel-art/svg?${base}`;
+    const arrayKeys = [
+        'skinColor', 'hair', 'hairColor',
+        'eyes', 'eyesColor', 'mouth', 'mouthColor',
+        'beard', 'glasses', 'glassesColor',
+        'hat', 'hatColor', 'accessories', 'accessoriesColor',
+        'clothing', 'clothingColor'
+    ];
+    for (const k of arrayKeys) {
+        if (opts[k]) url += `&${k}[]=${opts[k]}`;
+    }
+    const intKeys = ['beardProbability', 'glassesProbability', 'hatProbability', 'accessoriesProbability'];
+    for (const k of intKeys) {
+        if (opts[k] !== undefined) url += `&${k}=${opts[k]}`;
+    }
+    return url;
 }
+
+// Hex values validated against api.dicebear.com/9.x/pixel-art/schema.json
+const DICEBEAR_SKIN_COLORS = [
+    { id: 'ffdbac', hex: '#ffdbac', label: 'Pálida' },
+    { id: 'f5cfa0', hex: '#f5cfa0', label: 'Clara' },
+    { id: 'e0b687', hex: '#e0b687', label: 'Bronzeada' },
+    { id: 'b68655', hex: '#b68655', label: 'Morena' },
+    { id: 'a26d3d', hex: '#a26d3d', label: 'Escura' },
+    { id: '8d5524', hex: '#8d5524', label: 'Negra' },
+];
+
+const DICEBEAR_HAIR_COLORS = [
+    { id: '28150a', hex: '#28150a', label: 'Preto' },
+    { id: '603a14', hex: '#603a14', label: 'Castanho' },
+    { id: '83623b', hex: '#83623b', label: 'Castanho Claro' },
+    { id: 'cab188', hex: '#cab188', label: 'Loiro' },
+    { id: 'bd1700', hex: '#bd1700', label: 'Ruivo' },
+    { id: '009bbd', hex: '#009bbd', label: 'Azul' },
+];
 
 const GUILD_ICONS = { Produto: '📦', Suporte: '🎧', 'Customer Service': '📣' };
 
