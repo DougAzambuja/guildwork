@@ -3,7 +3,7 @@
 // ==========================================
 const token = localStorage.getItem('guild_token');
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     if (!token || localStorage.getItem('guild_role') !== 'admin') {
         window.location.href = 'login.html';
         return;
@@ -14,10 +14,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (nameEl) nameEl.innerText = adminName;
 
     setupRegisterForm();
-    renderUsersTable();
+    await renderUsersTable();
+    hideLoadingOverlay();
 
     document.getElementById('editUserForm').addEventListener('submit', submitEditUser);
-
     setInterval(refreshUsersBackground, 10000);
 });
 

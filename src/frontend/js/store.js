@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadPlayerProfile();
     await loadCustomLoot();
     updateCartUI();
+    hideLoadingOverlay();
 });
 
 window.addEventListener('pageshow', async (e) => {

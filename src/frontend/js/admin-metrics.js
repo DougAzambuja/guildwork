@@ -42,9 +42,11 @@ async function initMetrics() {
             renderEconomy(data.economy);
             renderSla(data.sla);
             renderCsat(data.csat);
+            hideLoadingOverlay();
         });
     } catch (err) {
         console.error('[Metrics]', err);
+        hideLoadingOverlay();
         showToast('Erro ao carregar métricas.', 'error');
     }
 }

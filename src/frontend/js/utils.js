@@ -87,3 +87,10 @@ function logout() {
     sessionStorage.clear();
     window.location.href = 'login.html';
 }
+
+function hideLoadingOverlay() {
+    const el = document.getElementById('loading-overlay');
+    if (!el) return;
+    el.classList.add('fade-out');
+    setTimeout(() => el.remove(), 350);
+}

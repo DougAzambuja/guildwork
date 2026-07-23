@@ -148,4 +148,5 @@
 
     // Boot
     await Promise.all([loadTopBar(), loadLeaderboard()]);
+    hideLoadingOverlay();
 })();

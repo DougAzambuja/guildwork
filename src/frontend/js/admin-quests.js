@@ -5,7 +5,7 @@ const token = localStorage.getItem('guild_token');
 
 const truncate = (str, max) => str && str.length > max ? str.slice(0, max) + '…' : (str || '');
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     if (!token || localStorage.getItem('guild_role') !== 'admin') {
         window.location.href = 'login.html';
         return;
@@ -17,8 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupQuestForm();
     initFilterBar();
-    loadSprintsSelect();
-    renderAdminQuests(1);
+    await Promise.all([loadSprintsSelect(), renderAdminQuests(1)]);
+    hideLoadingOverlay();
 });
 
 // ==========================================

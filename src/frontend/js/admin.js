@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function initDashboard() {
     await loadDashboard();
+    hideLoadingOverlay();
     setInterval(loadDashboard, 30000);
 }
 
