@@ -13,16 +13,30 @@
         <div class="loading-text">CARREGANDO LOJA...</div>
         <div class="loading-bar-track"><div class="loading-bar-fill"></div></div>
     </div>
-    <div class="top-bar" style="justify-content: space-between;">
-            <h1 style="margin:0; font-size:14px; color:#f39c12;">🏪 LOJA DA GUILDA</h1>
-            <div class="actions">
-                <a href="index.html" class="btn-pixel" data-cy="btn-voltar-mural">Voltar ao Mural</a>
-
-                <span class="actions-divider"></span>
-
-                <button class="btn-pixel logout-btn" data-cy="btn-logout" onclick="logout()">Sair</button>
+    <div class="top-bar">
+        <div class="player-info">
+            <img src="assets/imgs/caneca_pixel.jpg" alt="Avatar" class="avatar" id="storePlayerAvatar"
+                 style="object-fit:cover; cursor:pointer;"
+                 onclick="window.location.href='perfil.html'"
+                 title="Ver meu perfil"
+                 data-cy="store-player-avatar">
+            <div class="stats">
+                <h1 id="storePlayerName" data-cy="store-player-name">Aventureiro</h1>
+                <div id="storePlayerInfo" style="font-size: 9px; color: #7f8c8d;">Lvl: 1</div>
+                <div class="xp-container"><div class="xp-bar" id="storeXpBar"></div></div>
+                <div class="coin-display"><span class="coin-icon">💰</span> <span id="storePlayerCoins">0</span> Gold</div>
             </div>
         </div>
+        <div class="actions">
+            <a href="index.html"       class="btn-pixel" data-cy="btn-mural" style="background:#2980b9;">🗺️ Mural</a>
+            <a href="guild.html"       class="btn-pixel" data-cy="btn-guilda" style="background:#8e44ad;">🏰 Guilda</a>
+            <a href="leaderboard.html" class="btn-pixel" data-cy="btn-ranking" style="background:#c0392b;">🏆 Ranking</a>
+
+            <span class="actions-divider"></span>
+
+            <button class="btn-pixel logout-btn" data-cy="btn-logout" onclick="logout()">Sair</button>
+        </div>
+    </div>
 
     <div class="main-wrapper">
         <div class="shop-layout">
