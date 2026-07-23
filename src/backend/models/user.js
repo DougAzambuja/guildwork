@@ -57,6 +57,9 @@ const UserSchema = new mongoose.Schema({
         image:   { type: String },
     }],
 
+    // Segurança — forçar troca de senha no próximo login
+    force_password_change: { type: Boolean, default: false },
+
     // Buff temporário via streak de CSAT
     csat_streak:           { type: Number, default: 0 },
     buff_type:             { type: String, enum: ['xp_double_activity', 'xp_double_time'], default: null },

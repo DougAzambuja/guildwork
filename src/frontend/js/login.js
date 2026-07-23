@@ -30,6 +30,12 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
             localStorage.setItem('guild_active_user',            `player_${usernameInput}`);
             localStorage.setItem(`guild_user_${usernameInput}`,  data.user.nome);
 
+            if (data.requiresPasswordChange) {
+                showToast('🔑 Bem-vindo! Por segurança, defina uma nova senha antes de continuar.');
+                setTimeout(() => { window.location.href = 'change-password.html'; }, 1800);
+                return;
+            }
+
             if (data.user.role === 'admin') {
                 showToast(`⚔️ Bem-vindo, ${data.user.nome}! Abrindo os portões do castelo...`);
                 setTimeout(() => { window.location.href = 'admin.html'; }, 1500);
