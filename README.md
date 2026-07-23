@@ -20,14 +20,23 @@ GUILDWORK/
 ├── src/
 │   ├── backend/
 │   │   ├── controllers/            # Lógica de negócio (gamificação, economia, auth)
-│   │   ├── middleware/             # Proteção de rotas (JWT + Role-based access)
+│   │   ├── middleware/             # Proteção de rotas (JWT + Role-based access) + errorHandler + requestLogger
 │   │   ├── models/                 # Schemas Mongoose (User, Quest, Guild, Sprint, Notification, LootItem...)
 │   │   ├── routes/                 # Roteamento RESTful da API
 │   │   ├── services/               # notificationService (triggers + conquistas)
+│   │   ├── tests/
+│   │   │   ├── globalSetup.js      # Inicia MongoDB in-memory (MongoMemoryServer)
+│   │   │   ├── globalTeardown.js   # Para MongoDB in-memory após todos os testes
+│   │   │   ├── testSetup.js        # Connect/clean/disconnect Mongoose por arquivo de teste
+│   │   │   ├── fixtures/index.js   # Helpers: createAdmin, createPlayer, createQuest, createGuild...
+│   │   │   ├── integration/        # 9 suítes (auth, players, quests, admin, guild, loot, metrics, notifications, sprint)
+│   │   │   └── unit/               # questController (Group Quest) + notificationService
+│   │   ├── app.js                  # Express app (sem MongoDB/server.listen — importado pelo Supertest)
+│   │   ├── jest.config.js          # Configuração Jest 29 (globalSetup/Teardown, maxWorkers: 1)
 │   │   ├── seed-atlas.js           # Seed completo para o Atlas (dados realistas)
 │   │   ├── .env                    # Variáveis de ambiente (NÃO COMMITADO)
 │   │   ├── .env.example            # Template de variáveis de ambiente
-│   │   └── server.js               # Entry point
+│   │   └── server.js               # Entry point (importa app.js + inicia MongoDB + SLA job)
 │   └── frontend/
 │       ├── assets/imgs/            # Sprites e texturas pixel art
 │       ├── css/style.css           # CSS modularizado por componente
@@ -47,8 +56,11 @@ GUILDWORK/
 │       ├── admin-sprint-board.html # Board Kanban da Sprint (admin)
 │       ├── admin-profile.html      # Perfil do Admin (nome, avatar DiceBear, senha)
 │       └── change-password.html    # Troca obrigatória de senha no primeiro acesso (#115)
-├── .gitignore
-└── docker-compose.yml              # MongoDB local (opcional — profile: local-db)
+├── scripts/
+│   └── backup.sh                   # Dump automático do MongoDB com rotação de 7 backups e log JSON
+├── schema.prisma                   # Documentação arquitetural do schema (Prisma — não usado em runtime; Mongoose é o ORM)
+├── docker-compose.yml              # MongoDB local (opcional — profile: local-db)
+└── docker-compose.test.yml         # MongoDB de testes na porta 27018 + serviço de backup
 ```
 
 ## 📜 Regras de Negócio (Core Mechanics)
@@ -171,6 +183,53 @@ net stop MongoDB
 
 ---
 
+## 🧪 Testes
+
+A infraestrutura de testes usa **Jest 29 + Supertest + MongoDB Memory Server** — sem Docker, sem banco real.
+
+### Rodar os testes
+
+```bash
+cd src/backend
+
+npm test                    # Todos os testes (sequencial, maxWorkers: 1)
+npm run test:unit           # Apenas testes unitários (mocks, sem banco)
+npm run test:integration    # Apenas testes de integração (banco in-memory)
+npm run test:coverage       # Com relatório de cobertura (coverage/)
+npm run test:watch          # Modo watch para desenvolvimento
+```
+
+> **Primeira execução:** o `mongodb-memory-server` baixa automaticamente o binário do MongoDB (~70 MB). Pode demorar 1–2 minutos e parece travado — é normal. As próximas execuções são rápidas.
+
+### Arquitetura dos testes
+
+| Camada | Arquivo | O que faz |
+|---|---|---|
+| Setup global | `tests/globalSetup.js` | Sobe MongoDB in-memory, injeta `MONGODB_TEST_URI`, `JWT_SECRET` e `NODE_ENV=test` |
+| Teardown global | `tests/globalTeardown.js` | Para o MongoDB in-memory após todos os testes |
+| Setup por arquivo | `tests/testSetup.js` | `beforeAll` conecta, `afterEach` limpa coleções, `afterAll` desconecta |
+| Fixtures | `tests/fixtures/index.js` | `createAdmin`, `createPlayer`, `createQuest`, `createGuild`, `createSprint`, `createLootItem`, `createNotification` |
+| Integração (9 rotas) | `tests/integration/*.test.js` | Supertest importa `app.js` diretamente — sem porta, sem banco real |
+| Unitários | `tests/unit/*.test.js` | `questController` (Group Quest) e `notificationService` (com mocks Mongoose) |
+
+### Cobertura atual
+
+| Suite | Cenários testados |
+|---|---|
+| `auth` | Login válido, senha errada, usuário inexistente, `force_password_change`, registro admin/player, duplicata |
+| `players` | GET `/me`, troca de senha, leaderboard, perfil público |
+| `quests` | CRUD, atribuição, mover, concluir, comentários, WIP limit |
+| `admin` | Roster list, update com `force_password_change`, 403/401 |
+| `guild` | GET guilda, todas (admin), set leader, colunas |
+| `loot` | CRUD com auth |
+| `metrics` | GET métricas admin/403/401 |
+| `notifications` | List, mark-all-read, mark-one-read, 404 |
+| `sprint` | CRUD, sprint ativa, burndown |
+| `questController (unit)` | Solo share, party bonus, accepted/rejected tracking, admin crash test |
+| `notificationService (unit)` | Todos os triggers com mocks Mongoose |
+
+---
+
 ## ✨ Funcionalidades Implementadas
 
 ### 🎮 Board Kanban (Jogador)
@@ -274,6 +333,7 @@ net stop MongoDB
 | **Força Troca de Senha (#115)** | Flag `force_password_change` no modelo de usuário; admin ativa a flag no momento do recrutamento ou via edição de membro; login detecta a flag (`requiresPasswordChange: true`) e redireciona para `/change-password.html` antes de liberar o sistema; página exclusiva sem opção de cancelar — campos: senha atual, nova senha, confirmação; após salvar, flag zerada no backend e usuário redirecionado para a tela correta (admin ou board); roster redesenhado: formulário de recrutamento movido para modal "⚔️ Recrutar", cabeçalho substituído por barra de busca (por nome/@username) + filtro por guilda; tag "🔑 Troca pendente" visível na listagem para membros com flag ativa |
 | **Customização DiceBear (#116)** | Modal de personalização de avatar em ambas as telas de perfil (aventureiro e admin): 9 categorias (pele, cabelo, olhos, boca, barba, óculos, chapéu, roupa, acessórios), grid de thumbnails ao vivo por categoria, swatches de cores, preview grande em tempo real; seed extraído do avatar salvo para preservar o rosto; módulo `dicebear-customizer.js` auto-contido (IIFE) |
 | **Loading Screen / FOUC (#119)** | Overlay fullscreen `#loading-overlay` em todas as telas do funcionário (board, perfil, loja, ranking, guilda) — cobre o FOUC enquanto os fetches assíncronos completam; emoji e texto temáticos por tela; barra de progresso animada; fade-out suave (350ms) ao concluir; `hideLoadingOverlay()` adicionado a `utils.js` como utilitário compartilhado |
+| **Group Quest (#109)** | Distribuição de XP e Gold entre todos que trabalharam na quest — proporcional ao tempo de posse (`time_held_secs`); quorum mínimo de 10% do tempo total; Party Bonus de +15% no pool quando 2+ contribuidores válidos; buffs e maldições aplicados individualmente por contribuidor; novas maldições (`sla_breach`, `csat_low`) apenas para quem concluiu; admin excluído do registro de contribuidores; badge `↩ N×` no card quando a quest foi devolvida ao backlog; seção "👥 Contribuidores" no modal com avatar, nome, tempo de posse e % de contribuição; notificação individual para cada contribuidor não-completer com sua parcela de XP e Gold |
 
 > Todas as telas do painel compartilham `admin-header.js` (header + nav gerados dinamicamente, aba ativa detectada pela URL) e `notifications.js` (sino com polling de 30s).
 

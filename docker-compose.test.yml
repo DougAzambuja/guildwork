@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  mongodb-test:
+    image: mongo:7.0
+    container_name: guildwork_test_db
+    ports:
+      - '27018:27017'
+    environment:
+      MONGO_INITDB_DATABASE: guildwork_test
+    volumes:
+      - test_data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', 'db.adminCommand("ping")']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  backup:
+    image: mongo:7.0
+    container_name: guildwork_backup
+    depends_on:
+      mongodb-test:
+        condition: service_healthy
+    environment:
+      MONGO_HOST: mongodb-test
+      MONGO_PORT: '27017'
+      MONGO_DB:   guildwork_test
+      BACKUP_DIR: /backups
+    volumes:
+      - ./backups:/backups
+      - ./scripts:/scripts
+    entrypoint: ['/bin/bash', '/scripts/backup.sh']
+    restart: 'no'
+
+volumes:
+  test_data:

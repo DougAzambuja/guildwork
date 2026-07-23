@@ -1,47 +1,15 @@
-require('dotenv').config();
 // Atlas usa SRV DNS — garante resolução via Google DNS em redes com DNS corporativo restrito
 const dns = require('dns');
 dns.setServers(['8.8.8.8', '8.8.4.4']);
-const express  = require('express');
 const mongoose = require('mongoose');
-const cors     = require('cors');
+const app      = require('./app');
 
-
-const app = express();
-
-// ==========================================
-// MIDDLEWARES GLOBAIS
-// ==========================================
-// O CORS permite que o frontend (porta 5500) se comunique com o backend (porta 3001)
-app.use(cors({
-    origin: '*', 
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
-app.use(express.json());
-
-// ==========================================
-// CONEXÃO COM MONGODB
-// ==========================================
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => {
         console.log('✅ MongoDB conectado com sucesso!');
         startSlaJob();
     })
     .catch((err) => console.error('❌ Erro ao conectar MongoDB:', err));
-
-// ==========================================
-// ROTAS
-// ==========================================
-app.use('/api/auth',    require('./routes/auth'));
-app.use('/api/players', require('./routes/players'));
-app.use('/api/quests',  require('./routes/quests'));
-app.use('/api/loot',    require('./routes/loot'));
-app.use('/api/sprints', require('./routes/sprint'));
-app.use('/api/admin',         require('./routes/admin'));
-app.use('/api/metrics',       require('./routes/metrics'));
-app.use('/api/notifications', require('./routes/notifications'));
-app.use('/api/guild',         require('./routes/guild'));
 
 // ==========================================
 // JOB DE BACKGROUND — SLA e alertas admin
@@ -88,17 +56,6 @@ function startSlaJob() {
     }, 60 * 1000);
     console.log('⏰ Job de SLA agendado (a cada 2 min)');
 }
-
-// ==========================================
-// ROTA DE HEALTH CHECK
-// ==========================================
-app.get('/', (req, res) => {
-    res.json({ 
-        status: 'online',
-        message: 'GuildWork API rodando!',
-        version: '1.0.0'
-    });
-});
 
 // ==========================================
 // INICIALIZAÇÃO DO SERVIDOR
