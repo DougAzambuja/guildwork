@@ -267,6 +267,7 @@ net stop MongoDB
 | **Missões (paginação)** | Select de itens por página sempre visível (#99) — botões de navegação ocultados quando tudo cabe em uma página, mas o select permanece acessível |
 | **Perfil do Admin (#114)** | Tela `/admin-profile.html` — editar nome, avatar (DiceBear pixel art gerado pelo username ou URL personalizada) e alterar senha; header atualiza ao vivo sem reload |
 | **Customização DiceBear (#116)** | Modal de personalização de avatar em ambas as telas de perfil (aventureiro e admin): 9 categorias (pele, cabelo, olhos, boca, barba, óculos, chapéu, roupa, acessórios), grid de thumbnails ao vivo por categoria, swatches de cores, preview grande em tempo real; seed extraído do avatar salvo para preservar o rosto; módulo `dicebear-customizer.js` auto-contido (IIFE) |
+| **Loading Screen / FOUC (#119)** | Overlay fullscreen `#loading-overlay` em todas as telas do funcionário (board, perfil, loja, ranking, guilda) — cobre o FOUC enquanto os fetches assíncronos completam; emoji e texto temáticos por tela; barra de progresso animada; fade-out suave (350ms) ao concluir; `hideLoadingOverlay()` adicionado a `utils.js` como utilitário compartilhado |
 
 > Todas as telas do painel compartilham `admin-header.js` (header + nav gerados dinamicamente, aba ativa detectada pela URL) e `notifications.js` (sino com polling de 30s).
 

@@ -9,7 +9,6 @@
         { id: 'roster',    label: '🛡️ Membros',   href: 'admin-roster.html',  cy: 'tab-roster'    },
         { id: 'sprints',   label: '🏃 Sprints',    href: 'admin-sprints.html', cy: 'tab-sprints'   },
         { id: 'metrics',   label: '📊 Métricas',   href: 'admin-metrics.html', cy: 'tab-metrics'   },
-        { id: 'profile',   label: '👤 Perfil',     href: 'admin-profile.html', cy: 'tab-profile'   },
     ];
 
     function detectActiveTab() {
@@ -19,7 +18,6 @@
         if (p.includes('admin-roster'))   return 'roster';
         if (p.includes('admin-sprint'))   return 'sprints';
         if (p.includes('admin-metrics'))  return 'metrics';
-        if (p.includes('admin-profile'))  return 'profile';
         return 'dashboard';
     }
 

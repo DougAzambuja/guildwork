@@ -61,8 +61,10 @@
             // Não pré-preenche a URL se for um caminho local (mostra DiceBear gerado)
             document.getElementById('inputAvatarUrl').value = isLocalAvatar(user.avatar_url) ? '' : (user.avatar_url || '');
             document.getElementById('inputNome').value      = user.nome || '';
+            hideLoadingOverlay();
 
         } catch (e) {
+            hideLoadingOverlay();
             showToast('❌ Erro ao carregar perfil.', 'error');
         }
     }

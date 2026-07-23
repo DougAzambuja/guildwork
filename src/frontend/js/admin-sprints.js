@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadPage() {
     await loadAllSprints();
+    hideLoadingOverlay();
 }
 
 // ==========================================

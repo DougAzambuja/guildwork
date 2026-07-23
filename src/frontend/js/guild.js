@@ -46,8 +46,10 @@ async function loadGuild() {
         renderRanking();
         renderLeaderPanel();
         renderPlayerTopBar();
+        hideLoadingOverlay();
     } catch (err) {
         console.error(err);
+        hideLoadingOverlay();
         showToast('Erro de conexão.', 'error');
     }
 }

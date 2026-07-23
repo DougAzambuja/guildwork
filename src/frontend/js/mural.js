@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await fetchGuildContext();
     await fetchKanbanColumns();
     await loadBoard();
+    hideLoadingOverlay();
     startBoardAutoRefresh();
 });
 

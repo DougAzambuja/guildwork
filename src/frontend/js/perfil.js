@@ -66,9 +66,11 @@ async function initPerfil() {
 
         const isOwnProfile = me && me._id === id;
         renderPerfil(p, isOwnProfile ? me : null);
+        hideLoadingOverlay();
 
     } catch (err) {
         console.error(err);
+        hideLoadingOverlay();
         document.getElementById('perfilCard').innerHTML =
             '<div class="perfil-loading">Erro de conexão.</div>';
     }

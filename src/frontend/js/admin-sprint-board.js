@@ -30,7 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     showLoadingState();
     // Carrega em paralelo: board da sprint, lista de sprints e lista de guildas
-    Promise.all([loadSprintBoard(), loadAllSprints(), loadAllGuilds()]);
+    Promise.all([loadSprintBoard(), loadAllSprints(), loadAllGuilds()])
+        .then(() => hideLoadingOverlay());
 });
 
 function showLoadingState() {
