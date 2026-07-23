@@ -32,6 +32,7 @@ exports.login = async (req, res) => {
 
         res.json({
             token,
+            requiresPasswordChange: !!user.force_password_change,
             user: {
                 id:         user._id,
                 username:   user.username,
@@ -54,7 +55,7 @@ exports.login = async (req, res) => {
 // POST /api/auth/register (usado pelo admin para criar usuários)
 exports.register = async (req, res) => {
     try {
-        const { username, password, nome, role, faction } = req.body;
+        const { username, password, nome, role, faction, force_password_change } = req.body;
 
         // Verifica se o usuário já existe
         const existe = await User.findOne({ username });
@@ -62,7 +63,7 @@ exports.register = async (req, res) => {
             return res.status(400).json({ message: 'Usuário já existe.' });
         }
 
-        const user = new User({ username, password, nome, role, faction });
+        const user = new User({ username, password, nome, role, faction, force_password_change: !!force_password_change });
         await user.save();
 
         res.status(201).json({ 

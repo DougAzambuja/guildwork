@@ -132,6 +132,7 @@ exports.updateProfile = async (req, res) => {
             if (!valid) return res.status(400).json({ message: 'Senha atual incorreta.' });
             if (newPassword.length < 3) return res.status(400).json({ message: 'Nova senha deve ter pelo menos 3 caracteres.' });
             user.password = newPassword;
+            user.force_password_change = false;
         }
 
         await user.save();

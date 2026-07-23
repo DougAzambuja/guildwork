@@ -9,21 +9,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    const adminName = localStorage.getItem('guild_user') || 'Mestre da Guilda';
-    const nameEl    = document.getElementById('playerName');
-    if (nameEl) nameEl.innerText = adminName;
-
     setupRegisterForm();
+    setupEditForm();
     await renderUsersTable();
     hideLoadingOverlay();
 
-    document.getElementById('editUserForm').addEventListener('submit', submitEditUser);
     setInterval(refreshUsersBackground, 10000);
 });
 
 // ==========================================
-// 1. RECRUTAR AVENTUREIRO
+// 1. MODAL DE RECRUTAMENTO
 // ==========================================
+window.openRecruitModal = () => {
+    document.getElementById('registerForm').reset();
+    document.getElementById('recruitModal').style.display = 'flex';
+};
+
+window.closeRecruitModal = () => {
+    document.getElementById('recruitModal').style.display = 'none';
+};
+
 function setupRegisterForm() {
     const form = document.getElementById('registerForm');
     if (!form) return;
@@ -35,26 +40,24 @@ function setupRegisterForm() {
         const isAdmin = guilda === '__admin__';
 
         const userData = {
-            username: document.getElementById('regUsername').value.trim(),
-            nome:     document.getElementById('regNome').value.trim(),
-            password: document.getElementById('regPassword').value,
-            role:     isAdmin ? 'admin' : 'funcionario',
-            faction:  isAdmin ? 'Produto' : guilda
+            username:              document.getElementById('regUsername').value.trim(),
+            nome:                  document.getElementById('regNome').value.trim(),
+            password:              document.getElementById('regPassword').value,
+            role:                  isAdmin ? 'admin' : 'funcionario',
+            faction:               isAdmin ? 'Produto' : guilda,
+            force_password_change: document.getElementById('regForcePasswordChange').checked,
         };
 
         try {
             const res = await fetch(`${API_URL}/auth/register`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(userData)
             });
 
             if (res.ok) {
                 showToast(`Aventureiro "${userData.nome}" recrutado com sucesso!`);
-                form.reset();
+                closeRecruitModal();
                 await renderUsersTable();
             } else {
                 const err = await res.json();
@@ -68,9 +71,10 @@ function setupRegisterForm() {
 }
 
 // ==========================================
-// 2. ROSTER + PAGINAÇÃO
+// 2. ROSTER + PAGINAÇÃO + BUSCA/FILTRO
 // ==========================================
 let allUsers      = [];
+let filteredUsers = [];
 let usersPage     = 0;
 const USERS_PER_PAGE = 10;
 
@@ -83,30 +87,58 @@ async function renderUsersTable() {
         if (response.ok) {
             allUsers  = await response.json();
             usersPage = 0;
-            renderUsersPage();
+            applyFilters();
         }
     } catch (err) {
         console.error('Erro ao buscar jogadores:', err);
     }
 }
 
+window.applyFilters = () => {
+    const search = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+    const guilda = document.getElementById('filterGuilda')?.value || '';
+
+    filteredUsers = allUsers.filter(u => {
+        const matchSearch = !search ||
+            (u.nome     || '').toLowerCase().includes(search) ||
+            (u.username || '').toLowerCase().includes(search);
+
+        const matchGuilda = !guilda ||
+            (guilda === '__admin__' ? u.role === 'admin' : u.faction === guilda);
+
+        return matchSearch && matchGuilda;
+    });
+
+    usersPage = 0;
+    renderUsersPage();
+};
+
 function renderUsersPage() {
     const tbody = document.getElementById('usersTableBody');
     if (!tbody) return;
 
+    if (filteredUsers.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;font-size:8px;color:#7f8c8d;">Nenhum membro encontrado.</td></tr>`;
+        document.getElementById('usersPagination').innerHTML = '';
+        return;
+    }
+
     const start = usersPage * USERS_PER_PAGE;
-    const slice = allUsers.slice(start, start + USERS_PER_PAGE);
+    const slice = filteredUsers.slice(start, start + USERS_PER_PAGE);
 
     tbody.innerHTML = slice.map(p => {
         const crownMark   = p.is_guild_leader ? ' 👑' : '';
         const guildaLabel = p.role === 'admin'
             ? '🏰 Mestre'
             : `${GUILD_ICONS[p.faction] || '🏰'} ${p.faction || '—'}${crownMark}`;
+        const forceTag = p.force_password_change
+            ? `<span style="font-size:7px;color:#e67e22;display:block;margin-top:2px;">🔑 Troca pendente</span>`
+            : '';
 
         return `
             <tr>
-                <td><img src="${p.avatar_url || 'assets/imgs/caneca_pixel.jpg'}" style="width:32px; height:32px; border:2px solid #111; object-fit:cover;"></td>
-                <td>${p.nome || p.username}<br><span style="color:#7f8c8d; font-size:8px;">@${p.username}</span></td>
+                <td><img src="${p.avatar_url || 'assets/imgs/caneca_pixel.jpg'}" style="width:32px;height:32px;border:2px solid #111;object-fit:cover;"></td>
+                <td>${p.nome || p.username}<br><span style="color:#7f8c8d;font-size:8px;">@${p.username}</span>${forceTag}</td>
                 <td style="font-size:9px;">${guildaLabel}</td>
                 <td>Lv.${p.level || 1} &mdash; ${p.xp || 0} XP</td>
                 <td>${p.coins || 0} 💰</td>
@@ -114,7 +146,7 @@ function renderUsersPage() {
                 <td><span class="status-badge ${p.is_cursed ? 'cursed' : 'online'}">
                     ${p.is_cursed ? '🚨 Maldição' : '✅ OK'}
                 </span></td>
-                <td><button class="btn-pixel" style="font-size:8px;padding:4px 8px;" onclick="openEditUserModal('${p._id}')">Editar</button></td>
+                <td><button class="btn-pixel" style="font-size:8px;padding:4px 8px;" data-cy="btn-edit-${p._id}" onclick="openEditUserModal('${p._id}')">Editar</button></td>
             </tr>
         `;
     }).join('');
@@ -126,23 +158,23 @@ function renderUsersPaginationControls() {
     const container  = document.getElementById('usersPagination');
     if (!container) return;
 
-    const totalPages = Math.ceil(allUsers.length / USERS_PER_PAGE);
+    const totalPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
     if (totalPages <= 1) { container.innerHTML = ''; return; }
 
     const start = usersPage * USERS_PER_PAGE + 1;
-    const end   = Math.min(start + USERS_PER_PAGE - 1, allUsers.length);
+    const end   = Math.min(start + USERS_PER_PAGE - 1, filteredUsers.length);
 
     container.innerHTML = `
         <div class="pagination-row">
             <button class="btn-pixel" style="font-size:8px;padding:8px 12px;" onclick="goUsersPage(${usersPage - 1})" ${usersPage === 0 ? 'disabled' : ''}>← Anterior</button>
-            <span class="pagination-info">Página ${usersPage + 1} de ${totalPages} &nbsp;|&nbsp; ${start}–${end} de ${allUsers.length}</span>
+            <span class="pagination-info">Página ${usersPage + 1} de ${totalPages} &nbsp;|&nbsp; ${start}–${end} de ${filteredUsers.length}</span>
             <button class="btn-pixel" style="font-size:8px;padding:8px 12px;" onclick="goUsersPage(${usersPage + 1})" ${usersPage >= totalPages - 1 ? 'disabled' : ''}>Próxima →</button>
         </div>
     `;
 }
 
 window.goUsersPage = (page) => {
-    const totalPages = Math.ceil(allUsers.length / USERS_PER_PAGE);
+    const totalPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
     if (page < 0 || page >= totalPages) return;
     usersPage = page;
     renderUsersPage();
@@ -155,9 +187,9 @@ async function refreshUsersBackground() {
         });
         if (response.ok) {
             allUsers = await response.json();
-            renderUsersPage();
+            applyFilters();
         }
-    } catch (err) { /* silencioso no background */ }
+    } catch { /* silencioso */ }
 }
 
 // ==========================================
@@ -170,6 +202,7 @@ window.openEditUserModal = (userId) => {
     document.getElementById('editUserId').value       = userId;
     document.getElementById('editUserNome').value     = user.nome || '';
     document.getElementById('editUserPassword').value = '';
+    document.getElementById('editForcePasswordChange').checked = !!user.force_password_change;
 
     const guildaSelect = document.getElementById('editUserGuilda');
     guildaSelect.value = user.role === 'admin' ? '__admin__' : (user.faction || 'Produto');
@@ -181,28 +214,30 @@ window.closeEditUserModal = () => {
     document.getElementById('editUserModal').style.display = 'none';
 };
 
+function setupEditForm() {
+    document.getElementById('editUserForm').addEventListener('submit', submitEditUser);
+}
+
 async function submitEditUser(e) {
     e.preventDefault();
 
-    const userId  = document.getElementById('editUserId').value;
-    const guilda  = document.getElementById('editUserGuilda').value;
-    const isAdmin = guilda === '__admin__';
+    const userId   = document.getElementById('editUserId').value;
+    const guilda   = document.getElementById('editUserGuilda').value;
+    const isAdmin  = guilda === '__admin__';
     const password = document.getElementById('editUserPassword').value;
 
     const payload = {
-        nome:    document.getElementById('editUserNome').value.trim(),
-        role:    isAdmin ? 'admin' : 'funcionario',
-        faction: isAdmin ? 'Produto' : guilda,
+        nome:                  document.getElementById('editUserNome').value.trim(),
+        role:                  isAdmin ? 'admin' : 'funcionario',
+        faction:               isAdmin ? 'Produto' : guilda,
+        force_password_change: document.getElementById('editForcePasswordChange').checked,
     };
     if (password && password.trim().length >= 6) payload.password = password;
 
     try {
         const res = await fetch(`${API_URL}/admin/roster/${userId}`, {
             method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(payload)
         });
 

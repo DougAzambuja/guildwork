@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -16,74 +16,110 @@
     <div id="admin-header"></div>
 
     <div class="main-wrapper">
-        <div style="display:flex; flex-direction:column; gap:24px;">
+        <div class="dashboard-section" data-cy="dashboard-users">
 
-            <div class="dashboard-section">
-                <h2 class="section-title">⚔️ RECRUTAR AVENTUREIRO</h2>
-                <form id="registerForm" class="forge-form" data-cy="form-register">
-                    <div class="forge-group">
-                        <label for="regUsername">Username (login)</label>
-                        <input type="text" id="regUsername" class="pixel-input" placeholder="Ex: joao.silva" required autocomplete="off">
-                    </div>
-                    <div class="forge-group">
-                        <label for="regNome">Nome do Herói</label>
-                        <input type="text" id="regNome" class="pixel-input" placeholder="Ex: João Silva" required autocomplete="off">
-                    </div>
-                    <div class="forge-group">
-                        <label for="regPassword">Senha Inicial</label>
-                        <input type="password" id="regPassword" class="pixel-input" placeholder="Mínimo 6 caracteres" required minlength="6">
-                    </div>
-                    <div class="forge-group">
-                        <label for="regGuilda">Guilda</label>
-                        <select id="regGuilda" class="pixel-input">
-                            <option value="Produto">📦 Produto</option>
-                            <option value="Suporte">🎧 Suporte</option>
-                            <option value="Customer Service">📣 Customer Service</option>
-                            <option value="__admin__">🏰 Admin (Mestre da Guilda)</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn-pixel" style="background-color: #27ae60; padding: 15px;">⚔️ RECRUTAR</button>
-                </form>
-            </div>
+            <!-- Cabeçalho com busca, filtro e botão recrutar -->
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+                <h2 class="section-title" style="margin:0; border:none; flex-shrink:0;">🛡️ ROSTER DA GUILDA</h2>
 
-            <div class="dashboard-section" data-cy="dashboard-users">
-                <h2 class="section-title">🛡️ ROSTER DA GUILDA</h2>
-                <div class="users-table-wrapper">
-                    <table class="users-table" data-cy="users-table">
-                        <thead>
-                            <tr>
-                                <th>Avatar</th>
-                                <th>Aventureiro</th>
-                                <th>Guilda</th>
-                                <th>Nível (XP)</th>
-                                <th>Gold</th>
-                                <th>Missões</th>
-                                <th>Status</th>
-                                <th>Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody id="usersTableBody"></tbody>
-                    </table>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <input type="text" id="searchInput" class="pixel-input" placeholder="Buscar nome ou @username..."
+                           data-cy="input-search-roster"
+                           style="width:440px; font-size:8px; padding:8px 10px;"
+                           oninput="applyFilters()">
+
+                    <select id="filterGuilda" class="pixel-input" data-cy="select-filter-guilda"
+                            style="width:240px; font-size:8px; padding:8px 10px;" onchange="applyFilters()">
+                        <option value="">Todas as Guildas</option>
+                        <option value="Produto">📦 Produto</option>
+                        <option value="Suporte">🎧 Suporte</option>
+                        <option value="Customer Service">📣 Customer Service</option>
+                        <option value="__admin__">🏰 Admin</option>
+                    </select>
+
+                    <button class="btn-pixel" data-cy="btn-open-recruit-modal"
+                            onclick="openRecruitModal()"
+                            style="background:#27ae60; white-space:nowrap; padding:8px 16px;">
+                        ⚔️ Recrutar
+                    </button>
                 </div>
-                <div id="usersPagination" class="pagination-controls"></div>
             </div>
 
+            <div class="users-table-wrapper">
+                <table class="users-table" data-cy="users-table">
+                    <thead>
+                        <tr>
+                            <th>Avatar</th>
+                            <th>Aventureiro</th>
+                            <th>Guilda</th>
+                            <th>Nível (XP)</th>
+                            <th>Gold</th>
+                            <th>Missões</th>
+                            <th>Status</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody"></tbody>
+                </table>
+            </div>
+            <div id="usersPagination" class="pagination-controls"></div>
         </div>
     </div>
 
-    <!-- Modal de Edição de Usuário -->
-    <div id="editUserModal" class="modal-overlay" style="display: none;" onclick="if(event.target===this)closeEditUserModal()">
+    <!-- Modal: Recrutar Aventureiro -->
+    <div id="recruitModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeRecruitModal()" data-cy="modal-recruit">
+        <div class="modal-content">
+            <h2 class="section-title">⚔️ RECRUTAR AVENTUREIRO</h2>
+            <form id="registerForm" class="forge-form" data-cy="form-register">
+                <div class="forge-group">
+                    <label for="regUsername">Username (login)</label>
+                    <input type="text" id="regUsername" class="pixel-input" placeholder="Ex: joao.silva" required autocomplete="off" data-cy="input-reg-username">
+                </div>
+                <div class="forge-group">
+                    <label for="regNome">Nome do Herói</label>
+                    <input type="text" id="regNome" class="pixel-input" placeholder="Ex: João Silva" required autocomplete="off" data-cy="input-reg-nome">
+                </div>
+                <div class="forge-group">
+                    <label for="regPassword">Senha Inicial</label>
+                    <input type="password" id="regPassword" class="pixel-input" placeholder="Mínimo 6 caracteres" required minlength="6" data-cy="input-reg-password">
+                </div>
+                <div class="forge-group">
+                    <label for="regGuilda">Guilda</label>
+                    <select id="regGuilda" class="pixel-input" data-cy="select-reg-guilda">
+                        <option value="Produto">📦 Produto</option>
+                        <option value="Suporte">🎧 Suporte</option>
+                        <option value="Customer Service">📣 Customer Service</option>
+                        <option value="__admin__">🏰 Admin (Mestre da Guilda)</option>
+                    </select>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; margin-top:4px;">
+                    <input type="checkbox" id="regForcePasswordChange" data-cy="check-force-password-change"
+                           style="width:14px; height:14px; cursor:pointer; accent-color:#e67e22;">
+                    <label for="regForcePasswordChange" style="font-size:8px; color:#bdc3c7; cursor:pointer; margin:0;">
+                        Forçar troca de senha no primeiro acesso
+                    </label>
+                </div>
+                <div class="actions" style="display:flex; gap:10px; margin-top:16px;">
+                    <button type="submit" class="btn-pixel" style="flex:1; background:#27ae60; padding:12px; font-size:8px; white-space:nowrap;" data-cy="btn-submit-recruit">RECRUTAR</button>
+                    <button type="button" class="btn-pixel" style="flex:1; background:#c0392b; padding:12px; font-size:8px; white-space:nowrap;" onclick="closeRecruitModal()">CANCELAR</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Editar Aventureiro -->
+    <div id="editUserModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeEditUserModal()" data-cy="modal-edit-user">
         <div class="modal-content">
             <h2 class="section-title">🛡️ EDITAR AVENTUREIRO</h2>
             <form id="editUserForm" class="forge-form">
                 <input type="hidden" id="editUserId">
                 <div class="forge-group">
                     <label>Nome do Herói</label>
-                    <input type="text" id="editUserNome" class="pixel-input" required>
+                    <input type="text" id="editUserNome" class="pixel-input" required data-cy="input-edit-nome">
                 </div>
                 <div class="forge-group">
                     <label>Guilda</label>
-                    <select id="editUserGuilda" class="pixel-input">
+                    <select id="editUserGuilda" class="pixel-input" data-cy="select-edit-guilda">
                         <option value="Produto">📦 Produto</option>
                         <option value="Suporte">🎧 Suporte</option>
                         <option value="Customer Service">📣 Customer Service</option>
@@ -92,11 +128,18 @@
                 </div>
                 <div class="forge-group">
                     <label>Nova Senha (deixe vazio para não alterar)</label>
-                    <input type="password" id="editUserPassword" class="pixel-input" placeholder="Mínimo 6 caracteres" minlength="6">
+                    <input type="password" id="editUserPassword" class="pixel-input" placeholder="Mínimo 6 caracteres" minlength="6" data-cy="input-edit-password">
                 </div>
-                <div class="actions" style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button type="submit" class="btn-pixel" style="background-color: #27ae60;">SALVAR</button>
-                    <button type="button" class="btn-pixel" style="background-color: #7f8c8d;" onclick="closeEditUserModal()">CANCELAR</button>
+                <div style="display:flex; align-items:center; gap:10px; margin-top:4px;">
+                    <input type="checkbox" id="editForcePasswordChange" data-cy="check-edit-force-password"
+                           style="width:14px; height:14px; cursor:pointer; accent-color:#e67e22;">
+                    <label for="editForcePasswordChange" style="font-size:8px; color:#bdc3c7; cursor:pointer; margin:0;">
+                        Forçar troca de senha no próximo acesso
+                    </label>
+                </div>
+                <div class="actions" style="display:flex; gap:10px; margin-top:16px;">
+                    <button type="submit" class="btn-pixel" style="flex:1; background:#27ae60; padding:12px; font-size:8px; white-space:nowrap;" data-cy="btn-submit-edit-user">SALVAR</button>
+                    <button type="button" class="btn-pixel" style="flex:1; background:#c0392b; padding:12px; font-size:8px; white-space:nowrap;" onclick="closeEditUserModal()">CANCELAR</button>
                 </div>
             </form>
         </div>
