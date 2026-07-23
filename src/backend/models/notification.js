@@ -9,7 +9,7 @@ const NotificationSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['quest_assigned', 'level_up', 'sla_warning', 'achievement', 'admin_alert'],
+        enum: ['quest_assigned', 'level_up', 'sla_warning', 'achievement', 'admin_alert', 'contributor_reward'],
         required: true
     },
     title:   { type: String, required: true },

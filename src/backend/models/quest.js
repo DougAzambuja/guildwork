@@ -95,7 +95,18 @@ const QuestSchema = new mongoose.Schema({
         ref:     'Quest',
         default: null
     },
-    subtasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Quest' }]
+    subtasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Quest' }],
+
+    // Rastreamento de contribuidores — Group Quest (#109)
+    contributors: [{
+        user_id:        { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        action:         { type: String, enum: ['accepted', 'moved', 'rejected', 'completed'] },
+        time_held_secs: { type: Number, default: 0 },
+        timestamp:      { type: Date,   default: Date.now }
+    }],
+
+    // Timestamp da última atribuição — usado para calcular time_held_secs no próximo handoff
+    last_assigned_at: { type: Date, default: null }
 
 }, { timestamps: true });
 

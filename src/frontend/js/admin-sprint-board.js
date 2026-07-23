@@ -564,6 +564,7 @@ function renderQuestCard(q) {
                 <span class="quest-tag gold">💰 ${q.coin_reward || 0}</span>
                 ${assigneeName ? `<span class="quest-tag assignee">👤 ${assigneeName}</span>` : ''}
                 ${(q.subtasks_total > 0) ? `<span class="quest-tag" style="background:#8e44ad;color:#fff;" data-cy="subtask-badge">[${q.subtasks_done || 0}/${q.subtasks_total}]</span>` : ''}
+                ${(() => { const r = (q.contributors || []).filter(c => c.action === 'rejected').length; return r > 0 ? `<span class="quest-tag" style="background:#c0392b;color:#fff;" title="Devolvido ${r}× para o backlog">↩ ${r}×</span>` : ''; })()}
             </div>
             <div class="quest-card-actions">
                 <button class="quest-action-btn detail" data-cy="btn-card-details"
@@ -1215,6 +1216,52 @@ function renderBoardQuestDetail(quest) {
 
     renderBoardSubtasks(quest);
     renderBoardQuestComments(quest.comments || []);
+    renderBoardContributors(quest);
+}
+
+function renderBoardContributors(quest) {
+    const section = document.getElementById('bqd-contributors-section');
+    const list    = document.getElementById('bqd-contributors-list');
+    if (!section || !list) return;
+
+    const contributors = quest.contributors || [];
+    if (contributors.length === 0) { section.style.display = 'none'; return; }
+
+    const map = {};
+    for (const c of contributors) {
+        const id = String(c.user_id?._id || c.user_id);
+        if (!map[id]) map[id] = { user: c.user_id, totalSecs: 0, rejections: 0, actions: [] };
+        map[id].totalSecs  += c.time_held_secs || 0;
+        map[id].actions.push(c.action);
+        if (c.action === 'rejected') map[id].rejections++;
+    }
+
+    const totalSecs = Object.values(map).reduce((s, e) => s + e.totalSecs, 0);
+
+    list.innerHTML = Object.values(map).map(entry => {
+        const u       = entry.user;
+        const name    = u?.nome || u?.username || 'Aventureiro';
+        const avatar  = u?.avatar_url || (u?.username ? dicebearUrl(u.username) : 'assets/imgs/caneca_pixel.jpg');
+        const pct     = totalSecs > 0 ? Math.round((entry.totalSecs / totalSecs) * 100) : 0;
+        const timeStr = entry.totalSecs >= 3600
+            ? `${Math.round(entry.totalSecs / 3600)}h`
+            : entry.totalSecs >= 60
+                ? `${Math.round(entry.totalSecs / 60)}min`
+                : `${entry.totalSecs}s`;
+        const rejectBadge   = entry.rejections > 0
+            ? `<span style="color:#e74c3c;font-size:7px;margin-left:6px;">↩ ${entry.rejections}×</span>` : '';
+        const completedMark = entry.actions.includes('completed')
+            ? `<span style="color:#2ecc71;font-size:7px;margin-left:4px;">✔ concluiu</span>` : '';
+
+        return `
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #2c3e50;">
+                <img src="${avatar}" style="width:24px;height:24px;border:1px solid #555;object-fit:cover;">
+                <span style="font-size:8px;color:#ecf0f1;flex:1;">${escHtml(name)}${completedMark}${rejectBadge}</span>
+                <span style="font-size:7px;color:#7f8c8d;">${timeStr} · ${pct}%</span>
+            </div>`;
+    }).join('');
+
+    section.style.display = '';
 }
 
 // ==========================================

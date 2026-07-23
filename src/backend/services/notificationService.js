@@ -114,6 +114,19 @@ async function notifyAdminAlert(adminId, quest) {
     return true;
 }
 
+// ==========================================
+// TRIGGER: Recompensa de contribuidor (Group Quest #109)
+// ==========================================
+async function notifyContributorReward(userId, questTitle, xpGained, coinsGained) {
+    await create(
+        userId,
+        'contributor_reward',
+        '👥 Recompensa de Contribuição',
+        `Sua participação na missão "${questTitle}" rendeu +${xpGained} XP e +${coinsGained} Gold!`,
+        { xp: xpGained, coins: coinsGained }
+    );
+}
+
 module.exports = {
     create,
     notifyQuestAssigned,
@@ -121,5 +134,6 @@ module.exports = {
     checkAndNotifyAchievement,
     notifySlaWarning,
     notifyAdminAlert,
+    notifyContributorReward,
     ALL_ACHIEVEMENTS
 };

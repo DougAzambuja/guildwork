@@ -501,10 +501,14 @@ function renderTodoCard(quest, myWipCount) {
     const subtaskBadge = quest.subtasks_total > 0
         ? `<span style="background:#8e44ad;color:#fff;font-size:8px;padding:2px 6px;display:inline-block;margin-bottom:4px;" data-cy="subtask-badge">[${quest.subtasks_done || 0}/${quest.subtasks_total}]</span>`
         : '';
+    const rejectCount  = (quest.contributors || []).filter(c => c.action === 'rejected').length;
+    const rejectBadge  = rejectCount > 0
+        ? `<span style="background:#c0392b;color:#fff;font-size:7px;padding:1px 5px;display:inline-block;margin-bottom:4px;" title="Devolvida ${rejectCount}× para o backlog">↩ ${rejectCount}×</span>`
+        : '';
 
     el.innerHTML = `
         <span class="kanban-type-badge badge-${quest.type || 'normal'}">${(quest.type || 'NORMAL').toUpperCase()}</span>
-        ${subtaskBadge}
+        ${rejectBadge}${subtaskBadge}
         <div class="kanban-card-title">${quest.title}</div>
         <div class="kanban-card-meta">
             <span class="xp-reward">+${quest.xp_reward} XP</span>
@@ -671,9 +675,60 @@ async function openQuestModal(questId) {
         _renderModalChecklist(full);
         _renderPlayerSubtasks(full);
         _renderModalComments(full.comments || []);
+        _renderModalContributors(full);
     } catch (err) {
         console.error('Erro ao carregar detalhe da quest:', err);
     }
+}
+
+function _renderModalContributors(quest) {
+    const section = document.getElementById('qdm-contributors-section');
+    const list    = document.getElementById('qdm-contributors-list');
+    if (!section || !list) return;
+
+    const contributors = quest.contributors || [];
+    if (contributors.length === 0) { section.style.display = 'none'; return; }
+
+    // Agregar por user_id: soma tempo e conta rejeições
+    const map = {};
+    for (const c of contributors) {
+        const id = String(c.user_id?._id || c.user_id);
+        if (!map[id]) map[id] = { user: c.user_id, totalSecs: 0, rejections: 0, actions: [] };
+        map[id].totalSecs  += c.time_held_secs || 0;
+        map[id].actions.push(c.action);
+        if (c.action === 'rejected') map[id].rejections++;
+    }
+
+    const totalSecs = Object.values(map).reduce((s, e) => s + e.totalSecs, 0);
+
+    const rows = Object.values(map).map(entry => {
+        const u       = entry.user;
+        const name    = u?.nome || u?.username || 'Aventureiro';
+        const avatar  = u?.avatar_url || (u?.username ? dicebearUrl(u.username) : 'assets/imgs/caneca_pixel.jpg');
+        const pct     = totalSecs > 0 ? Math.round((entry.totalSecs / totalSecs) * 100) : 0;
+        const timeStr = entry.totalSecs >= 3600
+            ? `${Math.round(entry.totalSecs / 3600)}h`
+            : entry.totalSecs >= 60
+                ? `${Math.round(entry.totalSecs / 60)}min`
+                : `${entry.totalSecs}s`;
+        const rejectBadge = entry.rejections > 0
+            ? `<span style="color:#e74c3c;font-size:7px;margin-left:6px;">↩ ${entry.rejections}×</span>`
+            : '';
+        const isCompleter = entry.actions.includes('completed');
+        const completedMark = isCompleter
+            ? `<span style="color:#2ecc71;font-size:7px;margin-left:4px;">✔ concluiu</span>`
+            : '';
+
+        return `
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #2c3e50;">
+                <img src="${avatar}" style="width:24px;height:24px;border:1px solid #555;object-fit:cover;">
+                <span style="font-size:8px;color:#ecf0f1;flex:1;">${_esc(name)}${completedMark}${rejectBadge}</span>
+                <span style="font-size:7px;color:#7f8c8d;">${timeStr} · ${pct}%</span>
+            </div>`;
+    });
+
+    list.innerHTML = rows.join('');
+    section.style.display = 'block';
 }
 
 function _renderModalInfo(quest) {

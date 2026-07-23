@@ -1,0 +1,192 @@
+// schema.prisma — Referência de schema para o GuildWork
+// ⚠ ATENÇÃO: Este arquivo é documentação arquitetural.
+// O projeto usa Mongoose como ORM principal.
+// Prisma MongoDB requer replica set ou Atlas — não use em MongoDB standalone local.
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                   String    @id @default(auto()) @map("_id") @db.ObjectId
+  username             String    @unique
+  password             String
+  role                 Role      @default(funcionario)
+  nome                 String
+  avatar_url           String    @default("assets/imgs/caneca_pixel.jpg")
+  faction              Faction   @default(Produto)
+  xp                   Int       @default(0)
+  coins                Int       @default(100)
+  level                Int       @default(1)
+  is_cursed            Boolean   @default(false)
+  curse_type           String?
+  quests_completed     Int       @default(0)
+  delivery_streak      Int       @default(0)
+  last_delivery_at     DateTime?
+  force_password_change Boolean  @default(false)
+  csat_streak          Int       @default(0)
+  buff_type            String?
+  buff_expires_at      DateTime?
+  buff_quests_remaining Int?
+  achievements         Achievement[]
+  owned_cosmetics      OwnedCosmetic[]
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+model Quest {
+  id               String        @id @default(auto()) @map("_id") @db.ObjectId
+  title            String
+  description      String        @default("")
+  type             QuestType     @default(normal)
+  xp_reward        Int
+  coin_reward      Int
+  sla_seconds      Int?
+  status           QuestStatus   @default(todo)
+  assigned_to      String?       @db.ObjectId
+  started_at       DateTime?
+  faction          Faction       @default(Produto)
+  is_active        Boolean       @default(true)
+  sprint_id        String?       @db.ObjectId
+  labels           String[]
+  column_id        String?       @db.ObjectId
+  card_order       Int?
+  parent_id        String?       @db.ObjectId
+  subtasks         String[]      @db.ObjectId
+  last_assigned_at DateTime?
+  contributors     Contributor[]
+  comments         Comment[]
+  checklist        ChecklistItem[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+model Guild {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  name             String   @unique
+  faction_key      Faction  @unique
+  icon             String   @default("⚔️")
+  treasury_balance Float    @default(0)
+  tax_rate         Float    @default(0.10)
+  leader_id        String?  @db.ObjectId
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Sprint {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  goal          String?
+  status        SprintStatus  @default(planning)
+  factions      Faction[]
+  start_date    DateTime
+  end_date      DateTime
+  duration_days Int
+  created_by    String?       @db.ObjectId
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model LootItem {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  price        Int
+  image        String   @default("assets/imgs/caneca_pixel.jpg")
+  is_cosmetic  Boolean  @default(false)
+  created_by   String?  @db.ObjectId
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Notification {
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  user_id   String           @db.ObjectId
+  type      NotificationType
+  title     String
+  message   String
+  read      Boolean          @default(false)
+  meta      Json             @default("{}")
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+// ——— Tipos embutidos (embedded documents) ———
+
+type Contributor {
+  user_id        String   @db.ObjectId
+  action         String
+  time_held_secs Int      @default(0)
+  timestamp      DateTime @default(now())
+}
+
+type Comment {
+  user_id    String?  @db.ObjectId
+  text       String
+  type       String   @default("user")
+  created_at DateTime @default(now())
+}
+
+type ChecklistItem {
+  text       String
+  done       Boolean  @default(false)
+  created_at DateTime @default(now())
+}
+
+type Achievement {
+  key         String
+  title       String
+  unlocked_at DateTime @default(now())
+}
+
+type OwnedCosmetic {
+  item_id String @db.ObjectId
+  name    String
+  image   String
+}
+
+// ——— Enums ———
+
+enum Role {
+  admin
+  funcionario
+}
+
+enum Faction {
+  Produto
+  Suporte
+  Customer_Service @map("Customer Service")
+}
+
+enum QuestType {
+  normal
+  urgent
+  support
+  jira
+}
+
+enum QuestStatus {
+  todo
+  in_progress
+  done
+}
+
+enum SprintStatus {
+  planning
+  active
+  completed
+  cancelled
+}
+
+enum NotificationType {
+  quest_assigned
+  level_up
+  sla_warning
+  achievement
+  admin_alert
+  contributor_reward
+}

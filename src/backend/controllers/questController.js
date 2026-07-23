@@ -113,9 +113,11 @@ exports.moveQuest = async (req, res) => {
                 });
             }
 
-            quest.status      = 'in_progress';
-            quest.assigned_to = req.user.id;
-            quest.started_at  = new Date();
+            quest.status           = 'in_progress';
+            quest.assigned_to      = req.user.id;
+            quest.started_at       = new Date();
+            quest.last_assigned_at = new Date();
+            quest.contributors.push({ user_id: req.user.id, action: 'accepted', time_held_secs: 0, timestamp: new Date() });
 
             const KanbanColumn = require('../models/kanbanColumn');
             const guild = await Guild.findOne({ faction_key: quest.faction }).lean();
@@ -145,15 +147,59 @@ exports.moveQuest = async (req, res) => {
 // Helper interno: executa toda a lógica de conclusão de uma quest já validada.
 // Grava QuestCompletion, atualiza User, atualiza quest.status e quest.column_id.
 // Retorna um objeto com os valores calculados para o caller montar a resposta HTTP.
-async function _executeQuestCompletion(quest, user, csatScore, columnId = null) {
-    let xpGained    = quest.xp_reward;
-    let coinsGained = quest.coin_reward;
+// ==========================================
+// GROUP QUEST (#109) — HELPERS
+// ==========================================
 
-    if (quest.type === 'support' && csatScore) {
-        xpGained = Math.round(quest.xp_reward * (csatScore / 5));
+const PARTY_BONUS   = 1.15; // +15% no pool total quando 2+ contribuidores
+const QUORUM_RATIO  = 0.10; // contribuidor precisa de >= 10% do tempo total
+
+// Registra o holder atual como contribuidor e atualiza last_assigned_at
+function _recordCurrentHolder(quest, userId, isAdmin, action) {
+    if (isAdmin || !userId) return;
+    const now      = new Date();
+    const timeHeld = quest.last_assigned_at
+        ? Math.round((now.getTime() - new Date(quest.last_assigned_at).getTime()) / 1000)
+        : 0;
+    quest.contributors.push({ user_id: userId, action, time_held_secs: timeHeld, timestamp: now });
+    quest.last_assigned_at = now;
+}
+
+// Agrega contribuidores por user_id, aplica quorum e retorna shares
+function _buildContributorShares(contributors) {
+    if (!contributors || contributors.length === 0) return [];
+
+    const timeMap = {};
+    for (const c of contributors) {
+        const id = String(c.user_id);
+        timeMap[id] = (timeMap[id] || 0) + (c.time_held_secs || 0);
     }
 
+    const totalTime = Object.values(timeMap).reduce((s, t) => s + t, 0);
+    const entries   = Object.entries(timeMap);
+
+    if (totalTime === 0) {
+        return entries.map(([userId]) => ({ userId, ratio: 1 / entries.length }));
+    }
+
+    const qualified    = entries.filter(([, t]) => t / totalTime >= QUORUM_RATIO);
+    const effective    = qualified.length > 0 ? qualified : entries;
+    const effectiveSum = effective.reduce((s, [, t]) => s + t, 0);
+
+    return effective.map(([userId, time]) => ({ userId, ratio: time / effectiveSum }));
+}
+
+// Aplica buffs e maldições da quest para um usuário sobre sua parcela de XP/Gold
+// isCompleter: apenas o completer recebe CSAT scaling, curses, delivery streak e CSAT streak
+function _applyRewardsForUser(user, xpShare, coinsShare, quest, csatScore, isCompleter) {
     const now = new Date();
+    let xpGained    = xpShare;
+    let coinsGained = coinsShare;
+
+    if (isCompleter && quest.type === 'support' && csatScore) {
+        xpGained = Math.round(xpShare * (csatScore / 5));
+    }
+
     let newBuffType            = user.buff_type             || null;
     let newBuffExpiresAt       = user.buff_expires_at       || null;
     let newBuffQuestsRemaining = user.buff_quests_remaining || null;
@@ -174,7 +220,6 @@ async function _executeQuestCompletion(quest, user, csatScore, columnId = null) 
     }
 
     const wasCursed = user.is_cursed;
-
     if (user.curse_type) {
         if      (user.curse_type === 'sla_breach') xpGained    = Math.floor(xpGained    / 2);
         else if (user.curse_type === 'abandoned')  coinsGained = Math.floor(coinsGained / 2);
@@ -182,7 +227,6 @@ async function _executeQuestCompletion(quest, user, csatScore, columnId = null) 
             xpGained    = Math.floor(xpGained    / 2);
             coinsGained = Math.floor(coinsGained / 2);
         }
-
         const cured = user.curse_type === 'csat_low'
             ? (quest.type === 'support' && csatScore >= 4)
             : true;
@@ -190,26 +234,22 @@ async function _executeQuestCompletion(quest, user, csatScore, columnId = null) 
     }
 
     let newCurseApplied = null;
-    if (!user.is_cursed) {
+    // Novas maldições só se aplicam ao completer (quem empurrou para done)
+    if (isCompleter && !user.is_cursed) {
         if (quest.sla_seconds && quest.started_at) {
             const elapsed = (Date.now() - new Date(quest.started_at).getTime()) / 1000;
             if (elapsed > quest.sla_seconds) {
-                newCurseApplied = 'sla_breach';
-                user.curse_type = 'sla_breach';
-                user.is_cursed  = true;
+                newCurseApplied = 'sla_breach'; user.curse_type = 'sla_breach'; user.is_cursed = true;
             }
         }
         if (quest.type === 'support' && csatScore && csatScore <= 2) {
-            newCurseApplied = 'csat_low';
-            user.curse_type = 'csat_low';
-            user.is_cursed  = true;
+            newCurseApplied = 'csat_low'; user.curse_type = 'csat_low'; user.is_cursed = true;
         }
     }
 
     let newCsatStreak = user.csat_streak || 0;
     let buffGranted   = null;
-
-    if (quest.type === 'support' && csatScore) {
+    if (isCompleter && quest.type === 'support' && csatScore) {
         if (csatScore === 5) {
             newCsatStreak++;
             if (newCsatStreak === 5) {
@@ -219,83 +259,167 @@ async function _executeQuestCompletion(quest, user, csatScore, columnId = null) 
                 newBuffType = 'xp_double_activity'; newBuffExpiresAt = null;
                 newBuffQuestsRemaining = 2; buffGranted = 'xp_double_activity';
             }
-        } else {
-            newCsatStreak = 0;
-        }
+        } else { newCsatStreak = 0; }
     }
-
-    const todayStr     = new Date().toISOString().slice(0, 10);
-    const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-    const lastDelivery = user.last_delivery_at
-        ? new Date(user.last_delivery_at).toISOString().slice(0, 10)
-        : null;
 
     let newDeliveryStreak = user.delivery_streak || 0;
     let streakBonusXP     = 0;
+    let newLastDeliveryAt = user.last_delivery_at;
+    if (isCompleter) {
+        const todayStr     = new Date().toISOString().slice(0, 10);
+        const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+        const lastDelivery = user.last_delivery_at
+            ? new Date(user.last_delivery_at).toISOString().slice(0, 10)
+            : null;
 
-    if (!lastDelivery || lastDelivery < yesterdayStr) newDeliveryStreak = 1;
-    else if (lastDelivery === yesterdayStr)            newDeliveryStreak++;
+        if (!lastDelivery || lastDelivery < yesterdayStr) newDeliveryStreak = 1;
+        else if (lastDelivery === yesterdayStr)            newDeliveryStreak++;
 
-    const STREAK_MILESTONES = [
-        { at: 3, bonus: 50 }, { at: 7, bonus: 150 }, { at: 14, bonus: 300 }, { at: 30, bonus: 500 },
-    ];
-    const streakMilestone = STREAK_MILESTONES.find(m => m.at === newDeliveryStreak);
-    if (streakMilestone) streakBonusXP = streakMilestone.bonus;
-
-    const newLastDeliveryAt = (lastDelivery === todayStr) ? user.last_delivery_at : new Date();
-    xpGained += streakBonusXP;
-
-    const newQuestsCompleted = (user.quests_completed || 0) + 1;
-
-    await QuestCompletion.create({
-        user_id: user._id, quest_id: quest._id, xp_gained: xpGained,
-        coins_gained: coinsGained, csat_score: csatScore || null, was_cursed: wasCursed
-    });
-
-    let newXp    = (user.xp    || 0) + xpGained;
-    let newCoins = (user.coins || 0) + coinsGained;
-    let newLevel = user.level  || 1;
-    let leveledUp = false;
-
-    while (newXp >= xpParaProximoNivel(newLevel)) {
-        newXp -= xpParaProximoNivel(newLevel);
-        newLevel++;
-        leveledUp = true;
+        const milestone = [
+            { at: 3, bonus: 50 }, { at: 7, bonus: 150 }, { at: 14, bonus: 300 }, { at: 30, bonus: 500 },
+        ].find(m => m.at === newDeliveryStreak);
+        if (milestone) streakBonusXP = milestone.bonus;
+        newLastDeliveryAt = (lastDelivery === todayStr) ? user.last_delivery_at : new Date();
+        xpGained += streakBonusXP;
     }
-
-    await User.findByIdAndUpdate(user._id, {
-        xp: newXp, coins: newCoins, level: newLevel,
-        is_cursed: user.is_cursed, curse_type: user.curse_type,
-        quests_completed: newQuestsCompleted, csat_streak: newCsatStreak,
-        buff_type: newBuffType, buff_expires_at: newBuffExpiresAt,
-        buff_quests_remaining: newBuffQuestsRemaining,
-        delivery_streak: newDeliveryStreak, last_delivery_at: newLastDeliveryAt,
-    });
-
-    user.xp = newXp; user.coins = newCoins; user.level = newLevel;
-
-    quest.status = 'done';
-    if (columnId) quest.column_id = columnId;
-    quest.comments.push({ user_id: user._id, text: `${user.nome || user.username || 'Aventureiro'} concluiu a missão`, type: 'activity' });
-    await quest.save();
-
-    const guild = await Guild.findOne({ faction_key: user.faction });
-    let treasuryContribution = 0;
-    if (guild) {
-        treasuryContribution = Math.floor(coinsGained * guild.tax_rate);
-        await Guild.findByIdAndUpdate(guild._id, { $inc: { treasury_balance: treasuryContribution } });
-    }
-
-    if (leveledUp) notificationService.notifyLevelUp(user._id, newLevel).catch(() => {});
-    notificationService.checkAndNotifyAchievement(user._id, newQuestsCompleted).catch(() => {});
 
     return {
-        xpGained, coinsGained, leveledUp, newCurseApplied, buffApplied, buffGranted,
-        treasuryContribution, newXp, newCoins, newLevel, newQuestsCompleted,
+        xpGained, coinsGained, wasCursed, newCurseApplied, buffApplied, buffGranted,
+        newBuffType, newBuffExpiresAt, newBuffQuestsRemaining,
+        newCsatStreak, newDeliveryStreak, newLastDeliveryAt, streakBonusXP,
         isCursed: user.is_cursed, curseType: user.curse_type,
-        newCsatStreak, newBuffType, newBuffExpiresAt, newBuffQuestsRemaining,
-        newDeliveryStreak, streakBonusXP,
     };
+}
+
+// ==========================================
+// CONCLUSÃO DE QUEST (com distribuição Group Quest)
+// ==========================================
+async function _executeQuestCompletion(quest, completer, csatScore, columnId = null) {
+    const isCompleterAdmin = completer.role === 'admin';
+
+    // 1. Registrar completer como último holder
+    _recordCurrentHolder(quest, completer._id, isCompleterAdmin, 'completed');
+
+    // 2. Calcular shares por tempo de posse
+    const shares = _buildContributorShares(quest.contributors);
+    const hasParty = shares.length >= 2;
+
+    const baseXp    = hasParty ? Math.round(quest.xp_reward    * PARTY_BONUS) : quest.xp_reward;
+    const baseCoins = hasParty ? Math.round(quest.coin_reward   * PARTY_BONUS) : quest.coin_reward;
+
+    // Fallback solo: se nenhum contribuidor não-admin encontrado
+    const effectiveShares = shares.length > 0
+        ? shares
+        : [{ userId: String(completer._id), ratio: 1 }];
+
+    const guild = await Guild.findOne({ faction_key: completer.faction });
+    let completerResult = null;
+
+    // 3. Processar cada contribuidor individualmente
+    for (const share of effectiveShares) {
+        const isCompleter = share.userId === String(completer._id);
+        const user = isCompleter ? completer : await User.findById(share.userId);
+        if (!user) continue;
+
+        const xpShare    = Math.max(1, Math.round(baseXp    * share.ratio));
+        const coinsShare = Math.max(0, Math.round(baseCoins * share.ratio));
+
+        const calc = _applyRewardsForUser(user, xpShare, coinsShare, quest, csatScore, isCompleter);
+
+        const newQuestsCompleted = isCompleter ? (user.quests_completed || 0) + 1 : (user.quests_completed || 0);
+        let newXp    = (user.xp    || 0) + calc.xpGained;
+        let newCoins = (user.coins || 0) + calc.coinsGained;
+        let newLevel = user.level  || 1;
+        let leveledUp = false;
+
+        while (newXp >= xpParaProximoNivel(newLevel)) {
+            newXp -= xpParaProximoNivel(newLevel);
+            newLevel++;
+            leveledUp = true;
+        }
+
+        await QuestCompletion.create({
+            user_id:      user._id,
+            quest_id:     quest._id,
+            xp_gained:    calc.xpGained,
+            coins_gained: calc.coinsGained,
+            csat_score:   isCompleter ? (csatScore || null) : null,
+            was_cursed:   calc.wasCursed,
+        });
+
+        await User.findByIdAndUpdate(user._id, {
+            xp: newXp, coins: newCoins, level: newLevel,
+            is_cursed: user.is_cursed, curse_type: user.curse_type,
+            quests_completed:      newQuestsCompleted,
+            csat_streak:           isCompleter ? calc.newCsatStreak   : user.csat_streak,
+            buff_type:             calc.newBuffType,
+            buff_expires_at:       calc.newBuffExpiresAt,
+            buff_quests_remaining: calc.newBuffQuestsRemaining,
+            delivery_streak:       calc.newDeliveryStreak,
+            last_delivery_at:      calc.newLastDeliveryAt,
+        });
+
+        // Treasury: apenas da parcela do completer
+        let treasuryContribution = 0;
+        if (isCompleter && guild) {
+            treasuryContribution = Math.floor(calc.coinsGained * guild.tax_rate);
+            await Guild.findByIdAndUpdate(guild._id, { $inc: { treasury_balance: treasuryContribution } });
+        }
+
+        if (leveledUp) notificationService.notifyLevelUp(user._id, newLevel).catch(() => {});
+        if (isCompleter) {
+            notificationService.checkAndNotifyAchievement(user._id, newQuestsCompleted).catch(() => {});
+        } else {
+            notificationService.notifyContributorReward(user._id, quest.title, calc.xpGained, calc.coinsGained).catch(() => {});
+        }
+
+        if (isCompleter) {
+            completerResult = {
+                xpGained: calc.xpGained, coinsGained: calc.coinsGained, leveledUp,
+                newCurseApplied: calc.newCurseApplied, buffApplied: calc.buffApplied, buffGranted: calc.buffGranted,
+                treasuryContribution, newXp, newCoins, newLevel, newQuestsCompleted,
+                isCursed: user.is_cursed, curseType: user.curse_type,
+                newCsatStreak: calc.newCsatStreak, newBuffType: calc.newBuffType,
+                newBuffExpiresAt: calc.newBuffExpiresAt, newBuffQuestsRemaining: calc.newBuffQuestsRemaining,
+                newDeliveryStreak: calc.newDeliveryStreak, streakBonusXP: calc.streakBonusXP,
+                hasParty, contributorsCount: effectiveShares.length,
+            };
+        }
+    }
+
+    // Admin concluiu quest com contribuidores registrados: retorna resultado neutro sem XP/Gold
+    if (!completerResult) {
+        completerResult = {
+            xpGained: 0, coinsGained: 0, leveledUp: false,
+            newCurseApplied: null, buffApplied: null, buffGranted: null,
+            treasuryContribution: 0,
+            newXp:              completer.xp              || 0,
+            newCoins:           completer.coins           || 0,
+            newLevel:           completer.level           || 1,
+            newQuestsCompleted: completer.quests_completed || 0,
+            isCursed:           completer.is_cursed       || false,
+            curseType:          completer.curse_type      || null,
+            newCsatStreak:           completer.csat_streak          || 0,
+            newBuffType:             completer.buff_type             || null,
+            newBuffExpiresAt:        completer.buff_expires_at       || null,
+            newBuffQuestsRemaining:  completer.buff_quests_remaining || null,
+            newDeliveryStreak:       completer.delivery_streak       || 0,
+            streakBonusXP: 0,
+            hasParty, contributorsCount: effectiveShares.length,
+        };
+    }
+
+    // 4. Salvar quest como done
+    quest.status = 'done';
+    if (columnId) quest.column_id = columnId;
+    quest.comments.push({
+        user_id: completer._id,
+        text:    `${completer.nome || completer.username || 'Aventureiro'} concluiu a missão`,
+        type:    'activity'
+    });
+    await quest.save();
+
+    return completerResult;
 }
 
 function _buildCompletionResponse(r) {
@@ -304,6 +428,8 @@ function _buildCompletionResponse(r) {
         xpGained:             r.xpGained,
         coinsGained:          r.coinsGained,
         leveledUp:            r.leveledUp,
+        hasParty:             r.hasParty,
+        contributorsCount:    r.contributorsCount,
         newCurseApplied:      r.newCurseApplied,
         buffApplied:          r.buffApplied,
         buffGranted:          r.buffGranted,
@@ -448,20 +574,25 @@ exports.adminCreateQuest = async (req, res) => {
                 .map(text => ({ text, done: false }))
             : [];
 
+        const now = new Date();
         const quest = await Quest.create({
             title,
             description: description || '',
             type:        type        || 'normal',
             xp_reward,
             coin_reward,
-            sla_seconds: sla_seconds || null,
-            faction:     faction     || 'Produto',
-            sprint_id:   sprint_id   || null,
-            labels:      parsedLabels,
-            checklist:   parsedChecklist,
-            assigned_to: assigned_to || null,
-            status:      assigned_to ? 'in_progress' : 'todo',
-            started_at:  assigned_to ? new Date() : null
+            sla_seconds:      sla_seconds || null,
+            faction:          faction     || 'Produto',
+            sprint_id:        sprint_id   || null,
+            labels:           parsedLabels,
+            checklist:        parsedChecklist,
+            assigned_to:      assigned_to || null,
+            status:           assigned_to ? 'in_progress' : 'todo',
+            started_at:       assigned_to ? now : null,
+            last_assigned_at: assigned_to ? now : null,
+            contributors:     assigned_to
+                ? [{ user_id: assigned_to, action: 'accepted', time_held_secs: 0, timestamp: now }]
+                : []
         });
 
         if (assigned_to) {
@@ -497,18 +628,36 @@ exports.adminAssignQuest = async (req, res) => {
 
         if (userId) {
             const wasInProgress = quest.status === 'in_progress';
+            const prevHolder    = quest.assigned_to;
+
+            // Registra o tempo do holder anterior antes de trocar
+            if (wasInProgress && prevHolder) {
+                _recordCurrentHolder(quest, prevHolder, false, 'moved');
+            }
+
             quest.assigned_to = userId;
             if (!wasInProgress) {
                 quest.status     = 'in_progress';
                 quest.started_at = new Date();
             }
-            const assignee = await User.findById(userId).select('nome username');
+
+            const assignee          = await User.findById(userId).select('nome username role');
+            const newHolderIsAdmin  = assignee?.role === 'admin';
+            if (!newHolderIsAdmin) {
+                quest.contributors.push({ user_id: userId, action: 'accepted', time_held_secs: 0, timestamp: new Date() });
+                quest.last_assigned_at = new Date();
+            }
+
             quest.comments.push({ user_id: req.user.id, text: `Responsável alterado para ${assignee?.nome || assignee?.username || 'aventureiro'}`, type: 'activity' });
         } else {
             const previousAssignee = quest.assigned_to;
-            quest.assigned_to = null;
-            quest.status      = 'todo';
-            quest.started_at  = null;
+            if (previousAssignee) {
+                _recordCurrentHolder(quest, previousAssignee, false, 'rejected');
+            }
+            quest.assigned_to      = null;
+            quest.status           = 'todo';
+            quest.started_at       = null;
+            quest.last_assigned_at = null;
             quest.comments.push({ user_id: req.user.id, text: 'Missão resetada para "A Fazer"', type: 'activity' });
 
             if (previousAssignee) {
@@ -574,6 +723,7 @@ exports.getQuestDetail = async (req, res) => {
             .populate('sprint_id', 'name status')
             .populate('parent_id', 'title _id')
             .populate('comments.user_id', 'nome username avatar_url')
+            .populate('contributors.user_id', 'nome username avatar_url')
             .populate({ path: 'subtasks', populate: { path: 'assigned_to', select: 'nome username avatar_url' } });
 
         if (!quest) return res.status(404).json({ message: 'Quest não encontrada.' });
@@ -911,19 +1061,35 @@ exports.moveQuestToColumn = async (req, res) => {
             return res.json(_buildCompletionResponse(r));
         }
 
+        const prevAssignee = quest.assigned_to ? String(quest.assigned_to) : null;
+
         quest.column_id  = column._id;
         quest.status     = column.status_map;
-        quest.card_order = null; // reset ao mover entre colunas — aparece no final da coluna de destino
+        quest.card_order = null;
+
         if (column.status_map === 'in_progress') {
             if (!quest.started_at) quest.started_at = new Date();
-            // Quest sem responsável: quem fez o DnD aceita a missão (comportamento idêntico ao botão ACEITAR)
             if (!quest.assigned_to) {
+                // Aceitação: sem responsável anterior — inicia o timer e registra contribuidor
                 quest.assigned_to = req.user.id;
+                _recordCurrentHolder(quest, req.user.id, isAdmin, 'accepted');
                 quest.comments.push({ user_id: req.user.id, text: `${user.nome || user.username || 'Aventureiro'} aceitou a missão`, type: 'activity' });
+            } else if (prevAssignee && prevAssignee !== String(req.user.id)) {
+                // Líder/admin move card: registra tempo do holder atual sem trocar o assignee
+                _recordCurrentHolder(quest, quest.assigned_to, false, 'moved');
+            } else if (!quest.last_assigned_at) {
+                // Quest pré-atribuída sem last_assigned_at (dados legados) — inicia o timer
+                quest.last_assigned_at = new Date();
             }
         }
-        // Ao mover de volta para A Fazer, libera a quest para outros aventureiros
-        if (column.status_map === 'todo') quest.assigned_to = null;
+
+        // Devolução ao backlog: registra o holder atual como 'rejected'
+        if (column.status_map === 'todo') {
+            if (prevAssignee) _recordCurrentHolder(quest, quest.assigned_to, false, 'rejected');
+            quest.assigned_to      = null;
+            quest.last_assigned_at = null;
+        }
+
         await quest.save();
         const populated = await Quest.findById(quest._id)
             .populate('assigned_to', 'nome username avatar_url')
