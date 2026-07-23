@@ -129,12 +129,67 @@ const SORT_FUNCS = {
     gold_asc:   (a, b) => (a.coin_reward || 0) - (b.coin_reward || 0),
 };
 
-let _colSortState = {}; // { [colId]: sortKey }
+let _colSortState     = {}; // { [colId]: sortKey }
+let _filterAssigneeId = null; // null = todos
 
 window._setColSort = (colId, value) => {
     _colSortState[String(colId)] = value;
     renderKanban();
 };
+
+window.setAssigneeFilter = (userId) => {
+    _filterAssigneeId = userId;
+    renderAssigneeFilter();
+    renderKanban();
+};
+
+function renderAssigneeFilter() {
+    const bar = document.getElementById('assigneeFilterBar');
+    if (!bar) return;
+
+    // Coleta responsáveis únicos das quests atuais (excluindo subtasks sem assigned)
+    const seen = new Map();
+    allQuests.forEach(q => {
+        if (q.assigned_to && q.assigned_to._id) {
+            const id = String(q.assigned_to._id);
+            if (!seen.has(id)) seen.set(id, q.assigned_to);
+        }
+    });
+
+    if (seen.size === 0) { bar.style.display = 'none'; return; }
+    bar.style.display = 'flex';
+
+    const activeId = _filterAssigneeId ? String(_filterAssigneeId) : null;
+
+    const chips = [
+        `<button class="faction-filter-btn${!activeId ? ' active' : ''}"
+                 data-cy="filter-assignee-all"
+                 onclick="setAssigneeFilter(null)">👥 Todos</button>`
+    ];
+
+    seen.forEach((user, id) => {
+        const name   = user.nome || user.username || '?';
+        const active = activeId === id ? ' active' : '';
+        const avatar = user.avatar_url
+            ? `<img src="${user.avatar_url}" style="width:14px;height:14px;border-radius:2px;object-fit:cover;vertical-align:middle;margin-right:4px;">`
+            : '';
+        chips.push(
+            `<button class="faction-filter-btn${active}"
+                     data-cy="filter-assignee-${id}"
+                     onclick="setAssigneeFilter('${id}')">${avatar}${escHtml(name)}</button>`
+        );
+    });
+
+    // Mantém o label "FILTRAR:" como primeiro filho
+    const label = bar.querySelector('span');
+    bar.innerHTML = '';
+    if (label) bar.appendChild(label);
+    bar.insertAdjacentHTML('beforeend', chips.join(''));
+}
+
+function escHtml(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
 const HEALTH_CONFIG = {
     on_track: { label: '✅ NO RITMO',  color: '#27ae60' },
@@ -194,6 +249,7 @@ async function loadSprintBoard() {
             fetchBoardGuildMembers()
         ]);
         renderSprintHeader(data);
+        renderAssigneeFilter();
         renderKanban();
         // Re-renderiza abas de guilda após conhecer as facções da sprint
         renderGuildTabs();
@@ -284,11 +340,16 @@ function renderKanban() {
         { _id: 'done',        status_map: 'done'        }
     ];
 
+    // Aplica filtro por responsável (client-side, sem nova requisição)
+    const visibleQuests = _filterAssigneeId
+        ? allQuests.filter(q => q.assigned_to && String(q.assigned_to._id) === String(_filterAssigneeId))
+        : allQuests;
+
     // Agrupa por column_id (precedência) ou fallback por status
     const byColumn = {};
     cols.forEach(col => { byColumn[String(col._id)] = []; });
 
-    allQuests.forEach(q => {
+    visibleQuests.forEach(q => {
         const colId = q.column_id ? String(q.column_id) : null;
         if (colId && byColumn[colId] !== undefined) {
             const targetCol = cols.find(c => String(c._id) === colId);
@@ -568,7 +629,8 @@ function renderGuildTabs() {
 }
 
 window.setGuildFilter = async (guildId, btn) => {
-    currentGuildId = guildId || null;
+    currentGuildId    = guildId || null;
+    _filterAssigneeId = null; // reseta filtro de responsável ao trocar de guilda
     sessionStorage.setItem('admin_board_guild', currentGuildId || '');
     document.querySelectorAll('.faction-filter-btn').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
