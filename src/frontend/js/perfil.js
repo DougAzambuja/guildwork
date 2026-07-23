@@ -35,6 +35,9 @@ const AVATAR_CLASSES = [
 ];
 
 let _dicebearUsername = '';
+let _dicebearPreviewSeed = '';
+let _dicebearOpts = { skinColor: '', hairColor: '' };
+
 
 async function initPerfil() {
     const id = window.location.hash.slice(1);
@@ -99,6 +102,18 @@ function renderPerfil(p, me) {
 
     pendingAvatar = p.avatar_url || dicebearUrl(p.username);
     _dicebearUsername = p.username || '';
+    _dicebearOpts = { skinColor: '', hairColor: '' };
+
+    // Se o avatar salvo já é DiceBear, reutiliza o seed para os swatches não trocarem o rosto
+    if (p.avatar_url && p.avatar_url.includes('api.dicebear.com')) {
+        try {
+            _dicebearPreviewSeed = new URL(p.avatar_url).searchParams.get('seed') || _dicebearUsername;
+        } catch (_) {
+            _dicebearPreviewSeed = _dicebearUsername;
+        }
+    } else {
+        _dicebearPreviewSeed = _dicebearUsername;
+    }
 
     // Banner de maldição
     let curseBanner = '';
@@ -182,12 +197,18 @@ function renderPerfil(p, me) {
                 <div style="margin-bottom:16px;">
                     <div style="font-size:8px;color:#7f8c8d;letter-spacing:1px;margin-bottom:8px;">⚡ DICEBEAR (PIXEL ART)</div>
                     <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-                        <img id="dicebearPreview" src="${typeof dicebearUrl === 'function' ? dicebearUrl(p.username) : ''}"
-                             style="width:48px;height:48px;border:2px solid #2c3e50;image-rendering:pixelated;flex-shrink:0;" alt="DiceBear">
-                        <button onclick="useDicebearPerfil()" data-cy="btn-dicebear-perfil"
-                                style="font-family:'Press Start 2P',cursive;font-size:7px;padding:7px 10px;background:#2c3e50;color:#3498db;border:2px solid #3498db;cursor:pointer;">
-                            ⚡ Usar DiceBear
-                        </button>
+                        <img id="dicebearPreview" src="${dicebearUrl(_dicebearPreviewSeed, _dicebearOpts)}"
+                             style="width:64px;height:64px;border:2px solid #2c3e50;image-rendering:pixelated;flex-shrink:0;" alt="DiceBear">
+                        <div style="display:flex;flex-direction:column;gap:8px;">
+                            <button onclick="openDicebearCustomizerPerfil()" data-cy="btn-dicebear-customizer"
+                                    style="font-family:'Press Start 2P',cursive;font-size:7px;padding:7px 10px;background:#2c3e50;color:#f1c40f;border:2px solid #f1c40f;cursor:pointer;">
+                                ⚡ PERSONALIZAR
+                            </button>
+                            <button onclick="useDicebearPerfil()" data-cy="btn-dicebear-perfil"
+                                    style="font-family:'Press Start 2P',cursive;font-size:7px;padding:6px 10px;background:#2c3e50;color:#3498db;border:2px solid #3498db;cursor:pointer;">
+                                🔀 Aleatório
+                            </button>
+                        </div>
                     </div>
                     <div style="font-size:7px;color:#7f8c8d;letter-spacing:1px;margin-bottom:6px;">OU URL PERSONALIZADA</div>
                     <input type="text" id="perfilAvatarUrl" class="pixel-input"
@@ -272,10 +293,30 @@ function renderPerfil(p, me) {
     document.title = `GuildWork - ${p.nome || p.username}`;
 }
 
+window.openDicebearCustomizerPerfil = function () {
+    openDicebearCustomizer(_dicebearPreviewSeed, _dicebearOpts, function (newSeed, newOpts, url) {
+        _dicebearPreviewSeed = newSeed;
+        _dicebearOpts = newOpts;
+        const preview = document.getElementById('dicebearPreview');
+        if (preview) preview.src = url;
+        pendingAvatar = url;
+        isDirty = true;
+        const urlInput = document.getElementById('perfilAvatarUrl');
+        if (urlInput) urlInput.value = url;
+        const tmp = new Image();
+        tmp.onload = () => {
+            const mainAvatar = document.getElementById('perfilAvatarImg');
+            if (mainAvatar) mainAvatar.src = url;
+        };
+        tmp.src = url;
+        document.querySelectorAll('.perfil-avatar-opt').forEach(el => { el.style.borderColor = '#2c3e50'; });
+    });
+};
+
 window.useDicebearPerfil = () => {
     const randomSuffix = Math.random().toString(36).slice(2, 7);
-    const url = typeof dicebearUrl === 'function' ? dicebearUrl(_dicebearUsername + '_' + randomSuffix) : '';
-    if (!url) return;
+    _dicebearPreviewSeed = _dicebearUsername + '_' + randomSuffix;
+    const url = dicebearUrl(_dicebearPreviewSeed, _dicebearOpts);
     pendingAvatar = url;
     isDirty = true;
     const smallPreview = document.getElementById('dicebearPreview');

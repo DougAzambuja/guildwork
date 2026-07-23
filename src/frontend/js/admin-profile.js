@@ -1,6 +1,19 @@
 // admin-profile.js — lógica da tela de perfil do admin
 (function () {
     let currentUsername = '';
+    let _dicebearOpts = { skinColor: '', hairColor: '' };
+    let _dicebearPreviewSeed = '';
+
+    window.openDicebearCustomizerAdmin = function () {
+        openDicebearCustomizer(_dicebearPreviewSeed, _dicebearOpts, function (newSeed, newOpts, url) {
+            _dicebearPreviewSeed = newSeed;
+            _dicebearOpts = newOpts;
+            document.getElementById('inputAvatarUrl').value = url;
+            const tmp = new Image();
+            tmp.onload = () => { document.getElementById('avatarPreview').src = url; };
+            tmp.src = url;
+        });
+    };
 
     function isLocalAvatar(url) {
         return !url || url.startsWith('assets/');
@@ -22,6 +35,15 @@
             const user = await res.json();
 
             currentUsername = user.username || '';
+            if (user.avatar_url && user.avatar_url.includes('api.dicebear.com')) {
+                try {
+                    _dicebearPreviewSeed = new URL(user.avatar_url).searchParams.get('seed') || currentUsername;
+                } catch (_) {
+                    _dicebearPreviewSeed = currentUsername;
+                }
+            } else {
+                _dicebearPreviewSeed = currentUsername;
+            }
 
             document.getElementById('currentNome').textContent    = user.nome || user.username;
             document.getElementById('currentUsername').textContent = '@' + currentUsername;
@@ -53,7 +75,8 @@
     // TC-05: cada clique gera um seed diferente → avatar diferente
     window.useDicebear = function () {
         const randomSuffix = Math.random().toString(36).slice(2, 7);
-        const url = dicebearUrl(currentUsername + '_' + randomSuffix);
+        _dicebearPreviewSeed = currentUsername + '_' + randomSuffix;
+        const url = dicebearUrl(_dicebearPreviewSeed, _dicebearOpts);
         document.getElementById('inputAvatarUrl').value = url;
         document.getElementById('avatarPreview').src    = url;
     };
