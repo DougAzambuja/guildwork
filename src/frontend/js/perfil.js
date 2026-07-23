@@ -43,6 +43,11 @@ async function initPerfil() {
     const id = window.location.hash.slice(1);
 
     if (!id) {
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            if (payload?.id) { window.location.replace(`perfil.html#${payload.id}`); return; }
+        } catch { /* fall through */ }
+        hideLoadingOverlay();
         document.getElementById('perfilCard').innerHTML =
             '<div class="perfil-loading">ID do jogador não informado.</div>';
         return;

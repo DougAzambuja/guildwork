@@ -7,7 +7,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏰</text></svg>">
     <link rel="stylesheet" href="css/style.css">
     <style>
-        .guild-wrapper { padding: 0; }
+        .guild-wrapper { padding: 0; max-width: 1400px; margin: 0 auto; width: 100%; }
 
         .guild-header {
             display: flex; align-items: center; gap: 16px;
@@ -139,7 +139,11 @@
     </div>
     <div class="top-bar">
             <div class="player-info">
-                <img src="assets/imgs/caneca_pixel.jpg" alt="Avatar" class="avatar" id="playerAvatar" style="object-fit:cover;">
+                <img src="assets/imgs/caneca_pixel.jpg" alt="Avatar" class="avatar" id="playerAvatar"
+                     style="object-fit:cover; cursor:pointer;"
+                     onclick="window.location.href='perfil.html'"
+                     title="Ver meu perfil"
+                     data-cy="player-avatar">
                 <div class="stats">
                     <h1 id="playerName" data-cy="player-name">Aventureiro</h1>
                     <div id="levelDisplay" style="font-size: 9px; color: #7f8c8d;">Lvl: 1</div>
@@ -148,9 +152,9 @@
                 </div>
             </div>
             <div class="actions">
-                <a href="index.html"       class="btn-pixel" data-cy="link-board">Voltar ao Mural</a>
+                <a href="index.html"       class="btn-pixel" data-cy="link-board" style="background:#2980b9;">🗺️ Mural</a>
                 <a href="leaderboard.html" class="btn-pixel" data-cy="link-leaderboard" style="background:#c0392b;">🏆 Ranking</a>
-                <a href="store.html"       class="btn-pixel shop-btn" data-cy="link-loja">Ir para Loja</a>
+                <a href="store.html"       class="btn-pixel shop-btn" data-cy="link-loja">🛒 Loja</a>
 
                 <span class="actions-divider"></span>
 

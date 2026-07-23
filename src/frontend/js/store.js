@@ -79,6 +79,7 @@ async function loadPlayerProfile() {
             };
 
             renderPlayerProfile();
+            renderStoreHeader();
 
         } else {
             localStorage.clear();
@@ -87,6 +88,29 @@ async function loadPlayerProfile() {
     } catch (err) {
         console.error('Erro ao carregar perfil do jogador:', err);
         showToast('Erro ao sincronizar seu saldo com o servidor.', 'error');
+    }
+}
+
+function renderStoreHeader() {
+    const { nome, avatar_url, level, xp, coins, is_cursed } = playerData;
+    const xpMax = xpParaProximoNivel(level);
+
+    const avatarEl = document.getElementById('storePlayerAvatar');
+    const nameEl   = document.getElementById('storePlayerName');
+    const infoEl   = document.getElementById('storePlayerInfo');
+    const xpBarEl  = document.getElementById('storeXpBar');
+    const coinsEl  = document.getElementById('storePlayerCoins');
+
+    if (avatarEl) {
+        avatarEl.src = avatar_url || 'assets/imgs/caneca_pixel.jpg';
+        applyCurseAvatarClass(avatarEl, is_cursed);
+    }
+    if (nameEl)   nameEl.textContent  = nome;
+    if (infoEl)   infoEl.textContent  = `Lvl: ${level}`;
+    if (coinsEl)  coinsEl.textContent = coins.toLocaleString('pt-BR');
+    if (xpBarEl) {
+        const pct = Math.min(Math.round((xp / xpMax) * 100), 100);
+        xpBarEl.style.width = pct + '%';
     }
 }
 
@@ -101,7 +125,7 @@ function renderPlayerProfile() {
     const guildIcon = GUILD_ICONS[faction] || '🏰';
 
     card.innerHTML = `
-        <div class="profile-avatar-wrap">
+        <div class="profile-avatar-wrap" style="cursor:pointer;" onclick="window.location.href='perfil.html'" title="Ver meu perfil" data-cy="btn-perfil">
             <img class="profile-avatar${is_cursed ? ' curse-avatar' : ''}" src="${avatar_url || 'assets/imgs/caneca_pixel.jpg'}" alt="Avatar">
             <div class="profile-level-badge">Lv.${level}</div>
         </div>

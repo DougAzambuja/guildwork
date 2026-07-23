@@ -1713,6 +1713,9 @@ body:has(.mural-layout) {
     grid-template-columns: 210px 1fr 260px;
     gap: 20px;
     align-items: start;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
 }
 
 /* Remove a largura fixa de 70% dentro do novo grid */

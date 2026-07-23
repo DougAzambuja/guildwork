@@ -67,29 +67,12 @@ window.addEventListener('pageshow', async (e) => {
 // ==========================================
 // 2. AUTO-REFRESH DO BOARD
 // ==========================================
-const REFRESH_SECONDS = 30;
+const REFRESH_SECONDS = 15;
 
 function startBoardAutoRefresh() {
-    const btn = document.getElementById('btnRefreshBoard');
-    let countdown = REFRESH_SECONDS;
-
-    // Reseta countdown quando o usuário atualiza manualmente
-    if (btn) {
-        btn.addEventListener('click', () => { countdown = REFRESH_SECONDS; });
-    }
-
     setInterval(() => {
-        countdown--;
-        if (btn) btn.textContent = `↻ ${countdown}s`;
-
-        if (countdown <= 0) {
-            countdown = REFRESH_SECONDS;
-            if (btn) btn.classList.add('refreshing');
-            Promise.all([loadBoard(), fetchPlayerState()]).then(() => {
-                if (btn) btn.classList.remove('refreshing');
-            });
-        }
-    }, 1000);
+        Promise.all([loadBoard(), fetchPlayerState()]);
+    }, REFRESH_SECONDS * 1000);
 }
 
 // ==========================================

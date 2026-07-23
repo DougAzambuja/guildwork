@@ -192,6 +192,8 @@ net stop MongoDB
 | Tesouro | Saldo comum, taxa de contribuição automática por missão |
 | Distribuição | Líder pode enviar Gold para qualquer membro da guilda |
 | Link Sazonal | Botão direto para o Leaderboard Sazonal no painel de ranking |
+| Avatar clicável (#127) | Avatar na top bar navega para `/perfil.html` |
+| Max-width (#125) | Layout limitado a 1400px e centralizado — sem esticamento em monitores largos |
 
 ### 👑 Líder de Guilda
 | Feature | Detalhe |
@@ -225,7 +227,9 @@ net stop MongoDB
 |---|---|
 | Vitrine | Itens com preço, imagem e disponibilidade |
 | Carrinho | Preview de saldo pós-compra, bloqueio visual quando gold insuficiente |
-| Card de perfil | Avatar, nível, XP, guilda, gold, missões e conquistas |
+| Card de perfil | Avatar (clicável → perfil), nível, XP, guilda, gold, missões e conquistas |
+| Header completo (#126) | Player info (avatar, nome, nível, XP, gold) no topo + links de navegação (Mural, Guilda, Ranking) |
+| Max-width (#125) | Layout limitado a 1400px e centralizado — sem esticamento em monitores largos |
 | Cosméticos | Admin marca itens como cosmético (`🎭`); compra adiciona ao Guarda-Roupa do jogador |
 | Guarda-Roupa | Seção no próprio perfil com cosméticos comprados; clique equipa como avatar |
 | Perfil como hub de edição | Próprio perfil permite editar nome, avatar (classe ou cosmético), URL customizada e salvar tudo com um clique em "Salvar Herói" |
