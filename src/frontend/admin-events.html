@@ -79,16 +79,16 @@
         .form-field select {
             width: 100%;
             box-sizing: border-box;
-            font-family: 'Press Start 2P', cursive;
+            font-family: var(--font-game);
             font-size: 9px;
             padding: 8px 10px;
-            background: #0d1b2a;
-            color: #fff;
-            border: 2px solid #2c3e50;
+            background: var(--surface-0);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color-subtle);
             outline: none;
         }
         .form-field input:focus,
-        .form-field select:focus { border-color: #3498db; }
+        .form-field select:focus { border-color: var(--color-link); }
         .form-field input[type="datetime-local"]::-webkit-calendar-picker-indicator {
             filter: invert(1) brightness(0.75);
             cursor: pointer;
@@ -227,8 +227,8 @@
                         <h3 class="section-title" style="font-size:12px; margin:0; border:none; padding:0;">
                             📚 BIBLIOTECA DE TEMPLATES
                         </h3>
-                        <button class="ev-btn" data-cy="btn-new-template" onclick="showCreateForm()"
-                                style="background:#f39c12; color:#1a252f;">
+                        <button class="btn-pixel" data-cy="btn-new-template" onclick="showCreateForm()"
+                                style="font-size:10px; padding:10px 16px; background:#f39c12; color:#1a252f;">
                             + Novo Template
                         </button>
                     </div>
@@ -256,8 +256,8 @@
                         <h3 class="section-title" style="font-size:12px; margin:0; border:none; padding:0;">
                             📅 AGENDA SOCIAL
                         </h3>
-                        <button class="ev-btn" data-cy="btn-new-social-event" onclick="showSocialPanel()"
-                                style="background:#2980b9;">
+                        <button class="btn-pixel btn-info" data-cy="btn-new-social-event" onclick="showSocialPanel()"
+                                style="font-size:10px; padding:10px 16px;">
                             + Novo Evento
                         </button>
                     </div>
@@ -349,8 +349,8 @@
                             </div>
                         </div>
                         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;">
-                            <button type="button" class="ev-btn" onclick="showIdle()" style="background:#34495e;">Cancelar</button>
-                            <button type="submit" class="ev-btn" data-cy="btn-save-template" style="background:#27ae60;">💾 Salvar</button>
+                            <button type="button" class="btn-pixel btn-muted" onclick="showIdle()" style="font-size:10px;padding:10px 16px;border:none;box-shadow:none;">Cancelar</button>
+                            <button type="submit" class="btn-pixel btn-success" data-cy="btn-save-template" style="font-size:10px;padding:10px 16px;border:none;box-shadow:none;">💾 Salvar</button>
                         </div>
                     </form>
                 </div>
@@ -438,8 +438,8 @@
                         </div>
                     </div>
                     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;">
-                        <button type="button" class="ev-btn" onclick="showIdle()" style="background:#34495e;">Cancelar</button>
-                        <button type="button" class="ev-btn" data-cy="btn-confirm-trigger" onclick="submitTrigger()" style="background:#8e44ad;">⚡ Acionar!</button>
+                        <button type="button" class="btn-pixel btn-muted" onclick="showIdle()" style="font-size:10px;padding:10px 16px;border:none;box-shadow:none;">Cancelar</button>
+                        <button type="button" class="btn-pixel btn-special" data-cy="btn-confirm-trigger" onclick="submitTrigger()" style="font-size:10px;padding:10px 16px;border:none;box-shadow:none;">⚡ Acionar!</button>
                     </div>
                 </div>
 
@@ -484,8 +484,8 @@
                             </select>
                         </div>
                         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;">
-                            <button type="button" class="ev-btn" onclick="showIdle()" style="background:#34495e;">Cancelar</button>
-                            <button type="submit" class="ev-btn" data-cy="btn-save-social-event" style="background:#2980b9;">💾 Salvar</button>
+                            <button type="button" class="btn-pixel btn-muted" onclick="showIdle()" style="font-size:10px;padding:10px 16px;border:none;box-shadow:none;">Cancelar</button>
+                            <button type="submit" class="btn-pixel btn-info" data-cy="btn-save-social-event" style="font-size:10px;padding:10px 16px;border:none;box-shadow:none;">💾 Salvar</button>
                         </div>
                     </form>
                 </div>
@@ -507,8 +507,8 @@
                 <input id="editEncounterUntil" data-cy="input-edit-encounter-until" type="datetime-local">
             </div>
             <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;">
-                <button type="button" class="ev-btn" onclick="closeEditEncounterModal()" style="background:#34495e;">Cancelar</button>
-                <button type="button" class="ev-btn" data-cy="btn-save-edit-encounter" onclick="submitEditEncounter()" style="background:#27ae60;">💾 Salvar</button>
+                <button type="button" class="btn-pixel btn-muted" onclick="closeEditEncounterModal()" style="font-size:10px;padding:10px 16px;border:none;box-shadow:none;">Cancelar</button>
+                <button type="button" class="btn-pixel btn-success" data-cy="btn-save-edit-encounter" onclick="submitEditEncounter()" style="font-size:10px;padding:10px 16px;border:none;box-shadow:none;">💾 Salvar</button>
             </div>
         </div>
     </div>

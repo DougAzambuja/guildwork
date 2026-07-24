@@ -289,7 +289,8 @@
                 <div class="quest-modal-label">TROCAR RESPONSÁVEL</div>
                 <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
                     <select id="qdm-reassign-select" data-cy="select-reassign-member"
-                            style="flex:1;font-family:'Press Start 2P',cursive;font-size:9px;padding:8px 6px;background:#0d1b2a;color:#ecf0f1;border:2px solid #2c3e50;outline:none;cursor:pointer;">
+                            class="pixel-input-dark"
+                            style="flex:1;font-size:9px;padding:8px 6px;cursor:pointer;">
                     </select>
                     <button class="btn-pixel btn-success" data-cy="btn-save-assignee"
                             onclick="saveQuestAssignee()"
@@ -307,7 +308,8 @@
                 <div class="quest-modal-label">MOVER PARA</div>
                 <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
                     <select id="qdm-move-column-select" data-cy="select-move-column"
-                            style="flex:1;font-family:'Press Start 2P',cursive;font-size:9px;padding:8px 6px;background:#0d1b2a;color:#ecf0f1;border:2px solid #2c3e50;outline:none;cursor:pointer;">
+                            class="pixel-input-dark"
+                            style="flex:1;font-size:9px;padding:8px 6px;cursor:pointer;">
                     </select>
                     <button class="btn-pixel btn-special" data-cy="btn-move-column"
                             onclick="moveCardFromModal()"
@@ -326,38 +328,42 @@
             <div class="quest-modal-section" id="qdm-subtasks-section" style="display:none;" data-cy="section-player-subtasks">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
                     <div class="quest-modal-label" style="margin:0;">SUBTASKS</div>
-                    <button type="button" id="qdm-subtask-add-btn" data-cy="btn-player-add-subtask"
+                    <button type="button" id="qdm-subtask-add-btn" class="btn-pixel btn-special" data-cy="btn-player-add-subtask"
                             onclick="playerToggleSubtaskForm()"
-                            style="display:none;background:#8e44ad;border:none;color:#fff;font-family:'Press Start 2P',cursive;font-size:7px;padding:4px 8px;cursor:pointer;">+ Subtask</button>
+                            style="display:none;font-size:7px;padding:4px 8px;">+ Subtask</button>
                 </div>
                 <div id="qdm-subtask-parent-breadcrumb" style="display:none;margin-bottom:6px;"></div>
                 <div id="qdm-subtasks-progress" style="margin:6px 0 10px;"></div>
                 <div id="qdm-subtask-form" style="display:none;background:#1a252f;border:1px solid #2c3e50;padding:14px;margin-bottom:8px;">
                     <input type="text" id="qdm-subtask-title-input" data-cy="input-player-subtask-title"
                            placeholder="Título da subtask..."
-                           style="width:100%;box-sizing:border-box;font-family:'Press Start 2P',cursive;font-size:10px;padding:9px 8px;background:#0d1b2a;color:#ecf0f1;border:2px solid #2c3e50;margin-bottom:8px;outline:none;"
+                           class="pixel-input-dark"
+                           style="font-size:10px;padding:9px 8px;margin-bottom:8px;"
                            onkeydown="if(event.key==='Enter'){event.preventDefault();playerCreateSubtask();}">
                     <select id="qdm-subtask-assignee-select" data-cy="select-player-subtask-assignee"
-                            style="width:100%;font-family:'Press Start 2P',cursive;font-size:9px;padding:9px 8px;background:#0d1b2a;color:#ecf0f1;border:2px solid #2c3e50;margin-bottom:8px;outline:none;">
+                            class="pixel-input-dark"
+                            style="font-size:9px;padding:9px 8px;margin-bottom:8px;">
                         <option value="">👤 Sem atribuição</option>
                     </select>
                     <div style="display:flex;gap:8px;margin-bottom:10px;">
                         <div style="flex:1;">
                             <div style="font-size:9px;color:#95a5a6;margin-bottom:5px;">XP</div>
                             <input type="number" id="qdm-subtask-xp-input" data-cy="input-player-subtask-xp" min="0" value="0"
-                                   style="width:100%;box-sizing:border-box;font-family:'Press Start 2P',cursive;font-size:9px;padding:8px 6px;background:#0d1b2a;color:#27ae60;border:2px solid #2c3e50;outline:none;">
+                                   class="pixel-input-dark"
+                                   style="font-size:9px;padding:8px 6px;color:var(--color-success-bright);">
                         </div>
                         <div style="flex:1;">
                             <div style="font-size:9px;color:#95a5a6;margin-bottom:5px;">Gold</div>
                             <input type="number" id="qdm-subtask-gold-input" data-cy="input-player-subtask-gold" min="0" value="0"
-                                   style="width:100%;box-sizing:border-box;font-family:'Press Start 2P',cursive;font-size:9px;padding:8px 6px;background:#0d1b2a;color:#d4ac0d;border:2px solid #2c3e50;outline:none;">
+                                   class="pixel-input-dark pixel-input-gold"
+                                   style="font-size:9px;padding:8px 6px;">
                         </div>
                     </div>
                     <div style="display:flex;gap:8px;">
-                        <button type="button" data-cy="btn-player-confirm-subtask" onclick="playerCreateSubtask()"
-                                style="flex:1;background:#27ae60;border:none;color:#fff;font-family:'Press Start 2P',cursive;font-size:9px;padding:9px;cursor:pointer;">CRIAR</button>
-                        <button type="button" onclick="playerToggleSubtaskForm()"
-                                style="background:#7f8c8d;border:none;color:#fff;font-family:'Press Start 2P',cursive;font-size:9px;padding:9px 12px;cursor:pointer;">✕</button>
+                        <button type="button" class="btn-pixel btn-success" data-cy="btn-player-confirm-subtask" onclick="playerCreateSubtask()"
+                                style="flex:1;font-size:9px;padding:9px;">CRIAR</button>
+                        <button type="button" class="btn-pixel btn-muted" onclick="playerToggleSubtaskForm()"
+                                style="font-size:9px;padding:9px 12px;">✕</button>
                     </div>
                 </div>
                 <div id="qdm-subtask-list"></div>

@@ -360,9 +360,8 @@ O `style.css` é organizado em torno de um sistema de tokens declarado no `:root
 
 Fases planejadas:
 - ✅ **Fase 1 — Tokens:** `:root` com ~25 tokens; substituição sistemática de ~350 valores hardcoded
-- ✅ **Fase 2 — Botões:** 6 modificadores semânticos (`.btn-success/danger/info/muted/special/neutral`); eliminados todos os `style="background:#hex"` de botões em HTML + JS
-- 🔄 **Fase 3 — Inputs:** Padronizar 4 variações de inputs escuros sob `.pixel-input`
-- ⬜ **Fase 3 — Inputs:** Padronizar 4 variações de inputs escuros sob `.pixel-input`
+- ✅ **Fase 2 — Botões:** 6 modificadores semânticos (`.btn-success/danger/info/muted/special/neutral`); eliminados `style="background:#hex"` de botões em HTML e JS
+- ✅ **Fase 3 — Inputs:** `.pixel-input-dark` + `.pixel-input-gold` para inputs/selects escuros; `.form-field` de admin-events migrado para tokens; todos os inline dark inputs padronizados
 - ⬜ **Fase 4 — Títulos:** Unificar `.section-title` e variantes
 - ⬜ **Fase 5 — Modais e z-index:** 3 valores de z-index para modais + deduplicação de HTML (~120 linhas repetidas entre `admin.html` e `admin-sprint-board.html`)
 

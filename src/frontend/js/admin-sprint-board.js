@@ -411,8 +411,8 @@ function renderEmptyBoardState() {
         <div style="font-size:8px;color:#bdc3c7;margin-bottom:16px;line-height:1.8;">
             As quests do backlog não foram adicionadas a esta sprint ainda.
         </div>
-        <button onclick="importBacklogToSprint()" data-cy="btn-import-backlog"
-                style="font-family:'Press Start 2P',cursive;font-size:7px;padding:8px 14px;background:#27ae60;border:none;color:#fff;cursor:pointer;">
+        <button class="btn-pixel btn-success" onclick="importBacklogToSprint()" data-cy="btn-import-backlog"
+                style="font-size:7px;padding:8px 14px;">
             📥 Importar Backlog para esta Sprint
         </button>
     `;
@@ -1638,10 +1638,11 @@ function renderEditColumnsList() {
                    style="width:32px;height:32px;padding:2px;background:#0d1b2a;border:2px solid #2c3e50;cursor:pointer;flex-shrink:0;">
             <input type="text" value="${col.name}" data-cy="input-col-name-${i}"
                    oninput="_editColumnsData[${i}].name = this.value"
-                   style="flex:1;font-family:inherit;font-size:10px;padding:10px 12px;background:#0d1b2a;color:#ecf0f1;border:2px solid #2c3e50;outline:none;">
+                   class="pixel-input-dark"
+                   style="flex:1;font-size:10px;padding:10px 12px;">
             <span style="font-size:7px;padding:4px 8px;background:${tagBg};color:${tagText};white-space:nowrap;flex-shrink:0;min-width:44px;text-align:center;border:1px solid ${tagText}55;">${tag}</span>
-            <button onclick="_colDelete(${i})" data-cy="btn-delete-col-${i}"
-                    style="background:#c0392b;border:none;color:#fff;font-family:inherit;font-size:9px;padding:7px 10px;cursor:pointer;${delDis ? 'opacity:.35;cursor:not-allowed;' : ''}"
+            <button class="btn-pixel btn-danger" onclick="_colDelete(${i})" data-cy="btn-delete-col-${i}"
+                    style="font-size:9px;padding:7px 10px;${delDis ? 'opacity:.35;cursor:not-allowed;' : ''}"
                     ${delDis ? 'disabled' : ''}>✕</button>
         </div>`;
     }).join('');

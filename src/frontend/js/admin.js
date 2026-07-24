@@ -310,12 +310,12 @@ async function encLoadTemplates() {
                     <div style="font-size:8px;color:#ecf0f1;margin-bottom:2px;">${tpl.title}</div>
                     <div style="font-size:7px;color:${color};">${label} · ${Math.round(tpl.default_value*100)}% · ${tpl.default_duration}h · ${tpl.scope_type==='global'?'🌐 Global':'🏰 Facção'}</div>
                 </div>
-                <button onclick="encShowTrigger(${JSON.stringify(tpl).replace(/"/g,'&quot;')})" data-cy="btn-enc-trigger-${tpl._id}"
-                        style="font-family:'Press Start 2P',cursive;font-size:6px;padding:5px 8px;background:#8e44ad;border:none;color:#fff;cursor:pointer;">⚡</button>
-                <button onclick="encShowCreate(${JSON.stringify(tpl).replace(/"/g,'&quot;')})" data-cy="btn-enc-edit-${tpl._id}"
-                        style="font-family:'Press Start 2P',cursive;font-size:6px;padding:5px 8px;background:#2c3e50;border:none;color:#fff;cursor:pointer;">✏️</button>
-                <button onclick="encDeleteTemplate('${tpl._id}')" data-cy="btn-enc-delete-${tpl._id}"
-                        style="font-family:'Press Start 2P',cursive;font-size:6px;padding:5px 8px;background:#c0392b;border:none;color:#fff;cursor:pointer;">🗑️</button>
+                <button class="btn-pixel btn-special" onclick="encShowTrigger(${JSON.stringify(tpl).replace(/"/g,'&quot;')})" data-cy="btn-enc-trigger-${tpl._id}"
+                        style="font-size:6px;padding:5px 8px;">⚡</button>
+                <button class="btn-pixel btn-neutral" onclick="encShowCreate(${JSON.stringify(tpl).replace(/"/g,'&quot;')})" data-cy="btn-enc-edit-${tpl._id}"
+                        style="font-size:6px;padding:5px 8px;">✏️</button>
+                <button class="btn-pixel btn-danger" onclick="encDeleteTemplate('${tpl._id}')" data-cy="btn-enc-delete-${tpl._id}"
+                        style="font-size:6px;padding:5px 8px;">🗑️</button>
             </div>`;
         }).join('');
     } catch { container.innerHTML = '<div style="font-size:8px;color:#e74c3c;padding:12px 0;text-align:center;">Erro ao carregar biblioteca.</div>'; }

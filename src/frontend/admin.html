@@ -48,17 +48,18 @@
                     <h2 class="section-title" style="margin:0; border:none;">🏃 SPRINT</h2>
                     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                         <select id="dashSprintSelect" data-cy="select-dash-sprint"
-                                style="font-family:'Press Start 2P',cursive; font-size:7px; padding:5px 8px; background:#1a252f; color:#f1c40f; border:2px solid #2c3e50; outline:none; cursor:pointer; max-width:220px;"
+                                class="pixel-input-dark pixel-input-gold"
+                                style="font-size:7px; padding:5px 8px; max-width:220px;"
                                 onchange="onDashSprintChange(this.value)">
                             <option value="">Carregando...</option>
                         </select>
                         <span id="dashSprintHealth" class="status-badge" style="font-size:8px; padding:3px 10px; display:none;"></span>
-                        <a id="dashSprintBoardLink" href="#" class="btn-pixel" data-cy="btn-open-board-dashboard"
-                           style="font-size:7px; padding:5px 9px; background:#2980b9; text-decoration:none; display:inline-block;">
+                        <a id="dashSprintBoardLink" href="#" class="btn-pixel btn-info" data-cy="btn-open-board-dashboard"
+                           style="font-size:7px; padding:5px 9px; text-decoration:none; display:inline-block;">
                             📋 Abrir Board
                         </a>
-                        <a href="admin-events.html" class="btn-pixel" data-cy="btn-go-events"
-                           style="font-size:7px; padding:5px 9px; background:#8e44ad; text-decoration:none; display:inline-block;">
+                        <a href="admin-events.html" class="btn-pixel btn-special" data-cy="btn-go-events"
+                           style="font-size:7px; padding:5px 9px; text-decoration:none; display:inline-block;">
                             ⚡ Eventos
                         </a>
                     </div>
@@ -142,19 +143,22 @@
                 <form id="encCreateForm" data-cy="form-enc-create" onsubmit="encSubmitCreate(event)">
                     <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">TÍTULO *</label>
                     <input id="encTplTitle" data-cy="input-enc-tpl-title" type="text" required
-                           style="width:100%; box-sizing:border-box; font-family:'Press Start 2P',cursive; font-size:8px; padding:7px 9px; background:#0d1b2a; color:#fff; border:2px solid #2c3e50; outline:none; margin-bottom:12px;"
+                           class="pixel-input-dark"
+                           style="font-size:8px; padding:7px 9px; margin-bottom:12px;"
                            placeholder="Ex: Semana Dourada">
 
                     <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">DESCRIÇÃO</label>
                     <input id="encTplDesc" data-cy="input-enc-tpl-desc" type="text"
-                           style="width:100%; box-sizing:border-box; font-family:'Press Start 2P',cursive; font-size:8px; padding:7px 9px; background:#0d1b2a; color:#fff; border:2px solid #2c3e50; outline:none; margin-bottom:12px;"
+                           class="pixel-input-dark"
+                           style="font-size:8px; padding:7px 9px; margin-bottom:12px;"
                            placeholder="Detalhes do evento (opcional)">
 
                     <div style="display:flex; gap:12px; margin-bottom:12px;">
                         <div style="flex:1;">
                             <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">EFEITO *</label>
                             <select id="encTplKind" data-cy="select-enc-tpl-kind" required
-                                    style="width:100%; font-family:'Press Start 2P',cursive; font-size:7px; padding:7px 6px; background:#0d1b2a; color:#f1c40f; border:2px solid #2c3e50; outline:none; cursor:pointer;">
+                                    class="pixel-input-dark pixel-input-gold"
+                                    style="font-size:7px; padding:7px 6px;">
                                 <option value="xp_bonus">✨ Bônus de XP</option>
                                 <option value="gold_bonus">💰 Bônus de Gold</option>
                                 <option value="xp_penalty">💀 Penalidade de XP</option>
@@ -167,7 +171,8 @@
                         <div style="flex:1;">
                             <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">VALOR (%) *</label>
                             <input id="encTplValue" data-cy="input-enc-tpl-value" type="number" required min="1" max="100" value="50"
-                                   style="width:100%; box-sizing:border-box; font-family:'Press Start 2P',cursive; font-size:8px; padding:7px 9px; background:#0d1b2a; color:#fff; border:2px solid #2c3e50; outline:none;">
+                                   class="pixel-input-dark"
+                                   style="font-size:8px; padding:7px 9px;">
                         </div>
                     </div>
 
@@ -175,12 +180,14 @@
                         <div style="flex:1;">
                             <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">DURAÇÃO PADRÃO (h) *</label>
                             <input id="encTplDuration" data-cy="input-enc-tpl-duration" type="number" required min="1" max="168" value="2"
-                                   style="width:100%; box-sizing:border-box; font-family:'Press Start 2P',cursive; font-size:8px; padding:7px 9px; background:#0d1b2a; color:#fff; border:2px solid #2c3e50; outline:none;">
+                                   class="pixel-input-dark"
+                                   style="font-size:8px; padding:7px 9px;">
                         </div>
                         <div style="flex:1;">
                             <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">ESCOPO PADRÃO</label>
                             <select id="encTplScope" data-cy="select-enc-tpl-scope"
-                                    style="width:100%; font-family:'Press Start 2P',cursive; font-size:7px; padding:7px 6px; background:#0d1b2a; color:#f1c40f; border:2px solid #2c3e50; outline:none; cursor:pointer;">
+                                    class="pixel-input-dark pixel-input-gold"
+                                    style="font-size:7px; padding:7px 6px;">
                                 <option value="global">🌐 Global</option>
                                 <option value="faction">🏰 Facção</option>
                             </select>
@@ -188,10 +195,10 @@
                     </div>
 
                     <div style="display:flex; gap:8px; justify-content:flex-end;">
-                        <button type="button" class="btn-pixel" onclick="encShowLibrary()"
-                                style="font-size:7px; padding:7px 12px; background:#34495e; border:none; cursor:pointer;">Cancelar</button>
-                        <button type="submit" class="btn-pixel" data-cy="btn-enc-save-template"
-                                style="font-size:7px; padding:7px 12px; background:#27ae60; border:none; cursor:pointer;">💾 Salvar</button>
+                        <button type="button" class="btn-pixel btn-muted" onclick="encShowLibrary()"
+                                style="font-size:7px; padding:7px 12px; border:none; box-shadow:none; cursor:pointer;">Cancelar</button>
+                        <button type="submit" class="btn-pixel btn-success" data-cy="btn-enc-save-template"
+                                style="font-size:7px; padding:7px 12px; border:none; box-shadow:none; cursor:pointer;">💾 Salvar</button>
                     </div>
                 </form>
             </div>
@@ -202,11 +209,13 @@
 
                 <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">DURAÇÃO (horas)</label>
                 <input id="encTriggerDuration" data-cy="input-enc-trigger-duration" type="number" min="1" max="168"
-                       style="width:100%; box-sizing:border-box; font-family:'Press Start 2P',cursive; font-size:8px; padding:7px 9px; background:#0d1b2a; color:#fff; border:2px solid #2c3e50; outline:none; margin-bottom:12px;">
+                       class="pixel-input-dark"
+                       style="font-size:8px; padding:7px 9px; margin-bottom:12px;">
 
                 <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">ESCOPO</label>
                 <select id="encTriggerScope" data-cy="select-enc-trigger-scope"
-                        style="width:100%; font-family:'Press Start 2P',cursive; font-size:7px; padding:7px 6px; background:#0d1b2a; color:#f1c40f; border:2px solid #2c3e50; outline:none; cursor:pointer; margin-bottom:12px;"
+                        class="pixel-input-dark pixel-input-gold"
+                        style="font-size:7px; padding:7px 6px; margin-bottom:12px;"
                         onchange="encToggleFaction()">
                     <option value="global">🌐 Global</option>
                     <option value="faction">🏰 Facção específica</option>
@@ -215,7 +224,8 @@
                 <div id="encTriggerFactionWrap" style="display:none; margin-bottom:16px;">
                     <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">FACÇÃO</label>
                     <select id="encTriggerFaction" data-cy="select-enc-trigger-faction"
-                            style="width:100%; font-family:'Press Start 2P',cursive; font-size:7px; padding:7px 6px; background:#0d1b2a; color:#f1c40f; border:2px solid #2c3e50; outline:none; cursor:pointer;">
+                            class="pixel-input-dark pixel-input-gold"
+                            style="font-size:7px; padding:7px 6px;">
                         <option value="Produto">📦 Produto</option>
                         <option value="Suporte">🎧 Suporte</option>
                         <option value="Customer Service">📣 Customer Service</option>
@@ -223,10 +233,10 @@
                 </div>
 
                 <div style="display:flex; gap:8px; justify-content:flex-end;">
-                    <button type="button" class="btn-pixel" onclick="encShowLibrary()"
-                            style="font-size:7px; padding:7px 12px; background:#34495e; border:none; cursor:pointer;">Cancelar</button>
-                    <button type="button" class="btn-pixel" data-cy="btn-enc-confirm-trigger" onclick="encSubmitTrigger()"
-                            style="font-size:7px; padding:7px 12px; background:#8e44ad; border:none; cursor:pointer;">⚡ Acionar!</button>
+                    <button type="button" class="btn-pixel btn-muted" onclick="encShowLibrary()"
+                            style="font-size:7px; padding:7px 12px; border:none; box-shadow:none; cursor:pointer;">Cancelar</button>
+                    <button type="button" class="btn-pixel btn-special" data-cy="btn-enc-confirm-trigger" onclick="encSubmitTrigger()"
+                            style="font-size:7px; padding:7px 12px; border:none; box-shadow:none; cursor:pointer;">⚡ Acionar!</button>
                 </div>
             </div>
         </div>

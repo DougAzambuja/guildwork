@@ -533,6 +533,23 @@ body {
     border-color: var(--primary-color);
 }
 
+/* Input escuro — modais e formulários em fundo dark */
+.pixel-input-dark {
+    font-family: var(--font-game);
+    background-color: var(--surface-0);
+    color: var(--text-primary);
+    border: 2px solid var(--border-color-subtle);
+    outline: none;
+    box-sizing: border-box;
+}
+.pixel-input-dark:focus { border-color: var(--color-link); }
+
+/* Modificador para selects com valor de destaque (sprint selector, ordenação) */
+.pixel-input-dark.pixel-input-gold {
+    color: var(--color-gold);
+    cursor: pointer;
+}
+
 .date-field {
     font-family: monospace;
     font-size: 11px;

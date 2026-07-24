@@ -70,7 +70,8 @@
                     <h2 class="section-title" style="border:none; margin:0;">📊 DASHBOARD DA SPRINT</h2>
                     <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                         <select id="viewSprintSelect" data-cy="select-view-sprint"
-                                style="font-family:'Press Start 2P',cursive; font-size:7px; padding:6px 10px; background:#1a252f; color:#f1c40f; border:2px solid #2c3e50; outline:none; cursor:pointer; max-width:260px;"
+                                class="pixel-input-dark pixel-input-gold"
+                                style="font-size:7px; padding:6px 10px; max-width:260px;"
                                 onchange="onSprintSelectorChange(this.value)">
                             <option value="">Carregando sprints...</option>
                         </select>
@@ -166,7 +167,8 @@
                             <div class="forge-group" style="flex:1; min-width:200px; margin-bottom:0;">
                                 <label for="questsToAdd">Selecionar Quests disponíveis</label>
                                 <select id="questsToAdd" data-cy="select-quests-to-add" multiple
-                                        style="width:100%; height:90px; font-family:'Press Start 2P',cursive; font-size:8px; background:#0d1b2a; color:#ecf0f1; border:2px solid #2c3e50; padding:6px; outline:none;"></select>
+                                        class="pixel-input-dark"
+                                        style="width:100%; height:90px; font-size:8px; padding:6px;"></select>
                             </div>
                             <button class="btn-pixel btn-success" data-cy="btn-add-quests-sprint" onclick="addQuestsToActiveSprint()" style="padding:10px 14px; height:fit-content;">ADICIONAR</button>
                         </div>

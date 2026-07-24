@@ -267,9 +267,9 @@
                 <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                     <span id="sprintHealthBadge" class="status-badge" style="font-size:8px; padding:4px 10px;"></span>
                     <span id="sprintStatusBadge" class="status-badge" style="font-size:7px; padding:4px 8px; background:#2c3e50;"></span>
-                    <button class="btn-pixel" data-cy="btn-trigger-encounter"
+                    <button class="btn-pixel btn-special" data-cy="btn-trigger-encounter"
                             onclick="openEncounterModal()"
-                            style="font-size:7px; padding:5px 10px; background:#8e44ad; border:none; cursor:pointer;">
+                            style="font-size:7px; padding:5px 10px;">
                         ⚡ Evento
                     </button>
                 </div>
@@ -375,10 +375,11 @@
                 <div class="bqd-label">👤 RESPONSÁVEL</div>
                 <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
                     <select id="bqd-assignee-select" data-cy="select-admin-assignee"
-                            style="flex:1;font-family:'Press Start 2P',cursive;font-size:8px;padding:8px 6px;background:#0d1b2a;color:#ecf0f1;border:2px solid #2c3e50;outline:none;cursor:pointer;"></select>
-                    <button class="btn-pixel" data-cy="btn-admin-save-assignee"
+                            class="pixel-input-dark"
+                            style="flex:1;font-size:8px;padding:8px 6px;cursor:pointer;"></select>
+                    <button class="btn-pixel btn-success" data-cy="btn-admin-save-assignee"
                             onclick="saveAdminQuestAssignee()"
-                            style="font-size:7px;padding:8px 14px;background:#27ae60;flex-shrink:0;">✔ SALVAR</button>
+                            style="font-size:7px;padding:8px 14px;flex-shrink:0;">✔ SALVAR</button>
                 </div>
             </div>
 
@@ -387,10 +388,11 @@
                 <div class="bqd-label">🔀 MOVER PARA COLUNA</div>
                 <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
                     <select id="bqd-move-column-select" data-cy="select-admin-move-column"
-                            style="flex:1;font-family:'Press Start 2P',cursive;font-size:8px;padding:8px 6px;background:#0d1b2a;color:#ecf0f1;border:2px solid #2c3e50;outline:none;cursor:pointer;"></select>
-                    <button class="btn-pixel" data-cy="btn-admin-move-column"
+                            class="pixel-input-dark"
+                            style="flex:1;font-size:8px;padding:8px 6px;cursor:pointer;"></select>
+                    <button class="btn-pixel btn-special" data-cy="btn-admin-move-column"
                             onclick="moveAdminCardToColumn()"
-                            style="font-size:7px;padding:8px 14px;background:#8e44ad;flex-shrink:0;">➤ MOVER</button>
+                            style="font-size:7px;padding:8px 14px;flex-shrink:0;">➤ MOVER</button>
                 </div>
             </div>
 
@@ -446,10 +448,11 @@
                 <div style="display:flex;gap:6px;margin-top:8px;">
                     <input type="text" id="bqd-checklist-new-item" data-cy="input-bqd-checklist-new"
                            placeholder="Novo item..."
-                           style="flex:1;font-family:'Press Start 2P',cursive;font-size:7px;padding:5px;background:#1a252f;color:#ecf0f1;border:2px solid #2c3e50;outline:none;"
+                           class="pixel-input-dark"
+                           style="flex:1;font-size:7px;padding:5px;"
                            onkeydown="if(event.key==='Enter'){event.preventDefault();bqdAddChecklistItem();}">
-                    <button type="button" data-cy="btn-bqd-add-checklist-item" onclick="bqdAddChecklistItem()"
-                            style="background:#27ae60;border:none;color:#fff;font-family:'Press Start 2P',cursive;font-size:7px;padding:5px 10px;cursor:pointer;">+ ADD</button>
+                    <button type="button" class="btn-pixel btn-success" data-cy="btn-bqd-add-checklist-item" onclick="bqdAddChecklistItem()"
+                            style="font-size:7px;padding:5px 10px;">+ ADD</button>
                 </div>
             </div>
 
@@ -457,37 +460,41 @@
             <div id="bqd-subtasks-section" class="bqd-section" data-cy="section-bqd-subtasks">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                     <div class="bqd-label" style="margin:0;">🔗 SUBTASKS</div>
-                    <button type="button" id="bqd-subtask-add-btn" data-cy="btn-bqd-add-subtask"
+                    <button type="button" id="bqd-subtask-add-btn" class="btn-pixel btn-special" data-cy="btn-bqd-add-subtask"
                             onclick="bqdToggleSubtaskForm()"
-                            style="background:#8e44ad;border:none;color:#fff;font-family:'Press Start 2P',cursive;font-size:7px;padding:4px 8px;cursor:pointer;">+ Subtask</button>
+                            style="font-size:7px;padding:4px 8px;">+ Subtask</button>
                 </div>
                 <div id="bqd-subtasks-progress" style="margin-bottom:8px;"></div>
                 <div id="bqd-subtask-form" style="display:none;background:#0d1b2a;border:1px solid #2c3e50;padding:10px;margin-bottom:8px;">
                     <input type="text" id="bqd-subtask-title" data-cy="input-bqd-subtask-title"
                            placeholder="Título da subtask..."
-                           style="width:100%;box-sizing:border-box;font-family:'Press Start 2P',cursive;font-size:8px;padding:6px;background:#1a252f;color:#ecf0f1;border:2px solid #2c3e50;margin-bottom:6px;outline:none;"
+                           class="pixel-input-dark"
+                           style="font-size:8px;padding:6px;margin-bottom:6px;"
                            onkeydown="if(event.key==='Enter'){event.preventDefault();bqdCreateSubtask();}">
                     <select id="bqd-subtask-assignee" data-cy="select-bqd-subtask-assignee"
-                            style="width:100%;font-family:'Press Start 2P',cursive;font-size:8px;padding:6px;background:#1a252f;color:#ecf0f1;border:2px solid #2c3e50;margin-bottom:6px;outline:none;">
+                            class="pixel-input-dark"
+                            style="font-size:8px;padding:6px;margin-bottom:6px;">
                         <option value="">👤 Sem atribuição</option>
                     </select>
                     <div style="display:flex;gap:6px;margin-bottom:6px;">
                         <div style="flex:1;">
                             <div style="font-size:7px;color:#7f8c8d;margin-bottom:3px;">XP</div>
                             <input type="number" id="bqd-subtask-xp" data-cy="input-bqd-subtask-xp" min="0" value="0"
-                                   style="width:100%;box-sizing:border-box;font-family:'Press Start 2P',cursive;font-size:7px;padding:5px;background:#1a252f;color:#2ecc71;border:2px solid #2c3e50;outline:none;">
+                                   class="pixel-input-dark"
+                                   style="font-size:7px;padding:5px;color:var(--color-success-bright);">
                         </div>
                         <div style="flex:1;">
                             <div style="font-size:7px;color:#7f8c8d;margin-bottom:3px;">Gold</div>
                             <input type="number" id="bqd-subtask-gold" data-cy="input-bqd-subtask-gold" min="0" value="0"
-                                   style="width:100%;box-sizing:border-box;font-family:'Press Start 2P',cursive;font-size:7px;padding:5px;background:#1a252f;color:#f1c40f;border:2px solid #2c3e50;outline:none;">
+                                   class="pixel-input-dark pixel-input-gold"
+                                   style="font-size:7px;padding:5px;">
                         </div>
                     </div>
                     <div style="display:flex;gap:6px;">
-                        <button type="button" data-cy="btn-bqd-confirm-subtask" onclick="bqdCreateSubtask()"
-                                style="flex:1;background:#27ae60;border:none;color:#fff;font-family:'Press Start 2P',cursive;font-size:7px;padding:6px;cursor:pointer;">CRIAR</button>
-                        <button type="button" onclick="bqdToggleSubtaskForm()"
-                                style="background:#7f8c8d;border:none;color:#fff;font-family:'Press Start 2P',cursive;font-size:7px;padding:6px 10px;cursor:pointer;">✕</button>
+                        <button type="button" class="btn-pixel btn-success" data-cy="btn-bqd-confirm-subtask" onclick="bqdCreateSubtask()"
+                                style="flex:1;font-size:7px;padding:6px;">CRIAR</button>
+                        <button type="button" class="btn-pixel btn-muted" onclick="bqdToggleSubtaskForm()"
+                                style="font-size:7px;padding:6px 10px;">✕</button>
                     </div>
                 </div>
                 <div id="bqd-subtask-list"></div>
@@ -629,7 +636,8 @@
                     <div style="font-size:8px; color:#7f8c8d; padding:20px 0; text-align:center;">Carregando biblioteca...</div>
                 </div>
                 <button class="btn-pixel" data-cy="btn-enc-new-template" onclick="encShowCreate()"
-                        style="width:100%; margin-top:12px; font-size:7px; padding:9px; background:#2c3e50; border:none; cursor:pointer;">
+                        class="btn-pixel btn-neutral"
+                        style="width:100%; margin-top:12px; font-size:7px; padding:9px;">
                     + Criar Novo Evento
                 </button>
             </div>
@@ -639,19 +647,22 @@
                 <form id="encCreateForm" data-cy="form-enc-create" onsubmit="encSubmitCreate(event)">
                     <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">TÍTULO *</label>
                     <input id="encTplTitle" data-cy="input-enc-tpl-title" type="text" required
-                           style="width:100%; box-sizing:border-box; font-family:'Press Start 2P',cursive; font-size:8px; padding:7px 9px; background:#0d1b2a; color:#fff; border:2px solid #2c3e50; outline:none; margin-bottom:12px;"
+                           class="pixel-input-dark"
+                           style="font-size:8px; padding:7px 9px; margin-bottom:12px;"
                            placeholder="Ex: Semana Dourada">
 
                     <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">DESCRIÇÃO</label>
                     <input id="encTplDesc" data-cy="input-enc-tpl-desc" type="text"
-                           style="width:100%; box-sizing:border-box; font-family:'Press Start 2P',cursive; font-size:8px; padding:7px 9px; background:#0d1b2a; color:#fff; border:2px solid #2c3e50; outline:none; margin-bottom:12px;"
+                           class="pixel-input-dark"
+                           style="font-size:8px; padding:7px 9px; margin-bottom:12px;"
                            placeholder="Detalhes do evento (opcional)">
 
                     <div style="display:flex; gap:12px; margin-bottom:12px;">
                         <div style="flex:1;">
                             <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">EFEITO *</label>
                             <select id="encTplKind" data-cy="select-enc-tpl-kind" required
-                                    style="width:100%; font-family:'Press Start 2P',cursive; font-size:7px; padding:7px 6px; background:#0d1b2a; color:#f1c40f; border:2px solid #2c3e50; outline:none; cursor:pointer;">
+                                    class="pixel-input-dark pixel-input-gold"
+                                    style="font-size:7px; padding:7px 6px;">
                                 <option value="xp_bonus">✨ Bônus de XP</option>
                                 <option value="gold_bonus">💰 Bônus de Gold</option>
                                 <option value="xp_penalty">💀 Penalidade de XP</option>
@@ -664,7 +675,8 @@
                         <div style="flex:1;">
                             <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">VALOR (%) *</label>
                             <input id="encTplValue" data-cy="input-enc-tpl-value" type="number" required min="1" max="100" value="50"
-                                   style="width:100%; box-sizing:border-box; font-family:'Press Start 2P',cursive; font-size:8px; padding:7px 9px; background:#0d1b2a; color:#fff; border:2px solid #2c3e50; outline:none;">
+                                   class="pixel-input-dark"
+                                   style="font-size:8px; padding:7px 9px;">
                         </div>
                     </div>
 
@@ -672,12 +684,14 @@
                         <div style="flex:1;">
                             <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">DURAÇÃO PADRÃO (h) *</label>
                             <input id="encTplDuration" data-cy="input-enc-tpl-duration" type="number" required min="1" max="168" value="2"
-                                   style="width:100%; box-sizing:border-box; font-family:'Press Start 2P',cursive; font-size:8px; padding:7px 9px; background:#0d1b2a; color:#fff; border:2px solid #2c3e50; outline:none;">
+                                   class="pixel-input-dark"
+                                   style="font-size:8px; padding:7px 9px;">
                         </div>
                         <div style="flex:1;">
                             <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">ESCOPO PADRÃO</label>
                             <select id="encTplScope" data-cy="select-enc-tpl-scope"
-                                    style="width:100%; font-family:'Press Start 2P',cursive; font-size:7px; padding:7px 6px; background:#0d1b2a; color:#f1c40f; border:2px solid #2c3e50; outline:none; cursor:pointer;">
+                                    class="pixel-input-dark pixel-input-gold"
+                                    style="font-size:7px; padding:7px 6px;">
                                 <option value="global">🌐 Global</option>
                                 <option value="faction">🏰 Facção</option>
                             </select>
@@ -685,10 +699,10 @@
                     </div>
 
                     <div style="display:flex; gap:8px; justify-content:flex-end;">
-                        <button type="button" class="btn-pixel" onclick="encShowLibrary()"
-                                style="font-size:7px; padding:7px 12px; background:#34495e; border:none; cursor:pointer;">Cancelar</button>
-                        <button type="submit" class="btn-pixel" data-cy="btn-enc-save-template"
-                                style="font-size:7px; padding:7px 12px; background:#27ae60; border:none; cursor:pointer;">💾 Salvar</button>
+                        <button type="button" class="btn-pixel btn-muted" onclick="encShowLibrary()"
+                                style="font-size:7px; padding:7px 12px; border:none; box-shadow:none; cursor:pointer;">Cancelar</button>
+                        <button type="submit" class="btn-pixel btn-success" data-cy="btn-enc-save-template"
+                                style="font-size:7px; padding:7px 12px; border:none; box-shadow:none; cursor:pointer;">💾 Salvar</button>
                     </div>
                 </form>
             </div>
@@ -699,11 +713,13 @@
 
                 <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">DURAÇÃO (horas)</label>
                 <input id="encTriggerDuration" data-cy="input-enc-trigger-duration" type="number" min="1" max="168"
-                       style="width:100%; box-sizing:border-box; font-family:'Press Start 2P',cursive; font-size:8px; padding:7px 9px; background:#0d1b2a; color:#fff; border:2px solid #2c3e50; outline:none; margin-bottom:12px;">
+                       class="pixel-input-dark"
+                       style="font-size:8px; padding:7px 9px; margin-bottom:12px;">
 
                 <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">ESCOPO</label>
                 <select id="encTriggerScope" data-cy="select-enc-trigger-scope"
-                        style="width:100%; font-family:'Press Start 2P',cursive; font-size:7px; padding:7px 6px; background:#0d1b2a; color:#f1c40f; border:2px solid #2c3e50; outline:none; cursor:pointer; margin-bottom:12px;"
+                        class="pixel-input-dark pixel-input-gold"
+                        style="font-size:7px; padding:7px 6px; margin-bottom:12px;"
                         onchange="encToggleFaction()">
                     <option value="global">🌐 Global</option>
                     <option value="faction">🏰 Facção específica</option>
@@ -712,7 +728,8 @@
                 <div id="encTriggerFactionWrap" style="display:none; margin-bottom:16px;">
                     <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">FACÇÃO</label>
                     <select id="encTriggerFaction" data-cy="select-enc-trigger-faction"
-                            style="width:100%; font-family:'Press Start 2P',cursive; font-size:7px; padding:7px 6px; background:#0d1b2a; color:#f1c40f; border:2px solid #2c3e50; outline:none; cursor:pointer;">
+                            class="pixel-input-dark pixel-input-gold"
+                            style="font-size:7px; padding:7px 6px;">
                         <option value="Produto">📦 Produto</option>
                         <option value="Suporte">🎧 Suporte</option>
                         <option value="Customer Service">📣 Customer Service</option>
@@ -720,10 +737,10 @@
                 </div>
 
                 <div style="display:flex; gap:8px; justify-content:flex-end;">
-                    <button type="button" class="btn-pixel" onclick="encShowLibrary()"
-                            style="font-size:7px; padding:7px 12px; background:#34495e; border:none; cursor:pointer;">Cancelar</button>
-                    <button type="button" class="btn-pixel" data-cy="btn-enc-confirm-trigger" onclick="encSubmitTrigger()"
-                            style="font-size:7px; padding:7px 12px; background:#8e44ad; border:none; cursor:pointer;">⚡ Acionar!</button>
+                    <button type="button" class="btn-pixel btn-muted" onclick="encShowLibrary()"
+                            style="font-size:7px; padding:7px 12px; border:none; box-shadow:none; cursor:pointer;">Cancelar</button>
+                    <button type="button" class="btn-pixel btn-special" data-cy="btn-enc-confirm-trigger" onclick="encSubmitTrigger()"
+                            style="font-size:7px; padding:7px 12px; border:none; box-shadow:none; cursor:pointer;">⚡ Acionar!</button>
                 </div>
             </div>
         </div>
@@ -829,12 +846,12 @@
                             <div style="font-size:8px;color:#ecf0f1;margin-bottom:2px;">${tpl.title}</div>
                             <div style="font-size:7px;color:${col};">${label} · ${Math.round(tpl.default_value*100)}% · ${tpl.default_duration}h · ${tpl.scope_type==='global'?'🌐 Global':'🏰 Facção'}</div>
                         </div>
-                        <button onclick="encShowTrigger(${JSON.stringify(tpl).replace(/"/g,'&quot;')})" data-cy="btn-enc-trigger-${tpl._id}"
-                                style="font-family:'Press Start 2P',cursive;font-size:6px;padding:5px 8px;background:#8e44ad;border:none;color:#fff;cursor:pointer;">⚡</button>
-                        <button onclick="encShowCreate(${JSON.stringify(tpl).replace(/"/g,'&quot;')})" data-cy="btn-enc-edit-${tpl._id}"
-                                style="font-family:'Press Start 2P',cursive;font-size:6px;padding:5px 8px;background:#2c3e50;border:none;color:#fff;cursor:pointer;">✏️</button>
-                        <button onclick="encDeleteTemplate('${tpl._id}')" data-cy="btn-enc-delete-${tpl._id}"
-                                style="font-family:'Press Start 2P',cursive;font-size:6px;padding:5px 8px;background:#c0392b;border:none;color:#fff;cursor:pointer;">🗑️</button>
+                        <button class="btn-pixel btn-special" onclick="encShowTrigger(${JSON.stringify(tpl).replace(/"/g,'&quot;')})" data-cy="btn-enc-trigger-${tpl._id}"
+                                style="font-size:6px;padding:5px 8px;">⚡</button>
+                        <button class="btn-pixel btn-neutral" onclick="encShowCreate(${JSON.stringify(tpl).replace(/"/g,'&quot;')})" data-cy="btn-enc-edit-${tpl._id}"
+                                style="font-size:6px;padding:5px 8px;">✏️</button>
+                        <button class="btn-pixel btn-danger" onclick="encDeleteTemplate('${tpl._id}')" data-cy="btn-enc-delete-${tpl._id}"
+                                style="font-size:6px;padding:5px 8px;">🗑️</button>
                     </div>`;
                 }).join('');
             } catch { container.innerHTML = '<div style="font-size:8px;color:#e74c3c;padding:12px 0;text-align:center;">Erro ao carregar biblioteca.</div>'; }

@@ -117,7 +117,8 @@
                     <button id="btnQuestPrev" class="btn-pixel" style="font-size:8px;padding:8px 12px;flex-shrink:0;" data-cy="btn-quest-prev">← Anterior</button>
                     <span id="paginationPageInfo" class="pagination-info" style="white-space:nowrap;"></span>
                     <select id="filterLimit" data-cy="select-filter-limit"
-                            style="font-size:11px;padding:7px 10px;width:155px;flex-shrink:0;background:#1a252f;border:2px solid #2c3e50;color:#f1c40f;cursor:pointer;font-family:inherit;">
+                            class="pixel-input-dark pixel-input-gold"
+                            style="font-size:11px;padding:7px 10px;width:155px;flex-shrink:0;cursor:pointer;">
                         <option value="10">10 / pág.</option>
                         <option value="25">25 / pág.</option>
                         <option value="50">50 / pág.</option>
@@ -244,26 +245,29 @@
                            placeholder="Título da subtask..." style="font-size:9px;padding:6px;width:100%;box-sizing:border-box;"
                            onkeydown="if(event.key==='Enter'){event.preventDefault();adminCreateSubtask();}">
                     <select id="qdm-a-subtask-assignee-select" data-cy="select-admin-subtask-assignee"
-                            style="font-family:'Press Start 2P',cursive;font-size:8px;padding:6px;background:#1a252f;color:#ecf0f1;border:2px solid #2c3e50;width:100%;outline:none;">
+                            class="pixel-input-dark"
+                            style="font-size:8px;padding:6px;">
                         <option value="">👤 Sem atribuição</option>
                     </select>
                     <div style="display:flex;gap:6px;">
                         <div style="flex:1;">
                             <div style="font-size:7px;color:#7f8c8d;margin-bottom:3px;">XP</div>
                             <input type="number" id="qdm-a-subtask-xp-input" data-cy="input-admin-subtask-xp" min="0" value="0"
-                                   style="width:100%;box-sizing:border-box;font-family:'Press Start 2P',cursive;font-size:8px;padding:5px;background:#1a252f;color:#2ecc71;border:2px solid #2c3e50;outline:none;">
+                                   class="pixel-input-dark"
+                                   style="font-size:8px;padding:5px;color:var(--color-success-bright);">
                         </div>
                         <div style="flex:1;">
                             <div style="font-size:7px;color:#7f8c8d;margin-bottom:3px;">Gold</div>
                             <input type="number" id="qdm-a-subtask-gold-input" data-cy="input-admin-subtask-gold" min="0" value="0"
-                                   style="width:100%;box-sizing:border-box;font-family:'Press Start 2P',cursive;font-size:8px;padding:5px;background:#1a252f;color:#f1c40f;border:2px solid #2c3e50;outline:none;">
+                                   class="pixel-input-dark pixel-input-gold"
+                                   style="font-size:8px;padding:5px;">
                         </div>
                     </div>
                     <div style="display:flex;gap:6px;">
-                        <button type="button" data-cy="btn-admin-confirm-subtask" onclick="adminCreateSubtask()"
-                                style="background:#27ae60;border:none;color:#fff;font-family:'Press Start 2P',cursive;font-size:7px;padding:6px 10px;cursor:pointer;flex:1;">CRIAR</button>
-                        <button type="button" onclick="adminToggleSubtaskForm()"
-                                style="background:#7f8c8d;border:none;color:#fff;font-family:'Press Start 2P',cursive;font-size:7px;padding:6px 10px;cursor:pointer;">✕</button>
+                        <button type="button" class="btn-pixel btn-success" data-cy="btn-admin-confirm-subtask" onclick="adminCreateSubtask()"
+                                style="font-size:7px;padding:6px 10px;flex:1;">CRIAR</button>
+                        <button type="button" class="btn-pixel btn-muted" onclick="adminToggleSubtaskForm()"
+                                style="font-size:7px;padding:6px 10px;">✕</button>
                     </div>
                 </div>
                 <div id="qdm-a-subtask-list"></div>

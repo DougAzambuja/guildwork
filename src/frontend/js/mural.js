@@ -2229,7 +2229,7 @@ function renderPlayerColumnsList() {
                    style="width:32px;height:32px;padding:2px;border:2px solid #34495e;background:#111;cursor:pointer;flex-shrink:0;">
             <span style="font-size:7px;padding:4px 8px;background:${tagColor};color:#fff;white-space:nowrap;flex-shrink:0;min-width:44px;text-align:center;">${tag}</span>
             <button onclick="_playerColDelete(${i})"
-                    class="btn-pixel" style="font-size:9px;padding:7px 10px;background:#c0392b;${delDis ? 'opacity:.35;cursor:not-allowed;' : ''}"
+                    class="btn-pixel btn-danger" style="font-size:9px;padding:7px 10px;${delDis ? 'opacity:.35;cursor:not-allowed;' : ''}"
                     ${delDis ? 'disabled' : ''}>✕</button>
         </div>`;
     }).join('');
