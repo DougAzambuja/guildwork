@@ -368,6 +368,7 @@ Fases planejadas:
 - ✅ **Fase 7 — CSS centralizado:** blocos `<style>` locais de 7 HTMLs migrados para `style.css` com todos os tokens aplicados; conflitos de seletor resolvidos (`.kanban-board .kanban-col-header`, `.burndown-legend .legend-item`); `change-password.html` corrigido (tokens falsos removidos)
 - ✅ **Fase 8 — Limpeza residual:** segunda passagem com regex ampla substituiu 30 hex adicionais nos blocos migrados; residuais restantes são intencionais (gradientes de XP, hover states derivados, cores pixel art)
 - ✅ **Fase 9 — Empty states e label tags:** classes `.empty-state` (centrado, padding 16px, muted) + `.empty-state--sm` (compacto) + `.label-tag` (muted inline sem align) em `style.css`; 29 ocorrências substituídas em 9 arquivos JS (admin.js, admin-events, admin-quests, admin-roster, admin-sprint-board, admin-sprints, admin-metrics, mural.js, leaderboard.js, encounter-modal.js)
+- ✅ **Fase 10 — Constantes ENC centralizadas:** `ENC_ICONS`, `ENC_LABELS`, `ENC_COLORS` (formato rico `{bg, border, text}`) declaradas uma única vez em `utils.js`; declarações locais removidas de 4 arquivos (admin.js, admin-events.js, mural.js, admin-sprint-board.js); referências `ENCOUNTER_*` e `ENCOUNTER_*_BOARD` renomeadas para `ENC_*`; usages de string plana atualizados para `.text`/`.border`/`.bg`
 
 ---
 

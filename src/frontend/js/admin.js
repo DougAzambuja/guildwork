@@ -213,18 +213,6 @@ function renderDashboardStats(players) {
 // ==========================================
 // 3. MODAL — EVENTOS (BIBLIOTECA DE TEMPLATES)
 // ==========================================
-const ENC_ICONS  = { xp_penalty:'💀', gold_penalty:'💸', xp_bonus:'✨', gold_bonus:'💰', slow:'🐌', luck:'🍀', store_discount:'🏷️' };
-const ENC_LABELS = { xp_penalty:'PENALIDADE XP', gold_penalty:'PENALIDADE GOLD', xp_bonus:'BÔNUS XP', gold_bonus:'BÔNUS GOLD', slow:'SLA REDUZIDO', luck:'SORTE ATIVA', store_discount:'DESCONTO NA LOJA' };
-const ENC_COLORS = {
-    xp_penalty:    '#e74c3c',
-    gold_penalty:  '#e67e22',
-    xp_bonus:      '#2ecc71',
-    gold_bonus:    '#f1c40f',
-    slow:          '#9b59b6',
-    luck:          '#1abc9c',
-    store_discount:'#f39c12',
-};
-
 let _encCurrentTplId = null;
 
 function openEncounterModal() {
@@ -275,7 +263,7 @@ function encShowTrigger(tpl) {
     _encCurrentTplId = tpl._id;
     const icon  = ENC_ICONS[tpl.effect_kind]  || '⚡';
     const label = ENC_LABELS[tpl.effect_kind] || tpl.effect_kind;
-    const color = ENC_COLORS[tpl.effect_kind] || '#f1c40f';
+    const color = (ENC_COLORS[tpl.effect_kind] || ENC_COLORS.xp_bonus).text;
     document.getElementById('encTriggerInfo').innerHTML = `
         <div style="font-size:9px;color:#e056fd;margin-bottom:6px;">${icon} ${tpl.title}</div>
         ${tpl.description ? `<div style="font-size:7px;color:#bdc3c7;margin-bottom:8px;">${tpl.description}</div>` : ''}
@@ -303,7 +291,7 @@ async function encLoadTemplates() {
         container.innerHTML = list.map(tpl => {
             const icon  = ENC_ICONS[tpl.effect_kind]  || '⚡';
             const label = ENC_LABELS[tpl.effect_kind] || tpl.effect_kind;
-            const color = ENC_COLORS[tpl.effect_kind] || '#f1c40f';
+            const color = (ENC_COLORS[tpl.effect_kind] || ENC_COLORS.xp_bonus).text;
             return `<div style="display:flex;align-items:center;gap:8px;padding:9px 10px;background:#0d1b2a;border:1px solid #2c3e50;margin-bottom:6px;">
                 <span style="font-size:13px;">${icon}</span>
                 <div style="flex:1;min-width:0;">

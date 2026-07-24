@@ -1,18 +1,4 @@
-﻿const ENC_ICONS = {
-    xp_bonus: '✨', gold_bonus: '💰', xp_penalty: '💀',
-    gold_penalty: '💸', slow: '🐌', luck: '🍀', store_discount: '🏷️',
-};
-const ENC_LABELS = {
-    xp_bonus: 'Bônus de XP', gold_bonus: 'Bônus de Gold',
-    xp_penalty: 'Penalidade XP', gold_penalty: 'Penalidade Gold',
-    slow: 'Lentidão', luck: 'Sorte', store_discount: 'Desconto na Loja',
-};
-const ENC_COLORS = {
-    xp_bonus: '#2ecc71', gold_bonus: '#f1c40f', xp_penalty: '#e74c3c',
-    gold_penalty: '#e67e22', slow: '#9b59b6', luck: '#1abc9c', store_discount: '#f39c12',
-};
-
-let _currentTplId     = null;
+﻿let _currentTplId     = null;
 let _triggerMode      = 'duration';  // declarado aqui para garantir hoisting antes de qualquer chamada
 let _editingSocialId  = null;
 
@@ -119,7 +105,7 @@ function showTriggerPanel(tpl) {
 
     _currentTplId = tpl._id;
     const pct   = Math.round(tpl.default_value * 100);
-    const color = ENC_COLORS[tpl.effect_kind] || '#888';
+    const color = (ENC_COLORS[tpl.effect_kind] || ENC_COLORS.xp_bonus).text;
     const icon  = ENC_ICONS[tpl.effect_kind]  || '🎲';
     const label = ENC_LABELS[tpl.effect_kind] || tpl.effect_kind;
 
@@ -219,7 +205,7 @@ function renderTemplates(templates) {
     }
     el.innerHTML = templates.map(tpl => {
         const pct   = Math.round(tpl.default_value * 100);
-        const color = ENC_COLORS[tpl.effect_kind] || '#888';
+        const color = (ENC_COLORS[tpl.effect_kind] || ENC_COLORS.xp_bonus).text;
         const icon  = ENC_ICONS[tpl.effect_kind]  || '🎲';
         const scope = tpl.scope_type === 'global' ? '🌐 Global' : '🏰 Facção';
         const encoded = JSON.stringify(tpl).replace(/"/g, '&quot;');
@@ -321,7 +307,7 @@ function renderActiveEncounters(encounters) {
     const now = new Date();
     el.innerHTML = encounters.map(enc => {
         const kind  = enc.effect?.kind || '';
-        const color = ENC_COLORS[kind] || '#888';
+        const col   = ENC_COLORS[kind] || ENC_COLORS.xp_bonus;
         const icon  = ENC_ICONS[kind]  || '🎲';
         const label = ENC_LABELS[kind] || kind;
         const title = enc.title || label;
@@ -334,14 +320,14 @@ function renderActiveEncounters(encounters) {
         const encoded = JSON.stringify(enc).replace(/"/g, '&quot;');
 
         return `
-        <div class="active-event-card" style="border-color:${color};background:${color}20;" data-cy="active-event-${enc._id}">
+        <div class="active-event-card" style="border-color:${col.border};background:${col.bg};" data-cy="active-event-${enc._id}">
             <span style="font-size:20px;line-height:1;">${icon}</span>
             <div style="flex:1;min-width:0;">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
                     <span style="font-size:11px;color:#ecf0f1;">${title}</span>
                     ${isScheduled ? `<span style="font-size:8px;background:#f39c12;color:#1a252f;padding:2px 6px;letter-spacing:1px;">AGENDADO</span>` : ''}
                 </div>
-                <div style="font-size:10px;color:${color};margin-bottom:3px;">${label}${pct !== null ? ` · ${pct}%` : ''}</div>
+                <div style="font-size:10px;color:${col.text};margin-bottom:3px;">${label}${pct !== null ? ` · ${pct}%` : ''}</div>
                 <div style="font-size:9px;color:#7f8c8d;">
                     ${isScheduled ? `início ${startsAt} · ` : ''}${scope} · até ${endsAt}
                 </div>
@@ -366,7 +352,7 @@ function openEditEncounterModal(enc) {
     _editingEncounterId = enc._id;
 
     const kind  = enc.effect?.kind || '';
-    const color = ENC_COLORS[kind] || '#888';
+    const color = (ENC_COLORS[kind] || ENC_COLORS.xp_bonus).text;
     const icon  = ENC_ICONS[kind]  || '🎲';
     const label = ENC_LABELS[kind] || kind;
     const pct   = enc.effect?.value ? Math.round(enc.effect.value * 100) : null;

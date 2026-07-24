@@ -1727,18 +1727,6 @@ window.saveColumnsEdit = async () => {
 // ==========================================
 // ENCOUNTER MODAL — lógica específica do board
 // ==========================================
-const ENCOUNTER_ICONS_BOARD  = { xp_penalty:'💀', gold_penalty:'💸', xp_bonus:'✨', gold_bonus:'💰', slow:'🐌', luck:'🍀', store_discount:'🏷️' };
-const ENCOUNTER_LABELS_BOARD = { xp_penalty:'PENALIDADE XP', gold_penalty:'PENALIDADE GOLD', xp_bonus:'BÔNUS XP', gold_bonus:'BÔNUS GOLD', slow:'SLA REDUZIDO', luck:'SORTE ATIVA', store_discount:'DESCONTO NA LOJA' };
-const ENCOUNTER_COLORS_BOARD = {
-    xp_penalty:    { bg:'#1a0a0a', border:'#c0392b', text:'#e74c3c' },
-    gold_penalty:  { bg:'#1a0d00', border:'#e67e22', text:'#e67e22' },
-    xp_bonus:      { bg:'#0a1a0a', border:'#27ae60', text:'#2ecc71' },
-    gold_bonus:    { bg:'#0a0d0a', border:'#f1c40f', text:'#f1c40f' },
-    slow:          { bg:'#0d0d1a', border:'#8e44ad', text:'#9b59b6' },
-    luck:          { bg:'#0a1a10', border:'#1abc9c', text:'#1abc9c' },
-    store_discount:{ bg:'#1a1500', border:'#f39c12', text:'#f39c12' },
-};
-
 let _currentTplId = null;
 
 function openEncounterModal() {
@@ -1784,8 +1772,8 @@ function encShowTrigger(tpl) {
     document.getElementById('encBtnBack').style.display     = 'inline-block';
     document.getElementById('encModalTitle').textContent    = '⚡ ACIONAR EVENTO';
     _currentTplId = tpl._id;
-    const icon  = ENCOUNTER_ICONS_BOARD[tpl.effect_kind] || '⚡';
-    const label = ENCOUNTER_LABELS_BOARD[tpl.effect_kind] || tpl.effect_kind;
+    const icon  = ENC_ICONS[tpl.effect_kind] || '⚡';
+    const label = ENC_LABELS[tpl.effect_kind] || tpl.effect_kind;
     document.getElementById('encTriggerInfo').innerHTML = `
         <div style="font-size:9px;color:#e056fd;margin-bottom:6px;">${icon} ${tpl.title}</div>
         ${tpl.description ? `<div style="font-size:7px;color:#bdc3c7;margin-bottom:8px;">${tpl.description}</div>` : ''}
@@ -1811,9 +1799,9 @@ async function encLoadTemplates() {
             return;
         }
         container.innerHTML = list.map(tpl => {
-            const icon  = ENCOUNTER_ICONS_BOARD[tpl.effect_kind]  || '⚡';
-            const label = ENCOUNTER_LABELS_BOARD[tpl.effect_kind] || tpl.effect_kind;
-            const col   = (ENCOUNTER_COLORS_BOARD[tpl.effect_kind] || ENCOUNTER_COLORS_BOARD.xp_bonus).border;
+            const icon  = ENC_ICONS[tpl.effect_kind]  || '⚡';
+            const label = ENC_LABELS[tpl.effect_kind] || tpl.effect_kind;
+            const col   = (ENC_COLORS[tpl.effect_kind] || ENC_COLORS.xp_bonus).border;
             return `<div style="display:flex;align-items:center;gap:8px;padding:9px 10px;background:#0d1b2a;border:1px solid #2c3e50;margin-bottom:6px;">
                 <span style="font-size:13px;">${icon}</span>
                 <div style="flex:1;min-width:0;">
@@ -1905,9 +1893,9 @@ async function renderActiveEncountersBoard() {
         }
         container.innerHTML = list.map(enc => {
             const kind  = enc.effect?.kind || 'xp_bonus';
-            const col   = ENCOUNTER_COLORS_BOARD[kind]  || ENCOUNTER_COLORS_BOARD.xp_bonus;
-            const icon  = ENCOUNTER_ICONS_BOARD[kind]   || '⚡';
-            const label = ENCOUNTER_LABELS_BOARD[kind]  || 'EVENTO';
+            const col   = ENC_COLORS[kind]  || ENC_COLORS.xp_bonus;
+            const icon  = ENC_ICONS[kind]   || '⚡';
+            const label = ENC_LABELS[kind]  || 'EVENTO';
             const pct   = Math.round(enc.effect.value * 100);
             const until = enc.active_until ? new Date(enc.active_until) : null;
             const h     = until ? Math.max(0, Math.floor((until - Date.now()) / 3_600_000)) : 0;
