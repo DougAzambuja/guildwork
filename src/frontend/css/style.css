@@ -4,13 +4,71 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
 :root {
-    --text-color: #000000;
+    /* ── TIPOGRAFIA ──────────────────────────────────────────────────────── */
+    --font-game: 'Press Start 2P', cursive;
+
+    /* ── SUPERFÍCIES (fundos, do mais escuro ao mais claro) ─────────────── */
+    --surface-page:    #0d1520;             /* header, loading overlay       */
+    --surface-0:       #0d1b2a;             /* inputs dark, form panels      */
+    --surface-1:       #111c27;             /* ranking, leaderboard          */
+    --surface-2:       #1a252f;             /* ev-panel, quest-modal         */
+    --surface-card:    #1a2634;             /* perfil-card, guild-header     */
+    --surface-3:       #2c3e50;             /* dashboard-section, modais     */
+    --surface-4:       #34495e;             /* faction-card, inventory       */
+    --surface-light:   #ecf0f1;             /* pixel-input background        */
+    --surface-overlay: rgba(0, 0, 0, 0.8);  /* modal backdrop               */
+    --surface-paper:   #f4e8c1;             /* quest-paper, kanban-card      */
+
+    /* ── BORDAS ──────────────────────────────────────────────────────────── */
+    --border-pixel:        4px solid #111;     /* estilo pixel-art grosso    */
+    --border-panel:        6px solid #111;     /* seções e modais principais */
+    --border-subtle:       2px solid var(--surface-3);  /* cards sutis, inputs dark   */
+    --border-thin:         1px solid var(--surface-3);  /* menor (badges, tpl-card)   */
+    --border-color-pixel:  #111;
+    --border-color-subtle: #2c3e50;
+
+    /* ── CORES — ESTADOS ─────────────────────────────────────────────────── */
+    --color-success:        #27ae60;  /* botões confirmar, comprar           */
+    --color-success-bright: #2ecc71;  /* XP bars, indicadores de conclusão   */
+    --color-danger:         #e74c3c;  /* alertas, badges de urgência         */
+    --color-danger-dark:    #c0392b;  /* botões destrutivos (deletar, sair)  */
+    --color-warning:        #e67e22;  /* btn-pixel padrão, WIP slot          */
+    --color-special:        #8e44ad;  /* eventos aleatórios, shop especial   */
+    --color-special-light:  #9b59b6;  /* XP level bars, rank numbers         */
+    --color-link:           #3498db;  /* foco, XP bars, kanban count         */
+    --color-info:           #2980b9;  /* botões de edição, sync              */
+
+    /* ── CORES — ACENTOS ─────────────────────────────────────────────────── */
+    --color-gold:   #f1c40f;  /* moedas, títulos dourados, tab ativo        */
+    --color-accent: #f39c12;  /* nome do player, admin accent               */
+
+    /* ── CORES — TEXTO ───────────────────────────────────────────────────── */
+    --text-primary:   #ecf0f1;  /* texto principal em fundos escuros         */
+    --text-secondary: #bdc3c7;  /* labels, metadados                         */
+    --text-muted:     #7f8c8d;  /* placeholders, texto desabilitado          */
+
+    /* ── Z-INDEX ─────────────────────────────────────────────────────────── */
+    --z-base:    100;
+    --z-header:  200;
+    --z-modal:   1000;
+    --z-overlay: 9000;
+    --z-toast:   10100;
+
+    /* ── SOMBRAS ─────────────────────────────────────────────────────────── */
+    --shadow-pixel: 8px 8px 0px rgba(0,0,0,0.6);
+    --shadow-card:  6px 6px 0px rgba(0,0,0,0.5);
+    --shadow-small: 4px 4px 0px rgba(0,0,0,0.5);
+
+    /* ── TOKENS LEGADOS (backward-compatible — não remover) ──────────────── */
+    --text-color:    #000000;
     --primary-color: #4CAF50;
-    --coin-color: #f1c40f;
-    --paper-color: #f4e8c1;
-    --danger-color: #e74c3c;
-    --header-bg: #0d1520;
-    --shop-panel: rgba(20, 20, 20, 0.85);
+    --coin-color:    var(--color-gold);
+    --paper-color:   var(--surface-paper);
+    --danger-color:  var(--color-danger);
+    --header-bg:     var(--surface-page);
+    --shop-panel:    rgba(20, 20, 20, 0.85);
+    --card-bg:       var(--surface-card);  /* era usado mas não declarado — corrigido */
+
     /* Altura do header sticky compact (~65px) + margem inferior (10px) */
     --sticky-top: 75px;
 }
@@ -19,7 +77,7 @@
    2. BASE E ESTRUTURA
    ========================================= */
 body {
-    font-family: 'Press Start 2P', cursive;
+    font-family: var(--font-game);
     margin: 0;
     padding: 0;
     background-image: url('../assets/imgs/fundo_arvores_pixel.jpg');
@@ -70,12 +128,12 @@ body {
    ========================================= */
 .top-bar {
     background-color: var(--header-bg);
-    border-bottom: 2px solid #2c3e50;
+    border-bottom: 2px solid var(--surface-3);
     padding: 12px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: #ecf0f1;
+    color: var(--text-primary);
     position: sticky;
     top: 0;
     z-index: 100;
@@ -93,7 +151,7 @@ body {
     width: 40px;
     height: 40px;
     background-color: #1e2f3f;
-    border: 2px solid #f39c12;
+    border: 2px solid var(--color-accent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -113,16 +171,16 @@ body {
 
 .stats h1 {
     font-size: 12px;
-    color: #f39c12;
+    color: var(--color-accent);
     margin: 0;
     white-space: nowrap;
 }
 
 .coin-display {
     font-size: 10px;
-    color: #f1c40f;
+    color: var(--color-gold);
     background: rgba(0,0,0,0.3);
-    border: 1px solid #2c3e50;
+    border: var(--border-thin);
     padding: 3px 8px;
     display: inline-block;
     white-space: nowrap;
@@ -134,8 +192,8 @@ body {
 }
 
 .btn-pixel {
-    font-family: 'Press Start 2P', cursive;
-    background-color: #e67e22;
+    font-family: var(--font-game);
+    background-color: var(--color-warning);
     color: #fff;
     border: 2px solid #111;
     padding: 8px 10px;
@@ -161,16 +219,16 @@ body {
 .actions-divider {
     width: 2px;
     height: 22px;
-    background: #2c3e50;
+    background: var(--surface-3);
     flex-shrink: 0;
 }
 
 .btn-pixel.logout-btn {
-    background-color: #c0392b;
+    background-color: var(--color-danger-dark);
 }
 
 .btn-pixel.logout-btn:hover {
-    background-color: #e74c3c;
+    background-color: var(--color-danger);
 }
 
 /* =========================================
@@ -179,7 +237,7 @@ body {
 .xp-container {
     width: 110px;
     background-color: #1e2f3f;
-    border: 1px solid #2c3e50;
+    border: var(--border-thin);
     height: 6px;
     position: relative;
     flex-shrink: 0;
@@ -198,14 +256,14 @@ body {
 }
 
 /* Modificadores de botão do Mural */
-.actions .btn-pixel { background-color: #2980b9; } /* Botão Sync Jira */
-.btn-pixel.shop-btn { background-color: #8e44ad; } /* Botão Ir pra Loja */
+.actions .btn-pixel { background-color: var(--color-info); } /* Botão Sync Jira */
+.btn-pixel.shop-btn { background-color: var(--color-special); } /* Botão Ir pra Loja */
 
 .quest-paper {
     background-color: var(--paper-color);
-    border: 4px solid #111;
+    border: var(--border-pixel);
     padding: 20px;
-    box-shadow: 8px 8px 0px rgba(0,0,0,0.6);
+    box-shadow: var(--shadow-pixel);
     cursor: pointer;
     position: relative;
     transition: transform 0.1s;
@@ -255,21 +313,21 @@ body {
 }
 
 .shop-item {
-    background-color: #2c3e50;
-    border: 4px solid #bdc3c7;
+    background-color: var(--surface-3);
+    border: 4px solid var(--text-secondary);
     padding: 15px;
     text-align: center;
-    box-shadow: 6px 6px 0px rgba(0,0,0,0.5);
+    box-shadow: var(--shadow-card);
     transition: transform 0.2s;
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
-.shop-item:hover { transform: translateY(-5px); border-color: #f1c40f; }
+.shop-item:hover { transform: translateY(-5px); border-color: var(--color-gold); }
 
 .item-name {
-    color: #ecf0f1;
+    color: var(--text-primary);
     font-size: 12px;
     margin-bottom: 15px;
     line-height: 1.4;
@@ -279,14 +337,14 @@ body {
 .item-img {
     width: 80px;
     height: 80px;
-    background-color: #34495e;
-    border: 2px dashed #7f8c8d;
+    background-color: var(--surface-4);
+    border: 2px dashed var(--text-muted);
     margin-bottom: 15px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 10px;
-    color: #7f8c8d;
+    color: var(--text-muted);
     image-rendering: pixelated;
 }
 
@@ -297,12 +355,12 @@ body {
 }
 
 .btn-buy {
-    background-color: #27ae60;
+    background-color: var(--color-success);
     width: 100%;
 }
 
 .btn-buy:disabled {
-    background-color: #7f8c8d;
+    background-color: var(--text-muted);
     cursor: not-allowed;
     box-shadow: none;
     transform: none;
@@ -311,21 +369,21 @@ body {
 /* Configurações do Carrinho de Compras lateral */
 .cart-container {
     width: 30%;
-    background-color: #2c3e50;
-    border: 6px solid #111;
+    background-color: var(--surface-3);
+    border: var(--border-panel);
     padding: 20px;
     color: #fff;
-    box-shadow: 8px 8px 0px rgba(0,0,0,0.6);
+    box-shadow: var(--shadow-pixel);
     position: sticky;
     top: var(--sticky-top);
 }
 
 .cart-title { 
     font-size: 14px; 
-    color: #f1c40f; 
+    color: var(--color-gold); 
     margin-bottom: 20px; 
     text-align: center; 
-    border-bottom: 4px dashed #7f8c8d; 
+    border-bottom: 4px dashed var(--text-muted); 
     padding-bottom: 10px;
 }
 
@@ -339,7 +397,7 @@ body {
 .cart-item-row { 
     display: flex; 
     justify-content: space-between; 
-    border-bottom: 2px solid #34495e; 
+    border-bottom: 2px solid var(--surface-4); 
     padding: 5px 0; 
 }
 
@@ -347,18 +405,18 @@ body {
     font-size: 12px; 
     text-align: right; 
     margin-bottom: 20px; 
-    color: #e74c3c; 
+    color: var(--color-danger); 
 }
 
 .btn-checkout { 
-    background-color: #27ae60; 
+    background-color: var(--color-success); 
     width: 100%; 
     font-size: 12px; 
     padding: 15px; 
 }
 
 .btn-checkout:hover { 
-    background-color: #2ecc71; 
+    background-color: var(--color-success-bright); 
 }
 
 /* =========================================
@@ -371,7 +429,7 @@ body {
 }
 
 .item-qtd {
-    color: #f1c40f;
+    color: var(--color-gold);
     font-weight: bold;
 }
 
@@ -382,10 +440,10 @@ body {
 }
 
 .btn-remove {
-    background-color: #c0392b;
+    background-color: var(--color-danger-dark);
     color: white;
     border: 2px solid #111;
-    font-family: 'Press Start 2P', cursive;
+    font-family: var(--font-game);
     font-size: 8px;
     padding: 4px 6px;
     cursor: pointer;
@@ -398,7 +456,7 @@ body {
 }
 
 .btn-clear {
-    background-color: #7f8c8d;
+    background-color: var(--text-muted);
     width: 100%;
     font-size: 10px;
     padding: 10px;
@@ -420,7 +478,7 @@ body {
 }
 
 .login-box {
-    background-color: #2c3e50;
+    background-color: var(--surface-3);
     border: 8px solid #111;
     padding: 40px;
     box-shadow: 12px 12px 0px rgba(0,0,0,0.6);
@@ -431,7 +489,7 @@ body {
 }
 
 .login-title {
-    color: #f1c40f;
+    color: var(--color-gold);
     text-shadow: 2px 2px 0 #000;
     margin-bottom: 30px;
     font-size: 16px;
@@ -445,17 +503,17 @@ body {
 
 .form-group label {
     display: block;
-    color: #ecf0f1;
+    color: var(--text-primary);
     font-size: 10px;
     margin-bottom: 8px;
 }
 
 .pixel-input {
-    font-family: 'Press Start 2P', cursive;
+    font-family: var(--font-game);
     width: 100%;
     padding: 12px;
-    border: 4px solid #111;
-    background-color: #ecf0f1;
+    border: var(--border-pixel);
+    background-color: var(--text-primary);
     font-size: 10px;
     box-sizing: border-box;
     outline: none;
@@ -472,9 +530,9 @@ body {
     color-scheme: dark;
     width: 100%;
     padding: 10px 12px;
-    background: #0d1b2a;
-    color: #ecf0f1;
-    border: 2px solid #2c3e50;
+    background: var(--surface-0);
+    color: var(--text-primary);
+    border: var(--border-subtle);
     box-sizing: border-box;
     outline: none;
     cursor: pointer;
@@ -482,7 +540,7 @@ body {
 }
 
 .date-field:focus {
-    border-color: #3498db;
+    border-color: var(--color-link);
 }
 
 .date-field::-webkit-calendar-picker-indicator {
@@ -499,7 +557,7 @@ body {
 }
 
 .btn-login {
-    background-color: #27ae60;
+    background-color: var(--color-success);
     width: 100%;
     font-size: 12px;
     padding: 15px;
@@ -507,7 +565,7 @@ body {
 }
 
 .btn-login:hover {
-    background-color: #2ecc71;
+    background-color: var(--color-success-bright);
 }
 
 .login-hint {
@@ -527,21 +585,21 @@ body {
 
 .objectives-container {
     width: 30%;
-    background-color: #2c3e50;
-    border: 6px solid #111;
+    background-color: var(--surface-3);
+    border: var(--border-panel);
     padding: 20px;
     color: #fff;
-    box-shadow: 8px 8px 0px rgba(0,0,0,0.6);
+    box-shadow: var(--shadow-pixel);
     position: sticky;
     top: var(--sticky-top);
 }
 
 .objectives-title {
     font-size: 14px;
-    color: #f1c40f;
+    color: var(--color-gold);
     margin-bottom: 20px;
     text-align: center;
-    border-bottom: 4px dashed #7f8c8d;
+    border-bottom: 4px dashed var(--text-muted);
     padding-bottom: 10px;
 }
 
@@ -559,24 +617,24 @@ body {
 .obj-bar-bg {
     width: 100%;
     background-color: #111;
-    border: 2px solid #7f8c8d;
+    border: 2px solid var(--text-muted);
     height: 12px;
     position: relative;
 }
 
 .obj-bar-fill {
-    background-color: #3498db; /* Azul para a barra de progresso */
+    background-color: var(--color-link); /* Azul para a barra de progresso */
     height: 100%;
     width: 0%; /* O JavaScript vai controlar isso */
     transition: width 0.5s ease-in-out;
 }
 
 .obj-bar-fill.gold-bar {
-    background-color: #e67e22; /* Laranja para a meta de gold */
+    background-color: var(--color-warning); /* Laranja para a meta de gold */
 }
 
 .obj-bar-fill.complete {
-    background-color: #2ecc71 !important; /* Fica verde quando chega em 100% */
+    background-color: var(--color-success-bright) !important; /* Fica verde quando chega em 100% */
 }
 
 /* =========================================
@@ -615,21 +673,21 @@ body:has(.mural-layout) {
     flex: 0 0 342px;
     width: 342px;
     min-width: 342px;
-    background-color: #2c3e50;
-    border: 6px solid #111;
+    background-color: var(--surface-3);
+    border: var(--border-panel);
     padding: 20px;
     color: #fff;
-    box-shadow: 8px 8px 0px rgba(0,0,0,0.6);
+    box-shadow: var(--shadow-pixel);
     position: sticky;
     top: var(--sticky-top);
 }
 
 .objectives-title {
     font-size: 14px;
-    color: #f1c40f;
+    color: var(--color-gold);
     margin-bottom: 20px;
     text-align: center;
-    border-bottom: 4px dashed #7f8c8d;
+    border-bottom: 4px dashed var(--text-muted);
     padding-bottom: 10px;
 }
 
@@ -647,24 +705,24 @@ body:has(.mural-layout) {
 .obj-bar-bg {
     width: 100%;
     background-color: #111;
-    border: 2px solid #7f8c8d;
+    border: 2px solid var(--text-muted);
     height: 12px;
     position: relative;
 }
 
 .obj-bar-fill {
-    background-color: #3498db; /* Azul para a barra de progresso */
+    background-color: var(--color-link); /* Azul para a barra de progresso */
     height: 100%;
     width: 0%; /* O JavaScript vai controlar isso */
     transition: width 0.5s ease-in-out;
 }
 
 .obj-bar-fill.gold-bar {
-    background-color: #e67e22; /* Laranja para a meta de gold */
+    background-color: var(--color-warning); /* Laranja para a meta de gold */
 }
 
 .obj-bar-fill.complete {
-    background-color: #2ecc71 !important; /* Fica verde quando chega em 100% */
+    background-color: var(--color-success-bright) !important; /* Fica verde quando chega em 100% */
 }
 
 /* =========================================
@@ -676,8 +734,8 @@ body:has(.mural-layout) {
 }
 
 .objectives-container::-webkit-scrollbar { width: 6px; }
-.objectives-container::-webkit-scrollbar-track { background: #1a252f; }
-.objectives-container::-webkit-scrollbar-thumb { background: #f1c40f; }
+.objectives-container::-webkit-scrollbar-track { background: var(--surface-2); }
+.objectives-container::-webkit-scrollbar-thumb { background: var(--color-gold); }
 
 .sidebar-metric {
     margin-bottom: 16px;
@@ -687,7 +745,7 @@ body:has(.mural-layout) {
     display: flex;
     justify-content: space-between;
     font-size: 9px;
-    color: #ecf0f1;
+    color: var(--text-primary);
     margin-bottom: 7px;
 }
 
@@ -699,15 +757,15 @@ body:has(.mural-layout) {
 
 .sidebar-stat-box {
     flex: 1;
-    background: #1a252f;
-    border: 2px solid #34495e;
+    background: var(--surface-2);
+    border: 2px solid var(--surface-4);
     padding: 10px 6px;
     text-align: center;
 }
 
 .sidebar-stat-label {
     font-size: 8px;
-    color: #7f8c8d;
+    color: var(--text-muted);
     margin-bottom: 6px;
 }
 
@@ -723,23 +781,23 @@ body:has(.mural-layout) {
 .wip-slot {
     flex: 1;
     height: 16px;
-    border: 3px solid #34495e;
-    background: #1a252f;
+    border: 3px solid var(--surface-4);
+    background: var(--surface-2);
     transition: background 0.3s, border-color 0.3s;
 }
 
 .wip-slot.filled {
-    background: #e67e22;
+    background: var(--color-warning);
     border-color: #d35400;
     box-shadow: 0 0 6px rgba(230, 126, 34, 0.5);
 }
 
 .sidebar-divider {
     font-size: 9px;
-    color: #7f8c8d;
+    color: var(--text-muted);
     text-align: center;
-    border-top: 2px dashed #34495e;
-    border-bottom: 2px dashed #34495e;
+    border-top: 2px dashed var(--surface-4);
+    border-bottom: 2px dashed var(--surface-4);
     padding: 8px 0;
     margin: 18px 0 14px 0;
     letter-spacing: 1px;
@@ -753,8 +811,8 @@ body:has(.mural-layout) {
 
 .sprint-health-item {
     flex: 1;
-    background: #1a252f;
-    border: 2px solid #34495e;
+    background: var(--surface-2);
+    border: 2px solid var(--surface-4);
     padding: 12px 4px 8px 4px;
     text-align: center;
 }
@@ -767,14 +825,14 @@ body:has(.mural-layout) {
 
 .sprint-health-label {
     font-size: 8px;
-    color: #7f8c8d;
+    color: var(--text-muted);
     line-height: 1.5;
 }
 
 .sla-alert-banner {
     background: rgba(231, 76, 60, 0.12);
-    border: 2px solid #e74c3c;
-    color: #e74c3c;
+    border: 2px solid var(--color-danger);
+    color: var(--color-danger);
     font-size: 9px;
     padding: 8px 10px;
     text-align: center;
@@ -796,9 +854,9 @@ body:has(.mural-layout) {
 }
 
 .pixel-toast {
-    background-color: #2c3e50;
+    background-color: var(--surface-3);
     color: #fff;
-    border: 4px solid #f1c40f;
+    border: 4px solid var(--color-gold);
     padding: 15px 20px;
     font-size: 10px;
     line-height: 1.5;
@@ -807,8 +865,8 @@ body:has(.mural-layout) {
 }
 
 .pixel-toast.error {
-    border-color: #e74c3c;
-    color: #e74c3c;
+    border-color: var(--color-danger);
+    color: var(--color-danger);
 }
 
 @keyframes slideIn {
@@ -835,15 +893,15 @@ body:has(.mural-layout) {
     display: flex;
     gap: 0;
     flex-wrap: wrap;
-    background: #0d1520;
-    border-bottom: 2px solid #2c3e50;
+    background: var(--surface-page);
+    border-bottom: 2px solid var(--surface-3);
     margin-bottom: 0;
 }
 
 .admin-tab {
-    font-family: 'Press Start 2P', cursive;
+    font-family: var(--font-game);
     background: transparent;
-    color: #7f8c8d;
+    color: var(--text-muted);
     border: none;
     border-bottom: 3px solid transparent;
     padding: 14px 18px;
@@ -857,14 +915,14 @@ body:has(.mural-layout) {
 
 .admin-tab:hover {
     background: rgba(255, 255, 255, 0.04);
-    color: #ecf0f1;
-    border-bottom-color: #2c3e50;
+    color: var(--text-primary);
+    border-bottom-color: var(--border-color-subtle);
 }
 
 .admin-tab.active {
     background: rgba(243, 156, 18, 0.06);
-    color: #f39c12;
-    border-bottom: 3px solid #f39c12;
+    color: var(--color-accent);
+    border-bottom: 3px solid var(--color-accent);
 }
 
 .admin-tab-panel {
@@ -905,18 +963,18 @@ body:has(.mural-layout) {
 }
 
 .dashboard-section {
-    background-color: #2c3e50;
-    border: 6px solid #111;
+    background-color: var(--surface-3);
+    border: var(--border-panel);
     padding: 20px;
-    box-shadow: 8px 8px 0px rgba(0,0,0,0.6);
+    box-shadow: var(--shadow-pixel);
 }
 
 .section-title {
-    color: #f1c40f;
+    color: var(--color-gold);
     font-size: 14px;
     margin-top: 0;
     margin-bottom: 20px;
-    border-bottom: 4px dashed #7f8c8d;
+    border-bottom: 4px dashed var(--text-muted);
     padding-bottom: 10px;
 }
 
@@ -928,16 +986,16 @@ body:has(.mural-layout) {
 }
 
 .faction-card {
-    background-color: #34495e;
-    border: 4px solid #7f8c8d;
+    background-color: var(--surface-4);
+    border: 4px solid var(--text-muted);
     padding: 15px;
-    color: #ecf0f1;
+    color: var(--text-primary);
 }
 
 .faction-name {
     font-size: 12px;
     margin-bottom: 15px;
-    color: #3498db;
+    color: var(--color-link);
 }
 
 /* Formulário da Forja de Loot */
@@ -956,7 +1014,7 @@ body:has(.mural-layout) {
 .forge-group label {
     display: block;
     font-size: 10px;
-    color: #ecf0f1;
+    color: var(--text-primary);
     margin-bottom: 8px;
 }
 /* Estoque e Gerenciamento de Itens (Admin) */
@@ -971,9 +1029,9 @@ body:has(.mural-layout) {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #34495e;
+    background-color: var(--surface-4);
     padding: 10px 15px;
-    border: 2px solid #7f8c8d;
+    border: 2px solid var(--text-muted);
 }
 
 .inventory-item-info {
@@ -989,7 +1047,7 @@ body:has(.mural-layout) {
     height: 40px;
     image-rendering: pixelated;
     border: 2px solid #111;
-    background-color: #2c3e50;
+    background-color: var(--surface-3);
 }
 
 .inventory-actions {
@@ -997,8 +1055,8 @@ body:has(.mural-layout) {
     gap: 10px;
 }
 
-.btn-edit { background-color: #2980b9; font-size: 8px; padding: 6px 12px; }
-.btn-delete { background-color: #c0392b; font-size: 8px; padding: 6px 12px; }
+.btn-edit { background-color: var(--color-info); font-size: 8px; padding: 6px 12px; }
+.btn-delete { background-color: var(--color-danger-dark); font-size: 8px; padding: 6px 12px; }
 
 .pagination-controls {
     margin-top: 16px;
@@ -1013,13 +1071,13 @@ body:has(.mural-layout) {
 
 .pagination-info {
     font-size: 9px;
-    color: #bdc3c7;
+    color: var(--text-secondary);
     text-align: center;
 }
 
 .pagination-row .btn-pixel:disabled {
-    background-color: #34495e;
-    color: #7f8c8d;
+    background-color: var(--surface-4);
+    color: var(--text-muted);
     cursor: not-allowed;
     box-shadow: none;
 }
@@ -1038,8 +1096,8 @@ body:has(.mural-layout) {
 }
 
 .modal-content {
-    background-color: #2c3e50;
-    border: 6px solid #111;
+    background-color: var(--surface-3);
+    border: var(--border-panel);
     padding: 30px;
     width: 90%;
     max-width: 400px;
@@ -1050,7 +1108,7 @@ body:has(.mural-layout) {
 .avatar-preview {
     width: 80px;
     height: 80px;
-    border: 4px solid #f1c40f;
+    border: 4px solid var(--color-gold);
     margin: 0 auto 20px auto;
     display: block;
     background-color: #111;
@@ -1070,7 +1128,7 @@ body:has(.mural-layout) {
 .avatar-option {
     width: 45px;
     height: 45px;
-    border: 2px solid #7f8c8d;
+    border: 2px solid var(--text-muted);
     cursor: pointer;
     object-fit: cover;
     image-rendering: pixelated;
@@ -1080,11 +1138,11 @@ body:has(.mural-layout) {
 
 .avatar-option:hover {
     transform: scale(1.1);
-    border-color: #bdc3c7;
+    border-color: var(--text-secondary);
 }
 
 .avatar-option.selected {
-    border: 3px solid #2ecc71;
+    border: 3px solid var(--color-success-bright);
     box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
     transform: scale(1.1);
 }
@@ -1092,14 +1150,14 @@ body:has(.mural-layout) {
 .modal-divider {
     text-align: center;
     font-size: 8px;
-    color: #7f8c8d;
+    color: var(--text-muted);
     margin: 20px 0;
-    border-bottom: 2px dashed #7f8c8d;
+    border-bottom: 2px dashed var(--text-muted);
     line-height: 0.1em;
 }
 
 .modal-divider span {
-    background: #2c3e50;
+    background: var(--surface-3);
     padding: 0 10px;
 }
 
@@ -1119,7 +1177,7 @@ body:has(.mural-layout) {
 }
 
 .users-table th, .users-table td {
-    border: 2px solid #7f8c8d;
+    border: 2px solid var(--text-muted);
     padding: 12px;
     text-align: left;
 }
@@ -1131,8 +1189,8 @@ body:has(.mural-layout) {
 }
 
 .users-table th {
-    background-color: #34495e;
-    color: #f1c40f;
+    background-color: var(--surface-4);
+    color: var(--color-gold);
 }
 
 .users-table tr:nth-child(even) {
@@ -1144,8 +1202,8 @@ body:has(.mural-layout) {
     border: 2px solid #111;
     font-size: 8px;
 }
-.status-badge.online { background-color: #27ae60; }
-.status-badge.cursed { background-color: #c0392b; animation: pulse 1.5s infinite; }
+.status-badge.online { background-color: var(--color-success); }
+.status-badge.cursed { background-color: var(--color-danger-dark); animation: pulse 1.5s infinite; }
 
 @keyframes pulse {
     0% { transform: scale(1); }
@@ -1159,56 +1217,56 @@ body:has(.mural-layout) {
 /* Texto do cronômetro dentro do card */
 .quest-timer {
     font-size: 9px;
-    color: #c0392b;
+    color: var(--color-danger-dark);
     margin-top: 12px;
     text-align: center;
     font-weight: bold;
-    border: 2px dashed #c0392b;
+    border: 2px dashed var(--color-danger-dark);
     padding: 4px;
     background-color: rgba(255, 255, 255, 0.5);
 }
 
 /* --- STATUS 1: ALERTA (SLA QUASE ESTOURANDO) --- */
 .avatar.curse-warning {
-    border-color: #e67e22 !important;
+    border-color: var(--color-warning) !important;
     animation: borderPulse 0.8s infinite alternate;
 }
 .xp-bar.curse-warning {
-    background-color: #e67e22 !important;
+    background-color: var(--color-warning) !important;
 }
 
 /* --- STATUS 2: CRÍTICO (AMALDIÇOADO / SLA ESTOURADO) --- */
 .avatar.curse-critical {
-    border-color: #c0392b !important;
+    border-color: var(--color-danger-dark) !important;
     animation: borderFlicker 0.4s infinite alternate;
     filter: hue-rotate(90deg) saturate(2) brightness(0.8); /* Filtro Verde Zumbi/Envenenado */
 }
 #xpContainer.curse-critical {
     animation: shakeXp 0.2s infinite; /* Barra de XP tremendo */
-    border-color: #c0392b !important;
+    border-color: var(--color-danger-dark) !important;
 }
 .xp-bar.curse-critical {
-    background-color: #c0392b !important;
+    background-color: var(--color-danger-dark) !important;
 }
 
 /* Mesmo efeito de maldição do board (.avatar.curse-critical), mas numa classe própria
    pra funcionar em qualquer avatar do jogador em qualquer tela (guilda, loja, ranking,
    perfil) — sem depender da classe .avatar específica do top-bar do board. */
 .curse-avatar {
-    border-color: #c0392b !important;
+    border-color: var(--color-danger-dark) !important;
     animation: borderFlicker 0.4s infinite alternate;
     filter: hue-rotate(90deg) saturate(2) brightness(0.8); /* Filtro Verde Zumbi/Envenenado */
 }
 
 /* --- ANIMAÇÕES DA MALDIÇÃO --- */
 @keyframes borderPulse {
-    from { box-shadow: 0 0 4px #e67e22; }
-    to { box-shadow: 0 0 16px #e67e22; }
+    from { box-shadow: 0 0 4px var(--color-warning); }
+    to { box-shadow: 0 0 16px var(--color-warning); }
 }
 
 @keyframes borderFlicker {
-    0% { box-shadow: 0 0 4px #c0392b; }
-    100% { box-shadow: 0 0 24px #e74c3c; }
+    0% { box-shadow: 0 0 4px var(--color-danger-dark); }
+    100% { box-shadow: 0 0 24px var(--color-danger); }
 }
 
 @keyframes shakeXp {
@@ -1277,8 +1335,8 @@ body:has(.mural-layout) {
 
 .kanban-scroll-area::-webkit-scrollbar { height: 8px; }
 .kanban-scroll-area::-webkit-scrollbar-track { background: #3e2312; border-top: 2px solid #111; }
-.kanban-scroll-area::-webkit-scrollbar-thumb { background: #f1c40f; border: 1px solid #111; }
-.kanban-scroll-area::-webkit-scrollbar-thumb:hover { background: #e67e22; }
+.kanban-scroll-area::-webkit-scrollbar-thumb { background: var(--color-gold); border: 1px solid #111; }
+.kanban-scroll-area::-webkit-scrollbar-thumb:hover { background: var(--color-warning); }
 
 
 /* Filtro de player */
@@ -1295,15 +1353,15 @@ body:has(.mural-layout) {
     font-family: 'Press Start 2P', monospace;
     font-size: 9px;
     padding: 6px 12px;
-    background: #2c3e50;
+    background: var(--surface-3);
     border: 1px solid #4a6278;
-    color: #ecf0f1;
+    color: var(--text-primary);
     cursor: pointer;
     white-space: nowrap;
 }
 .kanban-filter-btn.active {
-    background: #8e44ad;
-    border-color: #9b59b6;
+    background: var(--color-special);
+    border-color: var(--color-special-light);
     color: #fff;
 }
 
@@ -1330,7 +1388,7 @@ body:has(.mural-layout) {
 }
 
 .kanban-col-title {
-    color: #f1c40f;
+    color: var(--color-gold);
     font-size: 9px;
     letter-spacing: 1px;
     white-space: nowrap;
@@ -1342,10 +1400,10 @@ body:has(.mural-layout) {
 
 .kanban-col-count {
     background: #111;
-    color: #f1c40f;
+    color: var(--color-gold);
     font-size: 9px;
     padding: 2px 8px;
-    border: 2px solid #f1c40f;
+    border: 2px solid var(--color-gold);
     min-width: 20px;
     text-align: center;
 }
@@ -1365,12 +1423,12 @@ body:has(.mural-layout) {
 
 .kanban-col-body::-webkit-scrollbar { width: 6px; }
 .kanban-col-body::-webkit-scrollbar-track { background: #111; border-radius: 2px; }
-.kanban-col-body::-webkit-scrollbar-thumb { background: #f1c40f; border-radius: 2px; border: 1px solid #111; }
-.kanban-col-body::-webkit-scrollbar-thumb:hover { background: #e67e22; }
+.kanban-col-body::-webkit-scrollbar-thumb { background: var(--color-gold); border-radius: 2px; border: 1px solid #111; }
+.kanban-col-body::-webkit-scrollbar-thumb:hover { background: var(--color-warning); }
 
 .kanban-card {
     background: var(--paper-color);
-    border: 4px solid #111;
+    border: var(--border-pixel);
     padding: 14px;
     box-shadow: 5px 5px 0px rgba(0, 0, 0, 0.5);
     position: relative;
@@ -1378,7 +1436,7 @@ body:has(.mural-layout) {
 }
 
 .kanban-card.urgent  { border-color: var(--danger-color); background: #ffcccc; }
-.kanban-card.support { border-color: #8e44ad; background: #ede0f5; }
+.kanban-card.support { border-color: var(--color-special); background: #ede0f5; }
 .kanban-card.done-card { opacity: 0.65; filter: grayscale(0.4); }
 
 .kanban-card-title {
@@ -1406,9 +1464,9 @@ body:has(.mural-layout) {
     margin-bottom: 8px;
 }
 
-.badge-normal  { background: #2980b9; color: #fff; }
-.badge-urgent  { background: #c0392b; color: #fff; }
-.badge-support { background: #8e44ad; color: #fff; }
+.badge-normal  { background: var(--color-info); color: #fff; }
+.badge-urgent  { background: var(--color-danger-dark); color: #fff; }
+.badge-support { background: var(--color-special); color: #fff; }
 .badge-jira    { background: #0052cc; color: #fff; }
 
 .kanban-assignee {
@@ -1429,7 +1487,7 @@ body:has(.mural-layout) {
 }
 
 .btn-kanban {
-    font-family: 'Press Start 2P', cursive;
+    font-family: var(--font-game);
     font-size: 8px;
     padding: 8px 10px;
     border: 3px solid #111;
@@ -1441,15 +1499,15 @@ body:has(.mural-layout) {
 }
 
 .btn-kanban:active { transform: translate(3px, 3px); box-shadow: none; }
-.btn-pickup { background: #27ae60; color: #fff; }
-.btn-pickup:hover { background: #2ecc71; }
+.btn-pickup { background: var(--color-success); color: #fff; }
+.btn-pickup:hover { background: var(--color-success-bright); }
 
 /* Drag-and-drop */
 .kanban-card.dragging { opacity: 0.4; cursor: grabbing; }
 .kanban-card[draggable="true"] { cursor: grab; }
 .kanban-col-body.dnd-over {
     background: rgba(241, 196, 15, 0.08);
-    outline: 2px dashed #f1c40f;
+    outline: 2px dashed var(--color-gold);
     outline-offset: -4px;
 }
 @keyframes curse-pulse {
@@ -1457,27 +1515,27 @@ body:has(.mural-layout) {
     50%       { box-shadow: 3px 3px 0 #ff3333, 0 0 8px rgba(255,50,50,0.5); }
 }
 .btn-kanban:disabled {
-    background: #7f8c8d;
-    color: #bdc3c7;
+    background: var(--text-muted);
+    color: var(--text-secondary);
     cursor: not-allowed;
     box-shadow: none;
 }
 
 .wip-warning {
     font-size: 8px;
-    color: #e74c3c;
+    color: var(--color-danger);
     text-align: center;
     padding: 4px;
-    border: 2px dashed #e74c3c;
+    border: 2px dashed var(--color-danger);
     background: rgba(231, 76, 60, 0.1);
     margin-bottom: 6px;
 }
 
 .kanban-sla-timer {
     font-size: 8px;
-    color: #c0392b;
+    color: var(--color-danger-dark);
     text-align: center;
-    border: 2px dashed #c0392b;
+    border: 2px dashed var(--color-danger-dark);
     padding: 4px;
     background: rgba(255, 255, 255, 0.5);
     margin-bottom: 6px;
@@ -1487,12 +1545,12 @@ body:has(.mural-layout) {
    15. MODAL DE DETALHES DA QUEST
    ========================================= */
 .quest-detail-modal {
-    background: #1a252f;
-    color: #ecf0f1;
+    background: var(--surface-2);
+    color: var(--text-primary);
     max-width: 500px;
     max-height: 88vh;
     overflow-y: auto;
-    border: 6px solid #f1c40f;
+    border: 6px solid var(--color-gold);
     box-shadow: 16px 16px 0px rgba(0,0,0,0.9);
 }
 
@@ -1512,10 +1570,10 @@ body:has(.mural-layout) {
 .quest-modal-title {
     font-size: 14px;
     line-height: 1.8;
-    color: #f1c40f;
+    color: var(--color-gold);
     margin: 14px 0;
     padding-bottom: 14px;
-    border-bottom: 4px dotted #34495e;
+    border-bottom: 4px dotted var(--surface-4);
 }
 
 .quest-modal-status-row {
@@ -1524,7 +1582,7 @@ body:has(.mural-layout) {
     gap: 12px;
     margin-bottom: 16px;
     font-size: 10px;
-    color: #bdc3c7;
+    color: var(--text-secondary);
 }
 
 .quest-modal-rewards {
@@ -1534,7 +1592,7 @@ body:has(.mural-layout) {
     margin: 16px 0;
     padding: 18px;
     background: #0d1b24;
-    border: 3px solid #34495e;
+    border: 3px solid var(--surface-4);
 }
 
 .quest-modal-reward-item {
@@ -1553,19 +1611,19 @@ body:has(.mural-layout) {
 .quest-modal-reward-divider {
     width: 3px;
     height: 50px;
-    background: #34495e;
+    background: var(--surface-4);
 }
 
 .quest-modal-section {
     margin: 10px 0;
     padding: 12px 14px;
     background: #0d1b24;
-    border-left: 4px solid #f1c40f;
+    border-left: 4px solid var(--color-gold);
 }
 
 .quest-modal-label {
     font-size: 9px;
-    color: #7f8c8d;
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 1px;
     margin-bottom: 8px;
@@ -1573,17 +1631,17 @@ body:has(.mural-layout) {
 
 .quest-modal-value {
     font-size: 11px;
-    color: #ecf0f1;
+    color: var(--text-primary);
     line-height: 1.6;
 }
 
 .quest-modal-sla-none {
-    color: #2ecc71;
+    color: var(--color-success-bright);
     font-size: 11px;
 }
 
 .quest-modal-sla-active {
-    color: #e74c3c;
+    color: var(--color-danger);
     font-size: 11px;
 }
 
@@ -1598,10 +1656,10 @@ body:has(.mural-layout) {
 
 .kanban-done-stamp {
     font-size: 8px;
-    color: #27ae60;
+    color: var(--color-success);
     text-align: center;
     padding: 4px;
-    border: 2px solid #27ae60;
+    border: 2px solid var(--color-success);
     background: rgba(39, 174, 96, 0.1);
 }
 
@@ -1614,8 +1672,8 @@ body:has(.mural-layout) {
 }
 
 .report-card {
-    background-color: #1a252f; /* Um tom mais escuro que o background do painel */
-    border: 4px solid #34495e;
+    background-color: var(--surface-2); /* Um tom mais escuro que o background do painel */
+    border: 4px solid var(--surface-4);
     padding: 15px;
     text-align: center;
     border-radius: 4px;
@@ -1623,7 +1681,7 @@ body:has(.mural-layout) {
 
 .report-label {
     font-size: 13px;
-    color: #bdc3c7;
+    color: var(--text-secondary);
     text-transform: uppercase;
     margin-bottom: 8px;
 }
@@ -1638,8 +1696,8 @@ body:has(.mural-layout) {
 }
 
 /* Cores dos valores */
-.gold-text { color: #f1c40f; text-shadow: 1px 1px 0 #000; }
-.sla-text { color: #2ecc71; text-shadow: 1px 1px 0 #000; }
+.gold-text { color: var(--color-gold); text-shadow: 1px 1px 0 #000; }
+.sla-text { color: var(--color-success-bright); text-shadow: 1px 1px 0 #000; }
 
 /* =========================================
    16. LEVEL UP OVERLAY
@@ -1667,38 +1725,38 @@ body:has(.mural-layout) {
 
 .levelup-stars {
     font-size: 24px;
-    color: #f1c40f;
+    color: var(--color-gold);
     letter-spacing: 12px;
     animation: levelup-spin 1s linear infinite;
 }
 
 .levelup-title {
-    font-family: 'Press Start 2P', cursive;
+    font-family: var(--font-game);
     font-size: 32px;
-    color: #f1c40f;
-    text-shadow: 4px 4px 0 #000, 0 0 40px #f1c40f, 0 0 80px #e67e22;
+    color: var(--color-gold);
+    text-shadow: 4px 4px 0 #000, 0 0 40px var(--color-gold), 0 0 80px var(--color-warning);
     animation: levelup-glow 0.6s infinite alternate;
 }
 
 .levelup-number {
-    font-family: 'Press Start 2P', cursive;
+    font-family: var(--font-game);
     font-size: 96px;
     color: #fff;
-    text-shadow: 6px 6px 0 #111, 0 0 60px #f1c40f;
+    text-shadow: 6px 6px 0 #111, 0 0 60px var(--color-gold);
     line-height: 1;
 }
 
 .levelup-subtitle {
-    font-family: 'Press Start 2P', cursive;
+    font-family: var(--font-game);
     font-size: 11px;
-    color: #ecf0f1;
+    color: var(--text-primary);
     text-shadow: 2px 2px 0 #000;
 }
 
 .levelup-hint {
-    font-family: 'Press Start 2P', cursive;
+    font-family: var(--font-game);
     font-size: 8px;
-    color: #7f8c8d;
+    color: var(--text-muted);
     margin-top: 8px;
 }
 
@@ -1713,8 +1771,8 @@ body:has(.mural-layout) {
 }
 
 @keyframes levelup-glow {
-    from { text-shadow: 4px 4px 0 #000, 0 0 20px #f1c40f; }
-    to   { text-shadow: 4px 4px 0 #000, 0 0 60px #f1c40f, 0 0 100px #e67e22; }
+    from { text-shadow: 4px 4px 0 #000, 0 0 20px var(--color-gold); }
+    to   { text-shadow: 4px 4px 0 #000, 0 0 60px var(--color-gold), 0 0 100px var(--color-warning); }
 }
 
 @keyframes levelup-spin {
@@ -1725,7 +1783,7 @@ body:has(.mural-layout) {
 
 /* Botão de refresh com countdown */
 #btnRefreshBoard {
-    background-color: #2980b9;
+    background-color: var(--color-info);
     min-width: 120px;
     transition: background-color 0.3s;
 }
@@ -1763,10 +1821,10 @@ body:has(.mural-layout) {
 
 /* — Card de Perfil — */
 .shop-profile {
-    background-color: #2c3e50;
-    border: 6px solid #111;
+    background-color: var(--surface-3);
+    border: var(--border-panel);
     padding: 20px;
-    box-shadow: 8px 8px 0px rgba(0,0,0,0.6);
+    box-shadow: var(--shadow-pixel);
     position: sticky;
     top: var(--sticky-top);
     display: flex;
@@ -1786,7 +1844,7 @@ body:has(.mural-layout) {
 .profile-avatar {
     width: 80px;
     height: 80px;
-    border: 4px solid #f1c40f;
+    border: 4px solid var(--color-gold);
     object-fit: cover;
     display: block;
 }
@@ -1795,9 +1853,9 @@ body:has(.mural-layout) {
     position: absolute;
     bottom: -10px;
     right: -10px;
-    background: #f1c40f;
+    background: var(--color-gold);
     color: #111;
-    font-family: 'Press Start 2P', cursive;
+    font-family: var(--font-game);
     font-size: 7px;
     padding: 4px 6px;
     border: 3px solid #111;
@@ -1806,7 +1864,7 @@ body:has(.mural-layout) {
 
 .profile-name {
     font-size: 10px;
-    color: #f1c40f;
+    color: var(--color-gold);
     text-align: center;
     margin: 0;
     line-height: 1.6;
@@ -1815,9 +1873,9 @@ body:has(.mural-layout) {
 
 .profile-guild-badge {
     font-size: 8px;
-    color: #bdc3c7;
-    background: #1a252f;
-    border: 2px solid #34495e;
+    color: var(--text-secondary);
+    background: var(--surface-2);
+    border: 2px solid var(--surface-4);
     padding: 6px 10px;
     text-align: center;
     width: 100%;
@@ -1832,7 +1890,7 @@ body:has(.mural-layout) {
     display: flex;
     justify-content: space-between;
     font-size: 7px;
-    color: #7f8c8d;
+    color: var(--text-muted);
     margin-bottom: 5px;
 }
 
@@ -1840,12 +1898,12 @@ body:has(.mural-layout) {
     width: 100%;
     height: 10px;
     background: #111;
-    border: 2px solid #34495e;
+    border: 2px solid var(--surface-4);
 }
 
 .profile-xp-fill {
     height: 100%;
-    background: #27ae60;
+    background: var(--color-success);
     transition: width 0.6s ease-in-out;
     min-width: 2px;
 }
@@ -1853,7 +1911,7 @@ body:has(.mural-layout) {
 .profile-divider {
     width: 100%;
     border: none;
-    border-top: 3px dashed #34495e;
+    border-top: 3px dashed var(--surface-4);
 }
 
 .profile-stat-row {
@@ -1864,8 +1922,8 @@ body:has(.mural-layout) {
 
 .profile-stat {
     flex: 1;
-    background: #1a252f;
-    border: 2px solid #34495e;
+    background: var(--surface-2);
+    border: 2px solid var(--surface-4);
     padding: 10px 4px;
     text-align: center;
     display: flex;
@@ -1878,27 +1936,27 @@ body:has(.mural-layout) {
 
 .profile-stat-value {
     font-size: 10px;
-    color: #f1c40f;
+    color: var(--color-gold);
 }
 
 .profile-stat-label {
     font-size: 7px;
-    color: #7f8c8d;
+    color: var(--text-muted);
 }
 
 /* — Itens inacessíveis (B: Affordability) — */
 .shop-item.locked {
     opacity: 0.5;
     filter: grayscale(0.4);
-    border-color: #7f8c8d !important;
+    border-color: var(--text-muted) !important;
 }
 
 .shop-item.locked .item-price {
-    color: #e74c3c;
+    color: var(--color-danger);
 }
 
 .shop-item.locked .btn-buy {
-    background-color: #7f8c8d !important;
+    background-color: var(--text-muted) !important;
     cursor: not-allowed;
     box-shadow: none;
     transform: none !important;
@@ -1911,7 +1969,7 @@ body:has(.mural-layout) {
 
 .shop-item-lock-notice {
     font-size: 8px;
-    color: #e74c3c;
+    color: var(--color-danger);
     margin-bottom: 6px;
 }
 
@@ -1920,13 +1978,13 @@ body:has(.mural-layout) {
     font-size: 9px;
     padding: 8px 10px;
     text-align: right;
-    border-top: 2px dashed #34495e;
+    border-top: 2px dashed var(--surface-4);
     margin-top: -10px;
     margin-bottom: 14px;
 }
 
-.cart-balance-preview.ok    { color: #2ecc71; }
-.cart-balance-preview.short { color: #e74c3c; animation: pulse 1s infinite; }
+.cart-balance-preview.ok    { color: var(--color-success-bright); }
+.cart-balance-preview.short { color: var(--color-danger); animation: pulse 1s infinite; }
 
 /* =========================================
    20. RESPONSIVIDADE — SEM MOBILE (≥768px)
@@ -1998,7 +2056,7 @@ body:has(.mural-layout) {
 #loading-overlay {
     position: fixed;
     inset: 0;
-    background: #0d1520;
+    background: var(--surface-page);
     z-index: 99999;
     display: flex;
     flex-direction: column;
@@ -2018,22 +2076,22 @@ body:has(.mural-layout) {
     line-height: 1;
 }
 .loading-text {
-    font-family: 'Press Start 2P', cursive;
+    font-family: var(--font-game);
     font-size: 9px;
-    color: #f1c40f;
+    color: var(--color-gold);
     letter-spacing: 3px;
     animation: loading-blink 1.1s step-end infinite;
 }
 .loading-bar-track {
     width: 160px;
     height: 6px;
-    background: #1a252f;
-    border: 2px solid #2c3e50;
+    background: var(--surface-2);
+    border: var(--border-subtle);
     overflow: hidden;
 }
 .loading-bar-fill {
     height: 100%;
-    background: #f1c40f;
+    background: var(--color-gold);
     animation: loading-bar 1.4s ease-in-out infinite;
 }
 @keyframes loading-pulse {
