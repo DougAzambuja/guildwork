@@ -250,6 +250,227 @@ describe('Encounters — DELETE /api/encounters/:id', () => {
     });
 });
 
+// ─── PATCH /api/encounters/:id ──────────────────────────────────────────────
+
+describe('Encounters — PATCH /api/encounters/:id', () => {
+    it('admin deve alterar active_until de um encontro', async () => {
+        const { token } = await createAdmin();
+
+        const created = await triggerEncounter(token, {
+            title:  'Evento a Editar',
+            effect: { kind: 'xp_bonus', value: 0.2, duration_hours: 2 },
+        });
+
+        const novaData = new Date(Date.now() + 8 * 3_600_000).toISOString();
+
+        const res = await request(app)
+            .patch(`/api/encounters/${created.body._id}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({ active_until: novaData });
+
+        expect(res.status).toBe(200);
+        expect(new Date(res.body.active_until).getTime()).toBeCloseTo(
+            new Date(novaData).getTime(),
+            -3,
+        );
+    });
+
+    it('admin deve reagendar start_at de um encontro', async () => {
+        const { token } = await createAdmin();
+
+        const futuro = new Date(Date.now() + 2 * 3_600_000).toISOString();
+        const created = await triggerEncounter(token, {
+            title:   'Evento Agendado',
+            effect:  { kind: 'xp_penalty', value: 0.3, duration_hours: 1 },
+            start_at: futuro,
+        });
+
+        const novoInicio = new Date(Date.now() + 4 * 3_600_000).toISOString();
+
+        const res = await request(app)
+            .patch(`/api/encounters/${created.body._id}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({ start_at: novoInicio });
+
+        expect(res.status).toBe(200);
+        expect(new Date(res.body.start_at).getTime()).toBeCloseTo(
+            new Date(novoInicio).getTime(),
+            -3,
+        );
+    });
+
+    it('deve retornar 404 para id inexistente', async () => {
+        const { token } = await createAdmin();
+
+        const res = await request(app)
+            .patch('/api/encounters/000000000000000000000000')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ active_until: new Date().toISOString() });
+
+        expect(res.status).toBe(404);
+    });
+
+    it('deve retornar 403 para funcionário', async () => {
+        const { token: adminToken } = await createAdmin();
+        const { token: playerToken } = await createPlayer();
+
+        const created = await triggerEncounter(adminToken, {
+            effect: { kind: 'xp_bonus', value: 0.1, duration_hours: 1 },
+        });
+
+        const res = await request(app)
+            .patch(`/api/encounters/${created.body._id}`)
+            .set('Authorization', `Bearer ${playerToken}`)
+            .send({ active_until: new Date().toISOString() });
+
+        expect(res.status).toBe(403);
+    });
+
+    it('deve retornar 401 sem token', async () => {
+        const res = await request(app)
+            .patch('/api/encounters/000000000000000000000000')
+            .send({ active_until: new Date().toISOString() });
+        expect(res.status).toBe(401);
+    });
+});
+
+// ─── Agendamento com start_at ────────────────────────────────────────────────
+
+describe('Encounters — start_at scheduling', () => {
+    it('evento com start_at futuro não aparece para funcionário', async () => {
+        const { token: adminToken } = await createAdmin();
+        const { token: playerToken } = await createPlayer({ faction: 'Produto' });
+
+        const futuro = new Date(Date.now() + 2 * 3_600_000).toISOString();
+
+        await triggerEncounter(adminToken, {
+            title:    'Evento Futuro',
+            type:     'global',
+            effect:   { kind: 'xp_bonus', value: 0.2, duration_hours: 4 },
+            start_at: futuro,
+        });
+
+        const res = await request(app)
+            .get('/api/encounters/active')
+            .set('Authorization', `Bearer ${playerToken}`);
+
+        expect(res.status).toBe(200);
+        expect(res.body.length).toBe(0);
+    });
+
+    it('evento com start_at no passado aparece para funcionário', async () => {
+        const { token: adminToken } = await createAdmin();
+        const { token: playerToken } = await createPlayer({ faction: 'Produto' });
+
+        const passado = new Date(Date.now() - 3_600_000).toISOString();
+
+        await triggerEncounter(adminToken, {
+            title:    'Evento Passado',
+            type:     'global',
+            effect:   { kind: 'xp_bonus', value: 0.2, duration_hours: 4 },
+            start_at: passado,
+        });
+
+        const res = await request(app)
+            .get('/api/encounters/active')
+            .set('Authorization', `Bearer ${playerToken}`);
+
+        expect(res.status).toBe(200);
+        expect(res.body.length).toBe(1);
+        expect(res.body[0].title).toBe('Evento Passado');
+    });
+
+    it('active_until é calculado a partir de start_at quando fornecido', async () => {
+        const { token } = await createAdmin();
+
+        const start_at = new Date(Date.now() + 3_600_000);
+        const durationHours = 2;
+
+        const res = await triggerEncounter(token, {
+            title:    'Evento com Start Futuro',
+            type:     'global',
+            effect:   { kind: 'xp_bonus', value: 0.1, duration_hours: durationHours },
+            start_at: start_at.toISOString(),
+        });
+
+        expect(res.status).toBe(201);
+        const expectedUntil = start_at.getTime() + durationHours * 3_600_000;
+        expect(new Date(res.body.active_until).getTime()).toBeCloseTo(expectedUntil, -3);
+    });
+});
+
+// ─── Admin bypass no GET /active ────────────────────────────────────────────
+
+describe('Encounters — admin bypass em GET /active', () => {
+    it('admin vê eventos de facções que não a sua', async () => {
+        const { token: adminToken } = await createAdmin();
+
+        await triggerEncounter(adminToken, {
+            title:            'Evento Dev',
+            type:             'faction',
+            affected_faction: 'Dev',
+            effect:           { kind: 'xp_bonus', value: 0.2, duration_hours: 2 },
+        });
+
+        await triggerEncounter(adminToken, {
+            title:            'Evento Suporte',
+            type:             'faction',
+            affected_faction: 'Suporte',
+            effect:           { kind: 'gold_bonus', value: 0.1, duration_hours: 1 },
+        });
+
+        const res = await request(app)
+            .get('/api/encounters/active')
+            .set('Authorization', `Bearer ${adminToken}`);
+
+        expect(res.status).toBe(200);
+        expect(res.body.length).toBe(2);
+    });
+
+    it('admin vê eventos agendados (start_at futuro)', async () => {
+        const { token: adminToken } = await createAdmin();
+
+        const futuro = new Date(Date.now() + 5 * 3_600_000).toISOString();
+
+        await triggerEncounter(adminToken, {
+            title:    'Evento Agendado Admin',
+            type:     'global',
+            effect:   { kind: 'xp_bonus', value: 0.3, duration_hours: 4 },
+            start_at: futuro,
+        });
+
+        const res = await request(app)
+            .get('/api/encounters/active')
+            .set('Authorization', `Bearer ${adminToken}`);
+
+        expect(res.status).toBe(200);
+        expect(res.body.length).toBe(1);
+        expect(res.body[0].title).toBe('Evento Agendado Admin');
+    });
+
+    it('funcionário não vê evento agendado que admin vê', async () => {
+        const { token: adminToken } = await createAdmin();
+        const { token: playerToken } = await createPlayer({ faction: 'Produto' });
+
+        const futuro = new Date(Date.now() + 5 * 3_600_000).toISOString();
+
+        await triggerEncounter(adminToken, {
+            title:    'Só para Admin',
+            type:     'global',
+            effect:   { kind: 'xp_bonus', value: 0.2, duration_hours: 4 },
+            start_at: futuro,
+        });
+
+        const [adminRes, playerRes] = await Promise.all([
+            request(app).get('/api/encounters/active').set('Authorization', `Bearer ${adminToken}`),
+            request(app).get('/api/encounters/active').set('Authorization', `Bearer ${playerToken}`),
+        ]);
+
+        expect(adminRes.body.length).toBe(1);
+        expect(playerRes.body.length).toBe(0);
+    });
+});
+
 // ─── Efeito na conclusão de quest ───────────────────────────────────────────
 
 describe('Encounters — Efeito na conclusão de quest', () => {

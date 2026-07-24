@@ -203,6 +203,9 @@ window.openEditUserModal = (userId) => {
     document.getElementById('editUserNome').value     = user.nome || '';
     document.getElementById('editUserPassword').value = '';
     document.getElementById('editForcePasswordChange').checked = !!user.force_password_change;
+    document.getElementById('editUserBirthDate').value = user.birth_date
+        ? new Date(user.birth_date).toISOString().slice(0, 10)
+        : '';
 
     const guildaSelect = document.getElementById('editUserGuilda');
     guildaSelect.value = user.role === 'admin' ? '__admin__' : (user.faction || 'Produto');
@@ -226,11 +229,13 @@ async function submitEditUser(e) {
     const isAdmin  = guilda === '__admin__';
     const password = document.getElementById('editUserPassword').value;
 
+    const birthVal = document.getElementById('editUserBirthDate').value;
     const payload = {
         nome:                  document.getElementById('editUserNome').value.trim(),
         role:                  isAdmin ? 'admin' : 'funcionario',
         faction:               isAdmin ? 'Produto' : guilda,
         force_password_change: document.getElementById('editForcePasswordChange').checked,
+        birth_date:            birthVal || null,
     };
     if (password && password.trim().length >= 6) payload.password = password;
 

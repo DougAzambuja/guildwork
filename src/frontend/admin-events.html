@@ -89,8 +89,64 @@
         }
         .form-field input:focus,
         .form-field select:focus { border-color: #3498db; }
+        .form-field input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            filter: invert(1) brightness(0.75);
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+            padding: 2px;
+            border-radius: 2px;
+        }
+        .form-field input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+            filter: invert(1) brightness(1);
+        }
         .form-row { display: flex; gap: 12px; }
         .form-row .form-field { flex: 1; }
+
+        /* Tabs de seção */
+        .events-tab-bar {
+            display: flex;
+            border-bottom: 4px solid #2c3e50;
+            margin-bottom: 20px;
+            gap: 0;
+        }
+        .events-tab-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 9px;
+            padding: 10px 14px;
+            border: none;
+            background: transparent;
+            color: #7f8c8d;
+            cursor: pointer;
+            border-bottom: 4px solid transparent;
+            margin-bottom: -4px;
+            line-height: 1.4;
+        }
+        .events-tab-btn.active { color: #f1c40f; border-bottom-color: #f1c40f; }
+        .events-tab-btn:hover:not(.active) { color: #ecf0f1; }
+
+        /* Cards de evento social */
+        .social-event-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            background: #0d1b2a;
+            border: 1px solid #2c3e50;
+            margin-bottom: 8px;
+            transition: border-color 0.15s;
+        }
+        .social-event-card:hover { border-color: #2980b9; }
+        .social-event-card.past { opacity: 0.5; }
+        .social-event-icon {
+            font-size: 22px;
+            flex-shrink: 0;
+            width: 36px;
+            text-align: center;
+        }
+        .social-event-body { flex: 1; min-width: 0; }
+        .social-event-title { font-size: 11px; color: #ecf0f1; margin-bottom: 4px; }
+        .social-event-meta  { font-size: 9px; color: #7f8c8d; }
 
         /* Painel direito */
         .ev-panel {
@@ -147,29 +203,68 @@
             <!-- ══ COLUNA ESQUERDA: bloco único ══ -->
             <div class="dashboard-section">
 
-                <!-- Título principal dentro do bloco -->
-                <h2 class="section-title">⚡ EVENTOS ALEATÓRIOS</h2>
-
-                <!-- ── EVENTOS ATIVOS ── -->
-                <h3 class="section-title" style="font-size:12px; margin-bottom:14px;">🟢 EVENTOS ATIVOS</h3>
-                <div id="activeEventsList" data-cy="active-events-list">
-                    <div style="font-size:10px;color:#7f8c8d;text-align:center;padding:12px 0;">Carregando...</div>
+                <!-- Tabs de seção -->
+                <div class="events-tab-bar">
+                    <button id="tabBtnRandom" class="events-tab-btn active" data-cy="tab-random-events"
+                            onclick="switchEventsTab('random')">⚡ EVENTOS ALEATÓRIOS</button>
+                    <button id="tabBtnSocial" class="events-tab-btn" data-cy="tab-social-events"
+                            onclick="switchEventsTab('social')">📢 MURAL DE AVISOS</button>
                 </div>
 
-                <hr class="events-divider">
+                <!-- ═══ TAB: EVENTOS ALEATÓRIOS ═══ -->
+                <div id="tabRandomEvents">
 
-                <!-- ── BIBLIOTECA DE TEMPLATES ── -->
-                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
-                    <h3 class="section-title" style="font-size:12px; margin:0; border:none; padding:0;">
-                        📚 BIBLIOTECA DE TEMPLATES
-                    </h3>
-                    <button class="ev-btn" data-cy="btn-new-template" onclick="showCreateForm()"
-                            style="background:#f39c12; color:#1a252f;">
-                        + Novo Template
-                    </button>
+                    <!-- ── EVENTOS ATIVOS ── -->
+                    <h3 class="section-title" style="font-size:12px; margin-bottom:14px;">🟢 EVENTOS ATIVOS</h3>
+                    <div id="activeEventsList" data-cy="active-events-list">
+                        <div style="font-size:10px;color:#7f8c8d;text-align:center;padding:12px 0;">Carregando...</div>
+                    </div>
+
+                    <hr class="events-divider">
+
+                    <!-- ── BIBLIOTECA DE TEMPLATES ── -->
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+                        <h3 class="section-title" style="font-size:12px; margin:0; border:none; padding:0;">
+                            📚 BIBLIOTECA DE TEMPLATES
+                        </h3>
+                        <button class="ev-btn" data-cy="btn-new-template" onclick="showCreateForm()"
+                                style="background:#f39c12; color:#1a252f;">
+                            + Novo Template
+                        </button>
+                    </div>
+                    <div id="templateList" data-cy="template-list">
+                        <div style="font-size:10px;color:#7f8c8d;text-align:center;padding:12px 0;">Carregando biblioteca...</div>
+                    </div>
+
                 </div>
-                <div id="templateList" data-cy="template-list">
-                    <div style="font-size:10px;color:#7f8c8d;text-align:center;padding:12px 0;">Carregando biblioteca...</div>
+
+                <!-- ═══ TAB: MURAL DE AVISOS ═══ -->
+                <div id="tabSocialEvents" style="display:none;">
+
+                    <!-- Aniversários do mês -->
+                    <div id="birthdaySection" style="margin-bottom:18px;">
+                        <h3 class="section-title" style="font-size:11px; margin-bottom:10px;">🎂 ANIVERSÁRIOS DO MÊS</h3>
+                        <div id="birthdayList">
+                            <div style="font-size:9px;color:#7f8c8d;text-align:center;padding:8px 0;">Carregando...</div>
+                        </div>
+                    </div>
+
+                    <hr class="events-divider">
+
+                    <!-- Agenda de eventos sociais -->
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+                        <h3 class="section-title" style="font-size:12px; margin:0; border:none; padding:0;">
+                            📅 AGENDA SOCIAL
+                        </h3>
+                        <button class="ev-btn" data-cy="btn-new-social-event" onclick="showSocialPanel()"
+                                style="background:#2980b9;">
+                            + Novo Evento
+                        </button>
+                    </div>
+                    <div id="socialEventsList" data-cy="social-events-list">
+                        <div style="font-size:10px;color:#7f8c8d;text-align:center;padding:12px 0;">Carregando agenda...</div>
+                    </div>
+
                 </div>
 
             </div>
@@ -177,7 +272,7 @@
             <!-- ══ COLUNA DIREITA: painel de ação ══ -->
             <div id="rightPanel">
 
-                <!-- ESTADO: idle -->
+                <!-- ESTADO: idle — Eventos Aleatórios -->
                 <div id="panelIdle" class="ev-panel">
                     <div class="ev-panel-title">🎲 MESTRE DO JOGO</div>
                     <div class="ev-panel-text">
@@ -185,6 +280,26 @@
                         <p>Clique em <strong style="color:#f39c12;">+ Novo Template</strong> para criar um novo evento na biblioteca.</p>
                         <p style="margin-top:14px;padding-top:14px;border-top:1px solid #2c3e50;">
                             Eventos ativos aplicam buffs/debuffs <strong style="color:#f1c40f;">passivos</strong> — os jogadores veem em seus murais em tempo real.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- ESTADO: idle — Mural de Avisos -->
+                <div id="panelIdleSocial" class="ev-panel" style="display:none;">
+                    <div class="ev-panel-title">📋 MURAL DE AVISOS</div>
+                    <div class="ev-panel-text">
+                        <p>Clique em <strong style="color:#2980b9;">+ Novo Evento</strong> para cadastrar um aviso na agenda da equipe.</p>
+                        <p style="margin-top:14px;padding-top:14px;border-top:1px solid #2c3e50;">
+                            Cada aviso tem uma <strong style="color:#f1c40f;">data do evento</strong> — quando ele acontece — e uma <strong style="color:#2ecc71;">data de exibição</strong> opcional — até quando aparece no mural.
+                        </p>
+                        <p>
+                            Sem data de exibição, o aviso <strong style="color:#e74c3c;">some automaticamente</strong> quando o evento começa. Com ela, continua visível até o prazo definido.
+                        </p>
+                        <p style="margin-top:14px;padding-top:14px;border-top:1px solid #2c3e50;">
+                            🎂 Os <strong style="color:#f39c12;">aniversários do mês</strong> aparecem aqui para facilitar a criação de um aviso de parabéns.
+                        </p>
+                        <p>
+                            Avisos podem ser para <strong style="color:#ecf0f1;">toda a empresa</strong> ou segmentados por <strong style="color:#9b59b6;">facção</strong> — jogadores veem apenas o que é relevante para eles.
                         </p>
                     </div>
                 </div>
@@ -204,25 +319,23 @@
                             <label>DESCRIÇÃO</label>
                             <input id="tplDesc" data-cy="input-tpl-desc" type="text" placeholder="Detalhes (opcional)">
                         </div>
+                        <div class="form-field">
+                            <label>EFEITO *</label>
+                            <select id="tplKind" data-cy="select-tpl-kind" required>
+                                <option value="xp_bonus">✨ Bônus de XP</option>
+                                <option value="gold_bonus">💰 Bônus de Gold</option>
+                                <option value="xp_penalty">💀 Penalidade de XP</option>
+                                <option value="gold_penalty">💸 Penalidade de Gold</option>
+                                <option value="luck">🍀 Sorte (2× XP)</option>
+                                <option value="slow">🐌 Lentidão (SLA)</option>
+                                <option value="store_discount">🏷️ Desconto na Loja</option>
+                            </select>
+                        </div>
                         <div class="form-row">
-                            <div class="form-field">
-                                <label>EFEITO *</label>
-                                <select id="tplKind" data-cy="select-tpl-kind" required>
-                                    <option value="xp_bonus">✨ Bônus de XP</option>
-                                    <option value="gold_bonus">💰 Bônus de Gold</option>
-                                    <option value="xp_penalty">💀 Penalidade de XP</option>
-                                    <option value="gold_penalty">💸 Penalidade de Gold</option>
-                                    <option value="luck">🍀 Sorte (2× XP)</option>
-                                    <option value="slow">🐌 Lentidão (SLA)</option>
-                                    <option value="store_discount">🏷️ Desconto na Loja</option>
-                                </select>
-                            </div>
                             <div class="form-field">
                                 <label>VALOR (%) *</label>
                                 <input id="tplValue" data-cy="input-tpl-value" type="number" required min="1" max="100" value="50">
                             </div>
-                        </div>
-                        <div class="form-row">
                             <div class="form-field">
                                 <label>DURAÇÃO PADRÃO (h) *</label>
                                 <input id="tplDuration" data-cy="input-tpl-duration" type="number" required min="1" max="168" value="2">
@@ -281,7 +394,11 @@
                         </div>
                         <div id="triggerStartAtWrap" class="form-field" style="display:none;">
                             <label>DATA E HORA DE INÍCIO</label>
-                            <input id="triggerStartAt" data-cy="input-trigger-start-at" type="datetime-local">
+                            <input id="triggerStartAt" data-cy="input-trigger-start-at" type="datetime-local"
+                                   onchange="_validateFutureDate(this, 'triggerStartAtHint')">
+                            <div id="triggerStartAtHint" style="font-size:8px;color:#e74c3c;margin-top:4px;display:none;">
+                                ⚠️ Selecione uma data no futuro.
+                            </div>
                         </div>
                     </div>
 
@@ -289,7 +406,11 @@
                     <div id="triggerModePeriod" style="display:none;">
                         <div class="form-field">
                             <label>INÍCIO</label>
-                            <input id="triggerPeriodStart" data-cy="input-trigger-period-start" type="datetime-local" onchange="_updateDurationPreview()">
+                            <input id="triggerPeriodStart" data-cy="input-trigger-period-start" type="datetime-local"
+                                   onchange="_updateDurationPreview(); _validateFutureDate(this, 'triggerPeriodStartHint')">
+                            <div id="triggerPeriodStartHint" style="font-size:8px;color:#e74c3c;margin-top:4px;display:none;">
+                                ⚠️ Selecione uma data no futuro.
+                            </div>
                         </div>
                         <div class="form-field">
                             <label>TÉRMINO</label>
@@ -320,6 +441,53 @@
                         <button type="button" class="ev-btn" onclick="showIdle()" style="background:#34495e;">Cancelar</button>
                         <button type="button" class="ev-btn" data-cy="btn-confirm-trigger" onclick="submitTrigger()" style="background:#8e44ad;">⚡ Acionar!</button>
                     </div>
+                </div>
+
+                <!-- ESTADO: criar / editar evento social -->
+                <div id="panelSocial" class="ev-panel" style="display:none;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:10px;border-bottom:4px dashed #3d5166;">
+                        <button onclick="showIdle()" style="background:transparent;border:none;color:#8e44ad;font-size:18px;cursor:pointer;padding:0;line-height:1;">←</button>
+                        <span id="panelSocialTitle" class="ev-panel-title" style="margin:0;border:none;padding:0;">+ NOVO EVENTO SOCIAL</span>
+                    </div>
+                    <form id="socialForm" data-cy="form-social-event" onsubmit="submitSocialEvent(event)">
+                        <div class="form-field">
+                            <label>TÍTULO *</label>
+                            <input id="socialTitle" data-cy="input-social-title" type="text" required placeholder="Ex: Happy Hour da Sprint">
+                        </div>
+                        <div class="form-field">
+                            <label>DESCRIÇÃO</label>
+                            <input id="socialDesc" data-cy="input-social-desc" type="text" placeholder="Local, link, detalhes...">
+                        </div>
+                        <div class="form-field">
+                            <label>DATA E HORA DO EVENTO *</label>
+                            <input id="socialDate" data-cy="input-social-date" type="datetime-local" required
+                                   onchange="_validateFutureDate(this, 'socialDateHint')">
+                            <div id="socialDateHint" style="font-size:8px;color:#e74c3c;margin-top:4px;display:none;">
+                                ⚠️ Selecione uma data no futuro.
+                            </div>
+                        </div>
+                        <div class="form-field">
+                            <label>EXIBIR NO MURAL ATÉ (opcional)</label>
+                            <input id="socialDisplayUntil" data-cy="input-social-display-until" type="datetime-local"
+                                   onchange="_validateDisplayUntil()">
+                            <div id="socialDisplayUntilHint" style="font-size:8px;color:#7f8c8d;margin-top:4px;">
+                                Vazio = some quando o evento começa. Preencha para manter visível após o início.
+                            </div>
+                        </div>
+                        <div class="form-field">
+                            <label>FACÇÃO (vazio = toda a empresa)</label>
+                            <select id="socialFaction" data-cy="select-social-faction">
+                                <option value="">🌐 Toda a Empresa</option>
+                                <option value="Produto">📦 Produto</option>
+                                <option value="Suporte">🎧 Suporte</option>
+                                <option value="Customer Service">📣 Customer Service</option>
+                            </select>
+                        </div>
+                        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;">
+                            <button type="button" class="ev-btn" onclick="showIdle()" style="background:#34495e;">Cancelar</button>
+                            <button type="submit" class="ev-btn" data-cy="btn-save-social-event" style="background:#2980b9;">💾 Salvar</button>
+                        </div>
+                    </form>
                 </div>
 
             </div>

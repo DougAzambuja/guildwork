@@ -12,22 +12,94 @@ const ENC_COLORS = {
     gold_penalty: '#e67e22', slow: '#9b59b6', luck: '#1abc9c', store_discount: '#f39c12',
 };
 
-let _currentTplId  = null;
-let _triggerMode   = 'duration';  // declarado aqui para garantir hoisting antes de qualquer chamada
+let _currentTplId     = null;
+let _triggerMode      = 'duration';  // declarado aqui para garantir hoisting antes de qualquer chamada
+let _editingSocialId  = null;
+
+// ── TABS ─────────────────────────────────────────────────────────────────────
+
+function switchEventsTab(tab) {
+    const isRandom = tab === 'random';
+    document.getElementById('tabRandomEvents').style.display = isRandom ? '' : 'none';
+    document.getElementById('tabSocialEvents').style.display = isRandom ? 'none' : '';
+    document.getElementById('tabBtnRandom').classList.toggle('active', isRandom);
+    document.getElementById('tabBtnSocial').classList.toggle('active', !isRandom);
+    showIdle();
+    if (!isRandom) {
+        loadSocialEvents();
+        loadBirthdays();
+    }
+}
+
+function _validateFutureDate(input, hintId) {
+    const hint = document.getElementById(hintId);
+    if (!hint) return;
+    const isPast = input.value && new Date(input.value) <= new Date();
+    hint.style.display = isPast ? '' : 'none';
+}
+
+function _validateDisplayUntil() {
+    const dateVal  = document.getElementById('socialDate').value;
+    const untilVal = document.getElementById('socialDisplayUntil').value;
+    const hint     = document.getElementById('socialDisplayUntilHint');
+    if (!hint) return;
+    if (untilVal && dateVal && new Date(untilVal) <= new Date(dateVal)) {
+        hint.style.color   = '#e74c3c';
+        hint.textContent   = '⚠️ Deve ser posterior à data do evento.';
+    } else {
+        hint.style.color   = '#7f8c8d';
+        hint.textContent   = 'Vazio = some quando o evento começa. Preencha para manter visível após o início.';
+    }
+}
 
 // ── PANELS ──────────────────────────────────────────────────────────────────
 
 function showIdle() {
-    document.getElementById('panelIdle').style.display    = '';
-    document.getElementById('panelForm').style.display    = 'none';
-    document.getElementById('panelTrigger').style.display = 'none';
-    _currentTplId = null;
+    const isSocialTab = document.getElementById('tabSocialEvents')?.style.display !== 'none';
+    document.getElementById('panelIdle').style.display       = isSocialTab ? 'none' : '';
+    document.getElementById('panelIdleSocial').style.display = isSocialTab ? '' : 'none';
+    document.getElementById('panelForm').style.display       = 'none';
+    document.getElementById('panelTrigger').style.display    = 'none';
+    document.getElementById('panelSocial').style.display     = 'none';
+    _currentTplId    = null;
+    _editingSocialId = null;
+}
+
+function showSocialPanel(event) {
+    document.getElementById('panelIdle').style.display       = 'none';
+    document.getElementById('panelIdleSocial').style.display = 'none';
+    document.getElementById('panelForm').style.display       = 'none';
+    document.getElementById('panelTrigger').style.display    = 'none';
+    document.getElementById('panelSocial').style.display     = '';
+
+    const nowStr = _toDatetimeLocal(new Date());
+    document.getElementById('socialDate').min         = nowStr;
+    document.getElementById('socialDisplayUntil').min = nowStr;
+
+    _editingSocialId = event?._id || null;
+    document.getElementById('panelSocialTitle').textContent = event ? '✏️ EDITAR EVENTO' : '+ NOVO EVENTO SOCIAL';
+    document.getElementById('socialTitle').value          = event?.title       || '';
+    document.getElementById('socialDesc').value           = event?.description || '';
+    document.getElementById('socialFaction').value        = event?.faction     || '';
+    document.getElementById('socialDate').value           = event?.event_date
+        ? _toDatetimeLocal(new Date(event.event_date))
+        : '';
+    document.getElementById('socialDisplayUntil').value  = event?.display_until
+        ? _toDatetimeLocal(new Date(event.display_until))
+        : '';
+
+    // Resetar hints
+    document.getElementById('socialDateHint').style.display = 'none';
+    const untilHint = document.getElementById('socialDisplayUntilHint');
+    untilHint.style.color   = '#7f8c8d';
+    untilHint.textContent   = 'Vazio = some quando o evento começa. Preencha para manter visível após o início.';
 }
 
 function showCreateForm(tpl) {
     document.getElementById('panelIdle').style.display    = 'none';
     document.getElementById('panelForm').style.display    = '';
     document.getElementById('panelTrigger').style.display = 'none';
+    document.getElementById('panelSocial').style.display  = 'none';
 
     _currentTplId = tpl?._id || null;
     document.getElementById('panelFormTitle').textContent = tpl ? '✏️ EDITAR TEMPLATE' : '+ NOVO TEMPLATE';
@@ -43,6 +115,7 @@ function showTriggerPanel(tpl) {
     document.getElementById('panelIdle').style.display    = 'none';
     document.getElementById('panelForm').style.display    = 'none';
     document.getElementById('panelTrigger').style.display = '';
+    document.getElementById('panelSocial').style.display  = 'none';
 
     _currentTplId = tpl._id;
     const pct   = Math.round(tpl.default_value * 100);
@@ -58,16 +131,21 @@ function showTriggerPanel(tpl) {
     `;
 
     // Campos modo Duração
+    const nowStr = _toDatetimeLocal(new Date());
     document.getElementById('triggerDuration').value  = tpl.default_duration || 2;
     document.getElementById('triggerStartMode').value = 'now';
     document.getElementById('triggerStartAtWrap').style.display = 'none';
     document.getElementById('triggerStartAt').value   = '';
+    document.getElementById('triggerStartAt').min     = nowStr;
+    document.getElementById('triggerStartAtHint').style.display = 'none';
 
     // Campos modo Período — pré-preenche com agora + duração padrão
     const now = new Date();
     const end = new Date(now.getTime() + (tpl.default_duration || 2) * 3_600_000);
     document.getElementById('triggerPeriodStart').value = _toDatetimeLocal(now);
     document.getElementById('triggerPeriodEnd').value   = _toDatetimeLocal(end);
+    document.getElementById('triggerPeriodStart').min   = nowStr;
+    document.getElementById('triggerPeriodStartHint').style.display = 'none';
     _updateDurationPreview(); // força exibição do preview ao abrir
 
     // Escopo
@@ -403,6 +481,206 @@ async function submitTrigger() {
         loadActiveEncounters();
     } catch {
         showToast('Erro de conexão.', 'error');
+    }
+}
+
+// ── SOCIAL EVENTS ────────────────────────────────────────────────────────────
+
+async function loadSocialEvents() {
+    const token = localStorage.getItem('guild_token');
+    try {
+        const res = await fetch(`${API_URL}/social-events`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        renderSocialEvents(Array.isArray(data) ? data : []);
+    } catch {
+        document.getElementById('socialEventsList').innerHTML =
+            '<div style="font-size:8px;color:#e74c3c;text-align:center;padding:16px 0;">Erro ao carregar agenda.</div>';
+    }
+}
+
+function _socialEventCard(ev) {
+    const formatDate = d => new Date(d).toLocaleString('pt-BR', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+    });
+    const faction = ev.faction ? `🏰 ${ev.faction}` : '🌐 Empresa toda';
+    const encoded = JSON.stringify(ev).replace(/"/g, '&quot;');
+    return `
+    <div class="social-event-card${ev.is_past ? ' past' : ''}" data-cy="social-event-${ev._id}">
+        <div class="social-event-icon">${ev.is_past ? '📋' : '📅'}</div>
+        <div class="social-event-body">
+            <div class="social-event-title">${ev.title}</div>
+            <div class="social-event-meta">
+                ${formatDate(ev.event_date)} · ${faction}
+                ${ev.description ? `<br>${ev.description}` : ''}
+            </div>
+        </div>
+        <div class="tpl-actions">
+            <button class="tpl-btn" data-cy="btn-edit-social-${ev._id}"
+                    style="background:#f1c40f;color:#1a252f;"
+                    onclick='showSocialPanel(${encoded})'>✏️</button>
+            <button class="tpl-btn" data-cy="btn-delete-social-${ev._id}"
+                    style="background:#e74c3c;"
+                    onclick="deleteSocialEvent('${ev._id}')">🗑️</button>
+        </div>
+    </div>`;
+}
+
+function renderSocialEvents(events) {
+    const el = document.getElementById('socialEventsList');
+    if (!events.length) {
+        el.innerHTML = '<div style="font-size:10px;color:#7f8c8d;text-align:center;padding:16px 0;">Nenhum evento na agenda.</div>';
+        return;
+    }
+
+    const future = events.filter(e => !e.is_past);
+    const past   = events.filter(e => e.is_past);
+
+    let html = future.map(_socialEventCard).join('');
+
+    if (past.length) {
+        html += `
+        <div style="margin-top:12px;">
+            <button onclick="_togglePastEvents(this)"
+                    style="font-family:'Press Start 2P',cursive;font-size:8px;background:transparent;border:none;color:#7f8c8d;cursor:pointer;padding:6px 0;width:100%;text-align:left;">
+                ▶ EVENTOS PASSADOS (${past.length})
+            </button>
+            <div id="pastEventsList" style="display:none;">
+                ${past.map(_socialEventCard).join('')}
+            </div>
+        </div>`;
+    }
+
+    el.innerHTML = html;
+}
+
+async function submitSocialEvent(e) {
+    e.preventDefault();
+    const token     = localStorage.getItem('guild_token');
+    const dateValue = document.getElementById('socialDate').value;
+    const eventDate = new Date(dateValue);
+
+    if (!_editingSocialId && eventDate <= new Date()) {
+        showToast('A data do evento deve ser no futuro.', 'error');
+        return;
+    }
+
+    const displayUntilVal = document.getElementById('socialDisplayUntil').value;
+    const displayUntil    = displayUntilVal ? new Date(displayUntilVal) : null;
+
+    if (displayUntil && displayUntil <= eventDate) {
+        showToast('"Exibir até" deve ser posterior à data do evento.', 'error');
+        return;
+    }
+
+    const payload = {
+        title:         document.getElementById('socialTitle').value.trim(),
+        description:   document.getElementById('socialDesc').value.trim(),
+        event_date:    eventDate.toISOString(),
+        display_until: displayUntil ? displayUntil.toISOString() : null,
+        faction:       document.getElementById('socialFaction').value || null,
+    };
+
+    const url    = _editingSocialId ? `${API_URL}/social-events/${_editingSocialId}` : `${API_URL}/social-events`;
+    const method = _editingSocialId ? 'PATCH' : 'POST';
+
+    try {
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            showToast(err.message || 'Erro ao salvar evento.', 'error');
+            return;
+        }
+        showToast(_editingSocialId ? 'Evento atualizado!' : 'Evento criado!', 'success');
+        showIdle();
+        loadSocialEvents();
+    } catch {
+        showToast('Erro de conexão.', 'error');
+    }
+}
+
+async function deleteSocialEvent(id) {
+    if (!confirm('Remover este evento da agenda?')) return;
+    const token = localStorage.getItem('guild_token');
+    try {
+        const res = await fetch(`${API_URL}/social-events/${id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) { showToast('Erro ao remover evento.', 'error'); return; }
+        showToast('Evento removido.', 'success');
+        if (_editingSocialId === id) showIdle();
+        loadSocialEvents();
+    } catch {
+        showToast('Erro de conexão.', 'error');
+    }
+}
+
+function _togglePastEvents(btn) {
+    const list   = document.getElementById('pastEventsList');
+    const isOpen = list.style.display === '';
+    list.style.display = isOpen ? 'none' : '';
+    const count  = list.querySelectorAll('.social-event-card').length;
+    btn.textContent = `${isOpen ? '▶' : '▼'} EVENTOS PASSADOS (${count})`;
+}
+
+// ── ANIVERSÁRIOS DO MÊS ──────────────────────────────────────────────────────
+
+async function loadBirthdays() {
+    const token = localStorage.getItem('guild_token');
+    const el    = document.getElementById('birthdayList');
+    if (!el) return;
+
+    try {
+        const res = await fetch(`${API_URL}/admin/roster`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) { el.innerHTML = ''; return; }
+
+        const players = await res.json();
+        const now     = new Date();
+        const month   = now.getMonth(); // 0-indexed
+
+        const birthdays = players
+            .filter(p => p.birth_date && new Date(p.birth_date).getMonth() === month)
+            .sort((a, b) => new Date(a.birth_date).getDate() - new Date(b.birth_date).getDate());
+
+        if (!birthdays.length) {
+            el.innerHTML = '<div style="font-size:9px;color:#7f8c8d;text-align:center;padding:6px 0;">Nenhum aniversário este mês.</div>';
+            return;
+        }
+
+        el.innerHTML = birthdays.map(p => {
+            const day      = new Date(p.birth_date).getDate().toString().padStart(2, '0');
+            const isToday  = new Date(p.birth_date).getDate() === now.getDate();
+            const prefill  = {
+                title:       `🎂 Aniversário de ${p.nome}`,
+                description: `Hoje é o dia do(a) ${p.nome}! Parabenize e comemore junto com o time.`,
+                event_date:  null,
+            };
+            const encoded = JSON.stringify(prefill).replace(/"/g, '&quot;');
+            return `
+            <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;margin-bottom:6px;
+                        background:${isToday ? '#1a2f1a' : '#0d1b2a'};
+                        border-left:3px solid ${isToday ? '#2ecc71' : '#3d5166'};">
+                <span style="font-size:16px;">${isToday ? '🎉' : '🎂'}</span>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:9px;color:#ecf0f1;">${p.nome}</div>
+                    <div style="font-size:8px;color:#7f8c8d;">dia ${day}${isToday ? ' — HOJE!' : ''}</div>
+                </div>
+                <button class="tpl-btn" title="Criar evento de aniversário"
+                        style="background:#2980b9;font-size:9px;"
+                        onclick='showSocialPanel(${encoded})'>📅</button>
+            </div>`;
+        }).join('');
+    } catch {
+        el.innerHTML = '';
     }
 }
 

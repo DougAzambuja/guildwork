@@ -466,6 +466,38 @@ body {
     border-color: var(--primary-color);
 }
 
+.date-field {
+    font-family: monospace;
+    font-size: 11px;
+    color-scheme: dark;
+    width: 100%;
+    padding: 10px 12px;
+    background: #0d1b2a;
+    color: #ecf0f1;
+    border: 2px solid #2c3e50;
+    box-sizing: border-box;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.date-field:focus {
+    border-color: #3498db;
+}
+
+.date-field::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(0.75);
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+    padding: 2px;
+    border-radius: 2px;
+}
+
+.date-field::-webkit-calendar-picker-indicator:hover {
+    filter: invert(1) brightness(1);
+}
+
 .btn-login {
     background-color: #27ae60;
     width: 100%;

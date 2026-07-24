@@ -119,12 +119,13 @@ exports.getLeaderboard = async (req, res) => {
 // PUT /api/players/profile — atualiza perfil (nome, avatar, senha)
 exports.updateProfile = async (req, res) => {
     try {
-        const { nome, avatar_url, currentPassword, newPassword } = req.body;
+        const { nome, avatar_url, currentPassword, newPassword, birth_date } = req.body;
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ message: 'Usuário não encontrado.' });
 
-        if (nome)              user.nome       = nome;
+        if (nome)                    user.nome       = nome;
         if (avatar_url !== undefined) user.avatar_url = avatar_url;
+        if (birth_date !== undefined) user.birth_date = birth_date ? new Date(birth_date) : null;
 
         if (newPassword) {
             if (!currentPassword) return res.status(400).json({ message: 'Senha atual é obrigatória.' });
