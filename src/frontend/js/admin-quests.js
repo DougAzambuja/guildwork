@@ -41,8 +41,9 @@ async function loadSprintsSelect() {
         const sprints = await res.json();
         const active  = sprints.filter(s => s.status !== 'cancelled' && s.status !== 'completed');
 
+        const activeSprint = active.find(s => s.status === 'active');
         const forgeOpts = '<option value="">🗂️ Sem sprint (Backlog)</option>' +
-            active.map(s => `<option value="${s._id}">[${STATUS_SPRINT_LABELS[s.status] || s.status}] ${s.name}</option>`).join('');
+            active.map(s => `<option value="${s._id}"${activeSprint && String(s._id) === String(activeSprint._id) ? ' selected' : ''}>[${STATUS_SPRINT_LABELS[s.status] || s.status}] ${s.name}</option>`).join('');
 
         const forgeSelect = document.getElementById('questSprint');
         if (forgeSelect) forgeSelect.innerHTML = forgeOpts;

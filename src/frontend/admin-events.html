@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GuildWork - Eventos</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .events-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 380px;
+            gap: 20px;
+            align-items: start;
+        }
+        @media (max-width: 900px) {
+            .events-layout { grid-template-columns: 1fr; }
+        }
+
+        /* Divisor interno entre seções do bloco esquerdo */
+        .events-divider {
+            border: none;
+            border-top: 4px dashed #3d5166;
+            margin: 20px 0;
+        }
+
+        /* Cards de template */
+        .tpl-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            background: #0d1b2a;
+            border: 1px solid #2c3e50;
+            margin-bottom: 8px;
+            transition: border-color 0.15s;
+        }
+        .tpl-card:hover { border-color: #3498db; }
+        .tpl-card-body  { flex: 1; min-width: 0; }
+        .tpl-card-title { font-size: 11px; color: #ecf0f1; margin-bottom: 5px; }
+        .tpl-card-meta  { font-size: 10px; }
+        .tpl-actions    { display: flex; gap: 6px; flex-shrink: 0; }
+        .tpl-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 11px;
+            width: 32px;
+            height: 32px;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .tpl-btn:hover { filter: brightness(1.2); }
+
+        /* Cards de evento ativo */
+        .active-event-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            border: 3px solid;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+        }
+
+        /* Formulários do painel direito */
+        .form-field { margin-bottom: 14px; }
+        .form-field label {
+            display: block;
+            font-size: 9px;
+            color: #bdc3c7;
+            margin-bottom: 5px;
+        }
+        .form-field input,
+        .form-field select {
+            width: 100%;
+            box-sizing: border-box;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 9px;
+            padding: 8px 10px;
+            background: #0d1b2a;
+            color: #fff;
+            border: 2px solid #2c3e50;
+            outline: none;
+        }
+        .form-field input:focus,
+        .form-field select:focus { border-color: #3498db; }
+        .form-row { display: flex; gap: 12px; }
+        .form-row .form-field { flex: 1; }
+
+        /* Painel direito */
+        .ev-panel {
+            background: #1a252f;
+            border: 6px solid #111;
+            padding: 20px;
+            box-shadow: 8px 8px 0px rgba(0,0,0,0.6);
+        }
+        .ev-panel-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            color: #f1c40f;
+            margin: 0 0 14px;
+            padding-bottom: 10px;
+            border-bottom: 4px dashed #3d5166;
+        }
+        .ev-panel-text {
+            font-size: 10px;
+            color: #7f8c8d;
+            line-height: 2;
+        }
+        .trigger-preview {
+            background: #0d1b2a;
+            border: 1px solid #8e44ad;
+            padding: 14px;
+            margin-bottom: 16px;
+        }
+
+        /* Botões de ação do painel */
+        .ev-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            padding: 10px 16px;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .ev-btn:hover { filter: brightness(1.15); }
+        .ev-btn:disabled { opacity: .5; cursor: not-allowed; }
+    </style>
+</head>
+<body class="admin-page">
+    <div id="loading-overlay" data-cy="loading-overlay">
+        <span class="loading-sword">⚡</span>
+        <div class="loading-text">CARREGANDO EVENTOS...</div>
+        <div class="loading-bar-track"><div class="loading-bar-fill"></div></div>
+    </div>
+    <div id="admin-header"></div>
+
+    <div class="main-wrapper">
+        <div class="events-layout">
+
+            <!-- ══ COLUNA ESQUERDA: bloco único ══ -->
+            <div class="dashboard-section">
+
+                <!-- Título principal dentro do bloco -->
+                <h2 class="section-title">⚡ EVENTOS ALEATÓRIOS</h2>
+
+                <!-- ── EVENTOS ATIVOS ── -->
+                <h3 class="section-title" style="font-size:12px; margin-bottom:14px;">🟢 EVENTOS ATIVOS</h3>
+                <div id="activeEventsList" data-cy="active-events-list">
+                    <div style="font-size:10px;color:#7f8c8d;text-align:center;padding:12px 0;">Carregando...</div>
+                </div>
+
+                <hr class="events-divider">
+
+                <!-- ── BIBLIOTECA DE TEMPLATES ── -->
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+                    <h3 class="section-title" style="font-size:12px; margin:0; border:none; padding:0;">
+                        📚 BIBLIOTECA DE TEMPLATES
+                    </h3>
+                    <button class="ev-btn" data-cy="btn-new-template" onclick="showCreateForm()"
+                            style="background:#f39c12; color:#1a252f;">
+                        + Novo Template
+                    </button>
+                </div>
+                <div id="templateList" data-cy="template-list">
+                    <div style="font-size:10px;color:#7f8c8d;text-align:center;padding:12px 0;">Carregando biblioteca...</div>
+                </div>
+
+            </div>
+
+            <!-- ══ COLUNA DIREITA: painel de ação ══ -->
+            <div id="rightPanel">
+
+                <!-- ESTADO: idle -->
+                <div id="panelIdle" class="ev-panel">
+                    <div class="ev-panel-title">🎲 MESTRE DO JOGO</div>
+                    <div class="ev-panel-text">
+                        <p>Selecione um template na biblioteca para <strong style="color:#e056fd;">⚡ Acionar</strong> um evento ou <strong style="color:#f1c40f;">✏️ Editar</strong> o template.</p>
+                        <p>Clique em <strong style="color:#f39c12;">+ Novo Template</strong> para criar um novo evento na biblioteca.</p>
+                        <p style="margin-top:14px;padding-top:14px;border-top:1px solid #2c3e50;">
+                            Eventos ativos aplicam buffs/debuffs <strong style="color:#f1c40f;">passivos</strong> — os jogadores veem em seus murais em tempo real.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- ESTADO: criar / editar template -->
+                <div id="panelForm" class="ev-panel" style="display:none;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:10px;border-bottom:4px dashed #3d5166;">
+                        <button onclick="showIdle()" style="background:transparent;border:none;color:#8e44ad;font-size:18px;cursor:pointer;padding:0;line-height:1;">←</button>
+                        <span id="panelFormTitle" class="ev-panel-title" style="margin:0;border:none;padding:0;">+ NOVO TEMPLATE</span>
+                    </div>
+                    <form id="tplForm" data-cy="form-template" onsubmit="submitTemplate(event)">
+                        <div class="form-field">
+                            <label>TÍTULO *</label>
+                            <input id="tplTitle" data-cy="input-tpl-title" type="text" required placeholder="Ex: Semana Dourada">
+                        </div>
+                        <div class="form-field">
+                            <label>DESCRIÇÃO</label>
+                            <input id="tplDesc" data-cy="input-tpl-desc" type="text" placeholder="Detalhes (opcional)">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>EFEITO *</label>
+                                <select id="tplKind" data-cy="select-tpl-kind" required>
+                                    <option value="xp_bonus">✨ Bônus de XP</option>
+                                    <option value="gold_bonus">💰 Bônus de Gold</option>
+                                    <option value="xp_penalty">💀 Penalidade de XP</option>
+                                    <option value="gold_penalty">💸 Penalidade de Gold</option>
+                                    <option value="luck">🍀 Sorte (2× XP)</option>
+                                    <option value="slow">🐌 Lentidão (SLA)</option>
+                                    <option value="store_discount">🏷️ Desconto na Loja</option>
+                                </select>
+                            </div>
+                            <div class="form-field">
+                                <label>VALOR (%) *</label>
+                                <input id="tplValue" data-cy="input-tpl-value" type="number" required min="1" max="100" value="50">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>DURAÇÃO PADRÃO (h) *</label>
+                                <input id="tplDuration" data-cy="input-tpl-duration" type="number" required min="1" max="168" value="2">
+                            </div>
+                            <div class="form-field">
+                                <label>ESCOPO PADRÃO</label>
+                                <select id="tplScope" data-cy="select-tpl-scope">
+                                    <option value="global">🌐 Global</option>
+                                    <option value="faction">🏰 Facção</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;">
+                            <button type="button" class="ev-btn" onclick="showIdle()" style="background:#34495e;">Cancelar</button>
+                            <button type="submit" class="ev-btn" data-cy="btn-save-template" style="background:#27ae60;">💾 Salvar</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ESTADO: acionar evento -->
+                <div id="panelTrigger" class="ev-panel" style="display:none;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:10px;border-bottom:4px dashed #3d5166;">
+                        <button onclick="showIdle()" style="background:transparent;border:none;color:#8e44ad;font-size:18px;cursor:pointer;padding:0;line-height:1;">←</button>
+                        <span class="ev-panel-title" style="margin:0;border:none;padding:0;">⚡ ACIONAR EVENTO</span>
+                    </div>
+                    <div id="triggerPreview" class="trigger-preview"></div>
+
+                    <!-- Toggle de modo -->
+                    <div style="display:flex;margin-bottom:14px;border:2px solid #2c3e50;">
+                        <button id="modeBtnDuration" data-cy="btn-mode-duration"
+                                onclick="setTriggerMode('duration')"
+                                style="flex:1;font-family:'Press Start 2P',cursive;font-size:8px;padding:8px 4px;border:none;cursor:pointer;background:#8e44ad;color:#fff;">
+                            ⏱ DURAÇÃO
+                        </button>
+                        <button id="modeBtnPeriod" data-cy="btn-mode-period"
+                                onclick="setTriggerMode('period')"
+                                style="flex:1;font-family:'Press Start 2P',cursive;font-size:8px;padding:8px 4px;border:none;cursor:pointer;background:#2c3e50;color:#7f8c8d;">
+                            📅 PERÍODO
+                        </button>
+                    </div>
+
+                    <!-- Modo: Duração -->
+                    <div id="triggerModeDuration">
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>DURAÇÃO (horas)</label>
+                                <input id="triggerDuration" data-cy="input-trigger-duration" type="number" min="1" max="168">
+                            </div>
+                            <div class="form-field">
+                                <label>INÍCIO</label>
+                                <select id="triggerStartMode" data-cy="select-trigger-start-mode" onchange="toggleStartAt()">
+                                    <option value="now">⚡ Imediato</option>
+                                    <option value="scheduled">🕐 Agendado</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="triggerStartAtWrap" class="form-field" style="display:none;">
+                            <label>DATA E HORA DE INÍCIO</label>
+                            <input id="triggerStartAt" data-cy="input-trigger-start-at" type="datetime-local">
+                        </div>
+                    </div>
+
+                    <!-- Modo: Período -->
+                    <div id="triggerModePeriod" style="display:none;">
+                        <div class="form-field">
+                            <label>INÍCIO</label>
+                            <input id="triggerPeriodStart" data-cy="input-trigger-period-start" type="datetime-local" onchange="_updateDurationPreview()">
+                        </div>
+                        <div class="form-field">
+                            <label>TÉRMINO</label>
+                            <input id="triggerPeriodEnd" data-cy="input-trigger-period-end" type="datetime-local" onchange="_updateDurationPreview()">
+                        </div>
+                        <div id="triggerDurationPreview" style="font-size:9px;color:#7f8c8d;margin:-8px 0 12px;text-align:right;"></div>
+                    </div>
+
+                    <!-- Escopo (comum aos dois modos) -->
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>ESCOPO</label>
+                            <select id="triggerScope" data-cy="select-trigger-scope" onchange="toggleFactionSelect()">
+                                <option value="global">🌐 Global</option>
+                                <option value="faction">🏰 Facção</option>
+                            </select>
+                        </div>
+                        <div id="triggerFactionWrap" class="form-field" style="display:none;">
+                            <label>FACÇÃO</label>
+                            <select id="triggerFaction" data-cy="select-trigger-faction">
+                                <option value="Produto">📦 Produto</option>
+                                <option value="Suporte">🎧 Suporte</option>
+                                <option value="Customer Service">📣 Customer Service</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;">
+                        <button type="button" class="ev-btn" onclick="showIdle()" style="background:#34495e;">Cancelar</button>
+                        <button type="button" class="ev-btn" data-cy="btn-confirm-trigger" onclick="submitTrigger()" style="background:#8e44ad;">⚡ Acionar!</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: editar evento ativo -->
+    <div id="editEncounterModal" data-cy="modal-edit-encounter"
+         style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:900;align-items:center;justify-content:center;">
+        <div style="background:#1a252f;border:6px solid #111;padding:24px;width:360px;box-shadow:8px 8px 0 rgba(0,0,0,0.6);">
+            <div style="font-family:'Press Start 2P',cursive;font-size:12px;color:#f1c40f;margin-bottom:16px;padding-bottom:10px;border-bottom:4px dashed #3d5166;">
+                ✏️ EDITAR EVENTO ATIVO
+            </div>
+            <div id="editEncounterInfo" style="margin-bottom:16px;padding:12px;background:#0d1b2a;border:1px solid #2c3e50;"></div>
+            <div class="form-field">
+                <label>NOVO HORÁRIO DE TÉRMINO</label>
+                <input id="editEncounterUntil" data-cy="input-edit-encounter-until" type="datetime-local">
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;">
+                <button type="button" class="ev-btn" onclick="closeEditEncounterModal()" style="background:#34495e;">Cancelar</button>
+                <button type="button" class="ev-btn" data-cy="btn-save-edit-encounter" onclick="submitEditEncounter()" style="background:#27ae60;">💾 Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/admin-header.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/admin-events.js"></script>
+</body>
+</html>

@@ -1,12 +1,32 @@
-const LootItem = require('../models/lootItem');
+const LootItem        = require('../models/lootItem');
+const RandomEncounter = require('../models/randomEncounter');
 
 /**
  * GET /api/loot
- * Lista todos os itens disponíveis. Acessível a qualquer usuário autenticado (vitrine da loja).
+ * Lista todos os itens. Se houver store_discount ativo, aplica desconto nos preços.
  */
 exports.getItems = async (req, res) => {
     try {
         const items = await LootItem.find().sort({ price: 1 });
+
+        const now      = new Date();
+        const discount = await RandomEncounter.findOne({
+            active:           true,
+            active_until:     { $gt: now },
+            'effect.kind':    'store_discount',
+            type:             'global',
+        }).sort({ 'effect.value': -1 }); // aplica o maior desconto ativo
+
+        if (discount) {
+            const pct = discount.effect.value;
+            return res.json(items.map(item => ({
+                ...item.toObject(),
+                original_price: item.price,
+                price:          Math.round(item.price * (1 - pct)),
+                discount_pct:   Math.round(pct * 100),
+            })));
+        }
+
         res.json(items);
     } catch (err) {
         res.status(500).json({ message: 'Erro ao buscar itens.', error: err.message });

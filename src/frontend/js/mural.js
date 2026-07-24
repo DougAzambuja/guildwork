@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await fetchGuildContext();
     await fetchKanbanColumns();
     await loadBoard();
+    await fetchAndRenderEncounters();
     hideLoadingOverlay();
     startBoardAutoRefresh();
 });
@@ -71,7 +72,7 @@ const REFRESH_SECONDS = 15;
 
 function startBoardAutoRefresh() {
     setInterval(() => {
-        Promise.all([loadBoard(), fetchPlayerState()]);
+        Promise.all([loadBoard(), fetchPlayerState(), fetchAndRenderEncounters()]);
     }, REFRESH_SECONDS * 1000);
 }
 
@@ -484,7 +485,7 @@ function _makeDraggable(el, questId) {
 
 function renderTodoCard(quest, myWipCount) {
     const el = document.createElement('div');
-    const typeClass = quest.type === 'urgent' ? 'urgent' : (quest.type === 'support' ? 'support' : '');
+    const typeClass = ['urgent', 'support'].includes(quest.type) ? quest.type : '';
     el.className = `kanban-card ${typeClass}`;
 
     const overWip      = myWipCount >= WIP_LIMIT;
@@ -528,7 +529,7 @@ function renderTodoCard(quest, myWipCount) {
 
 function renderInProgressCard(quest) {
     const el = document.createElement('div');
-    const typeClass = quest.type === 'urgent' ? 'urgent' : (quest.type === 'support' ? 'support' : '');
+    const typeClass = ['urgent', 'support'].includes(quest.type) ? quest.type : '';
     el.className = `kanban-card ${typeClass}`;
 
     const assignee     = quest.assigned_to;
@@ -1616,6 +1617,172 @@ function updateBuffUI() {
         </div>
         <div style="font-size:8px;color:#f39c12;">${detail}</div>
     `;
+}
+
+// ==========================================
+// RANDOM ENCOUNTERS
+// ==========================================
+const ENCOUNTER_ICONS = {
+    xp_penalty:     '💀', gold_penalty:   '💸',
+    xp_bonus:       '✨', gold_bonus:     '💰',
+    slow:           '🐌', luck:           '🍀',
+    store_discount: '🏷️',
+};
+const ENCOUNTER_LABELS = {
+    xp_penalty:     'PENALIDADE DE XP',   gold_penalty:   'PENALIDADE DE GOLD',
+    xp_bonus:       'BÔNUS DE XP',         gold_bonus:     'BÔNUS DE GOLD',
+    slow:           'SLA REDUZIDO',         luck:           'SORTE ATIVA',
+    store_discount: 'DESCONTO NA LOJA',
+};
+const ENCOUNTER_COLORS = {
+    xp_penalty:     { bg: '#1a0a0a', border: '#c0392b', text: '#e74c3c' },
+    gold_penalty:   { bg: '#1a0d00', border: '#e67e22', text: '#e67e22' },
+    xp_bonus:       { bg: '#0a1a0a', border: '#27ae60', text: '#2ecc71' },
+    gold_bonus:     { bg: '#0a0d0a', border: '#f1c40f', text: '#f1c40f' },
+    slow:           { bg: '#0d0d1a', border: '#8e44ad', text: '#9b59b6' },
+    luck:           { bg: '#0a1a10', border: '#1abc9c', text: '#1abc9c' },
+    store_discount: { bg: '#1a1500', border: '#f39c12', text: '#f39c12' },
+};
+
+let _activeEncounters = [];
+
+// Efeitos que merecem destaque positivo inline na sidebar
+const POSITIVE_EFFECT_KINDS = new Set(['xp_bonus', 'gold_bonus', 'luck', 'store_discount']);
+
+async function fetchAndRenderEncounters() {
+    const banner = document.getElementById('encounterBanner');
+    if (!banner) return;
+    try {
+        const res = await fetch(`${API_URL}/encounters/active`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (!res.ok) { banner.style.display = 'none'; return; }
+        _activeEncounters = await res.json();
+
+        if (!_activeEncounters.length) { banner.style.display = 'none'; return; }
+
+        const count      = _activeEncounters.length;
+        const single     = count === 1 ? _activeEncounters[0] : null;
+        const singleKind = single?.effect?.kind;
+
+        if (single && POSITIVE_EFFECT_KINDS.has(singleKind)) {
+            // 1 evento positivo → card inline (mesmo formato do streak)
+            const col   = ENCOUNTER_COLORS[singleKind];
+            const icon  = ENCOUNTER_ICONS[singleKind]  || '⚡';
+            const label = ENCOUNTER_LABELS[singleKind] || 'EVENTO ATIVO';
+            const pct   = Math.round((single.effect?.value || 0) * 100);
+            const time  = _formatTimeRemaining(single.active_until);
+
+            banner.style.cssText = `
+                display:block; cursor:pointer;
+                background:${col.bg};
+                border:1px solid ${col.border};
+                padding:8px 12px;
+                margin-bottom:10px;
+            `;
+            banner.innerHTML = `
+                <div style="font-size:8px;color:${col.text};letter-spacing:1px;font-weight:bold;">${icon} EVENTO ATIVO</div>
+                <div style="font-size:8px;color:#ecf0f1;margin-top:3px;">${single.title}</div>
+                <div style="font-size:7px;color:${col.text};margin-top:4px;">+${pct}% · ${time}</div>
+            `;
+        } else {
+            // 1 evento negativo OU múltiplos → pill neutro com chevron
+            const plural = count > 1;
+            banner.style.cssText = `
+                display:block; cursor:pointer;
+                background:#1a1400;
+                border:1px solid #f39c1230;
+                border-left:4px solid #f39c12;
+                padding:8px 12px;
+                margin-bottom:10px;
+            `;
+            banner.innerHTML = `
+                <div style="display:flex;align-items:center;gap:10px;"
+                     onmouseenter="this.style.opacity='.85'" onmouseleave="this.style.opacity='1'">
+                    <span style="font-size:15px;line-height:1;">⚡</span>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:8px;color:#f39c12;letter-spacing:1px;">EVENTO${plural ? 'S' : ''} ATIVO${plural ? 'S' : ''}</div>
+                        <div style="font-size:8px;color:#ecf0f1;margin-top:3px;">${plural ? `${count} eventos — ver detalhes` : 'Ver detalhes'}</div>
+                    </div>
+                    <span style="font-size:11px;color:#f39c12;flex-shrink:0;">›</span>
+                </div>
+            `;
+        }
+    } catch {
+        banner.style.display = 'none';
+    }
+}
+
+function _formatTimeRemaining(until) {
+    if (!until) return '—';
+    const ms = new Date(until) - Date.now();
+    if (ms <= 0) return 'Encerrado';
+    const h = Math.floor(ms / 3_600_000);
+    const m = Math.floor((ms % 3_600_000) / 60_000);
+    if (h > 0) return `${h}h ${m}m restantes`;
+    return `${m}m restantes`;
+}
+
+let _encounterTimerInterval = null;
+
+window.openEncounterModal = function() {
+    const modal = document.getElementById('encounterModal');
+    const body  = document.getElementById('encounterModalBody');
+    if (!modal || !body) return;
+
+    const renderModal = () => {
+        body.innerHTML = _activeEncounters.map(enc => {
+            const kind  = enc.effect?.kind || 'xp_bonus';
+            const col   = ENCOUNTER_COLORS[kind] || ENCOUNTER_COLORS.xp_bonus;
+            const icon  = ENCOUNTER_ICONS[kind]  || '⚡';
+            const label = ENCOUNTER_LABELS[kind] || 'EVENTO';
+            const pct   = Math.round((enc.effect?.value || 0) * 100);
+            const scope = enc.type === 'faction' ? `🏰 ${enc.affected_faction}` : '🌐 Todas as Facções';
+            const time  = _formatTimeRemaining(enc.active_until);
+
+            return `
+            <div style="
+                background:${col.bg};border:2px solid ${col.border};
+                padding:18px 20px;margin-bottom:14px;
+            ">
+                <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
+                    <span style="font-size:32px;line-height:1;">${icon}</span>
+                    <div>
+                        <div style="font-size:11px;color:${col.text};letter-spacing:1px;margin-bottom:5px;">${label}</div>
+                        <div style="font-size:13px;color:#ecf0f1;">${enc.title}</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                    <div style="background:#0d1b2a;padding:8px 14px;flex:1;min-width:80px;text-align:center;">
+                        <div style="font-size:8px;color:#7f8c8d;margin-bottom:4px;">EFEITO</div>
+                        <div style="font-size:14px;color:${col.text};">+${pct}%</div>
+                    </div>
+                    <div style="background:#0d1b2a;padding:8px 14px;flex:1;min-width:80px;text-align:center;">
+                        <div style="font-size:8px;color:#7f8c8d;margin-bottom:4px;">ALCANCE</div>
+                        <div style="font-size:9px;color:#ecf0f1;">${scope}</div>
+                    </div>
+                    <div style="background:#0d1b2a;padding:8px 14px;flex:1;min-width:80px;text-align:center;">
+                        <div style="font-size:8px;color:#7f8c8d;margin-bottom:4px;">TEMPO</div>
+                        <div style="font-size:9px;color:${col.text};">${time}</div>
+                    </div>
+                </div>
+                ${enc.description ? `<div style="font-size:9px;color:#7f8c8d;margin-top:12px;border-top:1px solid ${col.border}40;padding-top:10px;">${enc.description}</div>` : ''}
+            </div>`;
+        }).join('');
+    };
+
+    renderModal();
+    modal.style.display = 'flex';
+
+    // Atualiza tempo restante a cada minuto enquanto modal está aberto
+    _encounterTimerInterval = setInterval(renderModal, 60_000);
+}
+
+window.closeEncounterModal = function() {
+    const modal = document.getElementById('encounterModal');
+    if (modal) modal.style.display = 'none';
+    clearInterval(_encounterTimerInterval);
+    _encounterTimerInterval = null;
 }
 
 const STREAK_MILESTONES_DISPLAY = [3, 7, 14, 30];
