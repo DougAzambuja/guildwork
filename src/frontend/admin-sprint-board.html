@@ -197,7 +197,6 @@
         /* ---- MODAL DETALHE DA QUEST (mais largo) ---- */
         .modal-board-detail { max-width: 640px; width: 94%; max-height: 88vh; overflow-y: auto; padding: 20px; }
         .bqd-section { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 2px solid #1a252f; }
-        .bqd-label { font-size: 8px; color: #f1c40f; margin-bottom: 8px; }
         .bqd-comments-list { max-height: 160px; overflow-y: auto; margin-bottom: 10px; }
         .bqd-comments-list::-webkit-scrollbar { width: 3px; }
         .bqd-comments-list::-webkit-scrollbar-thumb { background: #2c3e50; }
@@ -300,7 +299,7 @@
         <div class="dashboard-section" data-cy="board-encounters-section" id="boardEncountersSection"
              style="padding:12px 16px;">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
-                <h2 class="section-title" style="margin:0; border:none; font-size:9px;">⚡ EVENTOS ATIVOS</h2>
+                <h2 class="section-title section-title--flush section-title--sm">⚡ EVENTOS ATIVOS</h2>
             </div>
             <div id="boardEncounterList" style="display:flex; flex-wrap:wrap; align-items:center; min-height:28px;">
                 <span style="font-size:7px;color:#7f8c8d;">Carregando...</span>
@@ -311,7 +310,7 @@
         <div class="dashboard-section" data-cy="board-kanban-section">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
                 <div style="display:flex;align-items:center;gap:10px;">
-                    <h2 class="section-title" style="margin:0; border:none;">⚔️ BOARD DE MISSÕES</h2>
+                    <h2 class="section-title section-title--flush">⚔️ BOARD DE MISSÕES</h2>
                     <button class="btn-pixel btn-neutral" data-cy="btn-edit-columns" onclick="openEditColumnsModal()" style="font-size:8px;padding:5px 10px;">⚙️ Colunas</button>
                 </div>
                 <div class="faction-filters" data-cy="guild-filters" id="guildFilters">
@@ -360,7 +359,7 @@
                 <div style="flex:1;min-width:0;margin-right:12px;">
                     <div id="bqd-type-badge" style="margin-bottom:6px;"></div>
                     <div id="bqd-parent-breadcrumb" style="display:none;margin-bottom:6px;"></div>
-                    <h2 id="bqd-title" class="section-title" style="margin:0;border:none;font-size:9px;word-break:break-word;"></h2>
+                    <h2 id="bqd-title" class="section-title section-title--flush section-title--sm" style="word-break:break-word;"></h2>
                 </div>
                 <button class="btn-pixel btn-neutral" style="font-size:10px;padding:4px 10px;flex-shrink:0;" data-cy="btn-close-board-quest-detail" onclick="closeBoardQuestDetail()">✕</button>
             </div>

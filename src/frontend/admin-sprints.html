@@ -67,7 +67,7 @@
             <div class="dashboard-section" data-cy="panel-active-sprint" id="activeSprint">
                 <!-- Seletor de sprint + badge de saúde -->
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
-                    <h2 class="section-title" style="border:none; margin:0;">📊 DASHBOARD DA SPRINT</h2>
+                    <h2 class="section-title section-title--flush">📊 DASHBOARD DA SPRINT</h2>
                     <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                         <select id="viewSprintSelect" data-cy="select-view-sprint"
                                 class="pixel-input-dark pixel-input-gold"
@@ -152,16 +152,16 @@
                     </div>
 
                     <!-- Desempenho por facção -->
-                    <h3 class="section-title" style="font-size:9px; margin-top:20px;">📊 DESEMPENHO POR GUILDA</h3>
+                    <h3 class="section-title section-title--sm" style="margin-top:20px;">📊 DESEMPENHO POR GUILDA</h3>
                     <div class="factions-grid" id="sprintFactionGrid" data-cy="sprint-faction-grid"></div>
 
                     <!-- Top performers -->
-                    <h3 class="section-title" style="font-size:9px; margin-top:20px;">🏆 TOP PERFORMERS DA SPRINT</h3>
+                    <h3 class="section-title section-title--sm" style="margin-top:20px;">🏆 TOP PERFORMERS DA SPRINT</h3>
                     <div id="sprintTopPerformers" data-cy="sprint-top-performers"></div>
 
                     <!-- Adicionar quests (só visível na sprint ativa) -->
                     <div id="addQuestsSection" style="display:none;">
-                        <h3 class="section-title" style="font-size:9px; margin-top:20px;">➕ ADICIONAR QUESTS À SPRINT</h3>
+                        <h3 class="section-title section-title--sm" style="margin-top:20px;">➕ ADICIONAR QUESTS À SPRINT</h3>
                         <div style="font-size:7px; color:#7f8c8d; margin-bottom:8px;">Quests do backlog (sem sprint atribuída)</div>
                         <div style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
                             <div class="forge-group" style="flex:1; min-width:200px; margin-bottom:0;">

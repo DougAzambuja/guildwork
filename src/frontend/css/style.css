@@ -1003,8 +1003,35 @@ body:has(.mural-layout) {
     border-bottom: 4px dashed var(--text-muted);
     padding-bottom: 10px;
 }
+/* Sem borda/margem — para títulos dentro de flex rows e headers compactos */
+.section-title--flush {
+    margin: 0;
+    border: none;
+    padding: 0;
+}
+/* Tamanho reduzido — para sub-seções dentro de cards compactos */
+.section-title--sm {
+    font-size: 9px;
+}
 
-/* Cards das Facções */
+/* Rótulos de seção do sidebar do board (admin-sprint-board) */
+.bqd-label {
+    font-size: 8px;
+    color: var(--color-gold);
+    margin-bottom: 8px;
+}
+
+/* Títulos de painel de eventos (admin-events) */
+.ev-panel-title {
+    font-family: var(--font-game);
+    font-size: 12px;
+    color: var(--color-gold);
+    margin: 0 0 14px;
+    padding-bottom: 10px;
+    border-bottom: 4px dashed var(--border-color-subtle);
+}
+
+/* Cards de Facções */
 .factions-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));

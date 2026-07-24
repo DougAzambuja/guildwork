@@ -155,14 +155,7 @@
             padding: 20px;
             box-shadow: 8px 8px 0px rgba(0,0,0,0.6);
         }
-        .ev-panel-title {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 12px;
-            color: #f1c40f;
-            margin: 0 0 14px;
-            padding-bottom: 10px;
-            border-bottom: 4px dashed #3d5166;
-        }
+        /* .ev-panel-title moved to style.css */
         .ev-panel-text {
             font-size: 10px;
             color: #7f8c8d;
@@ -224,7 +217,7 @@
 
                     <!-- ── BIBLIOTECA DE TEMPLATES ── -->
                     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
-                        <h3 class="section-title" style="font-size:12px; margin:0; border:none; padding:0;">
+                        <h3 class="section-title section-title--flush" style="font-size:12px;">
                             📚 BIBLIOTECA DE TEMPLATES
                         </h3>
                         <button class="btn-pixel" data-cy="btn-new-template" onclick="showCreateForm()"
@@ -253,7 +246,7 @@
 
                     <!-- Agenda de eventos sociais -->
                     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
-                        <h3 class="section-title" style="font-size:12px; margin:0; border:none; padding:0;">
+                        <h3 class="section-title section-title--flush" style="font-size:12px;">
                             📅 AGENDA SOCIAL
                         </h3>
                         <button class="btn-pixel btn-info" data-cy="btn-new-social-event" onclick="showSocialPanel()"

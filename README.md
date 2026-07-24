@@ -362,7 +362,7 @@ Fases planejadas:
 - ✅ **Fase 1 — Tokens:** `:root` com ~25 tokens; substituição sistemática de ~350 valores hardcoded
 - ✅ **Fase 2 — Botões:** 6 modificadores semânticos (`.btn-success/danger/info/muted/special/neutral`); eliminados `style="background:#hex"` de botões em HTML e JS
 - ✅ **Fase 3 — Inputs:** `.pixel-input-dark` + `.pixel-input-gold` para inputs/selects escuros; `.form-field` de admin-events migrado para tokens; todos os inline dark inputs padronizados
-- ⬜ **Fase 4 — Títulos:** Unificar `.section-title` e variantes
+- ✅ **Fase 4 — Títulos:** `.section-title--flush` e `--sm` como modificadores; `bqd-label` e `ev-panel-title` movidos para `style.css` com tokens; hardcoded em `profile-section-title` / `perfil-section-title` tokenizados
 - ⬜ **Fase 5 — Modais e z-index:** 3 valores de z-index para modais + deduplicação de HTML (~120 linhas repetidas entre `admin.html` e `admin-sprint-board.html`)
 
 ---
