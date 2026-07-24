@@ -6,7 +6,7 @@ Bem-vindo ao GuildWork! Um sistema de gestão de tarefas gamificado que transfor
 
 A arquitetura é leve, stateless e com autoridade no servidor para todas as regras de economia e gamificação:
 
-* **Front-end:** HTML5, CSS3 com **Design System de tokens** (25+ variáveis semânticas em `:root` — superfícies, cores, tipografia — eliminando ~350 valores hardcoded) e Vanilla JavaScript. Estética em Pixel Art servida via VS Code Live Server.
+* **Front-end:** HTML5, CSS3 com **Design System de tokens** (73 variáveis semânticas em `:root` — superfícies, cores, tipografia, z-index, bordas, spacing — eliminando ~450 valores hardcoded; blocos `<style>` locais de 7 HTMLs centralizados em `style.css`) e Vanilla JavaScript. Estética em Pixel Art servida via VS Code Live Server.
 * **Back-end:** Node.js (v18+) com Express. Arquitetura RESTful e stateless.
 * **Banco de Dados:** MongoDB Atlas (M0 free tier, cluster `GuildWork`, sa-east-1) via Mongoose 9.x com schemas estritos. Docker Compose disponível para uso local via profile `local-db`.
 * **Segurança:** JWT (8h de expiração), bcryptjs para hash de senha, validação de todas as regras de negócio exclusivamente no servidor.
@@ -364,6 +364,9 @@ Fases planejadas:
 - ✅ **Fase 3 — Inputs:** `.pixel-input-dark` + `.pixel-input-gold` para inputs/selects escuros; `.form-field` de admin-events migrado para tokens; todos os inline dark inputs padronizados
 - ✅ **Fase 4 — Títulos:** `.section-title--flush` e `--sm` como modificadores; `bqd-label` e `ev-panel-title` movidos para `style.css` com tokens; hardcoded em `profile-section-title` / `perfil-section-title` tokenizados
 - ✅ **Fase 5 — Modais e z-index:** tokens `--z-encounter/modal/toast/overlay` aplicados a todos os z-index do `style.css`; encounter modal HTML deduplicado em `js/encounter-modal.js` (IIFE de injeção); inline script do board movido para `admin-sprint-board.js`
+- ✅ **Fase 6 — Tipografia e tokens ausentes:** escala tipográfica `--text-xxs` (7px) a `--text-2xl` (16px); 83 `font-size: Npx` substituídos; tokens de superfície/cor/overlay ausentes adicionados ao `:root` (`--surface-deep`, `--overlay-soft/medium`, `--border-color-mid`, `--color-silver/teal/xp/warning-dark/link-hover`)
+- ✅ **Fase 7 — CSS centralizado:** blocos `<style>` locais de 7 HTMLs migrados para `style.css` com todos os tokens aplicados; conflitos de seletor resolvidos (`.kanban-board .kanban-col-header`, `.burndown-legend .legend-item`); `change-password.html` corrigido (tokens falsos removidos)
+- ✅ **Fase 8 — Limpeza residual:** segunda passagem com regex ampla substituiu 30 hex adicionais nos blocos migrados; residuais restantes são intencionais (gradientes de XP, hover states derivados, cores pixel art)
 
 ---
 
