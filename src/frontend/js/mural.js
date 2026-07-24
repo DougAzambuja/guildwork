@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await fetchKanbanColumns();
     await loadBoard();
     await fetchAndRenderEncounters();
+    await fetchAndRenderSocialEvents();
     hideLoadingOverlay();
     startBoardAutoRefresh();
 });
@@ -72,7 +73,7 @@ const REFRESH_SECONDS = 15;
 
 function startBoardAutoRefresh() {
     setInterval(() => {
-        Promise.all([loadBoard(), fetchPlayerState(), fetchAndRenderEncounters()]);
+        Promise.all([loadBoard(), fetchPlayerState(), fetchAndRenderEncounters(), fetchAndRenderSocialEvents()]);
     }, REFRESH_SECONDS * 1000);
 }
 
@@ -1783,6 +1784,59 @@ window.closeEncounterModal = function() {
     if (modal) modal.style.display = 'none';
     clearInterval(_encounterTimerInterval);
     _encounterTimerInterval = null;
+}
+
+// ── SOCIAL EVENTS ────────────────────────────────────────────────────────────
+
+async function fetchAndRenderSocialEvents() {
+    const banner = document.getElementById('socialEventsBanner');
+    const list   = document.getElementById('socialEventsSidebar');
+    if (!banner || !list) return;
+
+    try {
+        const res = await fetch(`${API_URL}/social-events`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (!res.ok) { banner.style.display = 'none'; return; }
+
+        const events = await res.json();
+
+        // Mostra apenas os próximos 5 eventos (futuros primeiro, depois passados)
+        const future = events.filter(e => !e.is_past);
+        const past   = events.filter(e => e.is_past);
+        const visible = [...future, ...past].slice(0, 5);
+
+        if (!visible.length) { banner.style.display = 'none'; return; }
+
+        banner.style.display = '';
+
+        const formatDate = d => new Date(d).toLocaleString('pt-BR', {
+            day: '2-digit', month: '2-digit',
+            hour: '2-digit', minute: '2-digit',
+        });
+
+        list.innerHTML = visible.map(ev => {
+            const faction = ev.faction ? `🏰 ${ev.faction}` : '🌐 Empresa toda';
+            return `
+            <div style="
+                padding:8px 10px;
+                margin-bottom:6px;
+                background:${ev.is_past ? '#0d1b2a' : '#0d1f0d'};
+                border-left:3px solid ${ev.is_past ? '#3d5166' : '#27ae60'};
+                opacity:${ev.is_past ? '0.55' : '1'};
+            ">
+                <div style="font-size:8px;color:${ev.is_past ? '#7f8c8d' : '#2ecc71'};margin-bottom:3px;">
+                    ${ev.is_past ? '📋' : '📅'} ${formatDate(ev.event_date)}
+                </div>
+                <div style="font-size:9px;color:#ecf0f1;margin-bottom:2px;">${ev.title}</div>
+                ${ev.description ? `<div style="font-size:8px;color:#7f8c8d;">${ev.description}</div>` : ''}
+                <div style="font-size:7px;color:#3d5166;margin-top:3px;">${faction}</div>
+            </div>`;
+        }).join('');
+
+    } catch {
+        banner.style.display = 'none';
+    }
 }
 
 const STREAK_MILESTONES_DISPLAY = [3, 7, 14, 30];

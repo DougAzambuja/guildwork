@@ -33,7 +33,7 @@ exports.getRoster = async (req, res) => {
  */
 exports.updateUser = async (req, res) => {
     try {
-        const { nome, faction, role, password, force_password_change } = req.body;
+        const { nome, faction, role, password, force_password_change, birth_date } = req.body;
         const user = await User.findById(req.params.id);
 
         if (!user) return res.status(404).json({ message: 'Usuário não encontrado.' });
@@ -42,6 +42,7 @@ exports.updateUser = async (req, res) => {
         if (faction) user.faction = faction;
         if (role)    user.role    = role;
         if (typeof force_password_change === 'boolean') user.force_password_change = force_password_change;
+        if (birth_date !== undefined) user.birth_date = birth_date ? new Date(birth_date) : null;
         if (password && password.trim().length >= 6) {
             user.password = password; // pre-save hook aplica o hash
         }

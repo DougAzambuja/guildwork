@@ -191,6 +191,13 @@ function renderPerfil(p, me) {
                        style="width:100%;box-sizing:border-box;margin-bottom:16px;" autocomplete="off" data-cy="input-perfil-nome"
                        oninput="isDirty=true">
 
+                <div class="perfil-section-title">🎂 DATA DE ANIVERSÁRIO (opcional)</div>
+                <input type="date" id="editBirthDate" class="date-field"
+                       value="${p.birth_date ? new Date(p.birth_date).toISOString().slice(0, 10) : ''}"
+                       style="margin-bottom:16px;"
+                       data-cy="input-perfil-birth-date"
+                       oninput="isDirty=true">
+
                 <div class="perfil-section-title">🎭 GUARDA-ROUPA</div>
                 <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;" data-cy="wardrobe-grid">
                     ${wardrobeHtml}
@@ -347,16 +354,23 @@ window.onAvatarUrlInput = (val) => {
 };
 
 window.saveHero = async () => {
-    const nomeEl = document.getElementById('editNome');
-    const nome   = nomeEl ? nomeEl.value.trim() : '';
+    const nomeEl      = document.getElementById('editNome');
+    const birthDateEl = document.getElementById('editBirthDate');
+    const nome        = nomeEl ? nomeEl.value.trim() : '';
 
     if (!nome) { showToast('Nome não pode ser vazio.', 'error'); return; }
+
+    const payload = {
+        nome,
+        avatar_url:  pendingAvatar,
+        birth_date:  birthDateEl ? (birthDateEl.value || null) : undefined,
+    };
 
     try {
         const res = await fetch(`${API_URL}/players/me`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ nome, avatar_url: pendingAvatar })
+            body: JSON.stringify(payload)
         });
 
         const data = await res.json();

@@ -57,6 +57,9 @@ const UserSchema = new mongoose.Schema({
         image:   { type: String },
     }],
 
+    // Perfil
+    birth_date: { type: Date, default: null },
+
     // Segurança — forçar troca de senha no próximo login
     force_password_change: { type: Boolean, default: false },
 
