@@ -363,7 +363,7 @@ Fases planejadas:
 - ✅ **Fase 2 — Botões:** 6 modificadores semânticos (`.btn-success/danger/info/muted/special/neutral`); eliminados `style="background:#hex"` de botões em HTML e JS
 - ✅ **Fase 3 — Inputs:** `.pixel-input-dark` + `.pixel-input-gold` para inputs/selects escuros; `.form-field` de admin-events migrado para tokens; todos os inline dark inputs padronizados
 - ✅ **Fase 4 — Títulos:** `.section-title--flush` e `--sm` como modificadores; `bqd-label` e `ev-panel-title` movidos para `style.css` com tokens; hardcoded em `profile-section-title` / `perfil-section-title` tokenizados
-- ⬜ **Fase 5 — Modais e z-index:** 3 valores de z-index para modais + deduplicação de HTML (~120 linhas repetidas entre `admin.html` e `admin-sprint-board.html`)
+- ✅ **Fase 5 — Modais e z-index:** tokens `--z-encounter/modal/toast/overlay` aplicados a todos os z-index do `style.css`; encounter modal HTML deduplicado em `js/encounter-modal.js` (IIFE de injeção); inline script do board movido para `admin-sprint-board.js`
 
 ---
 

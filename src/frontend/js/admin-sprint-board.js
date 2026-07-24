@@ -1723,3 +1723,218 @@ window.saveColumnsEdit = async () => {
         if (btn) btn.disabled = false;
     }
 };
+
+// ==========================================
+// ENCOUNTER MODAL — lógica específica do board
+// ==========================================
+const ENCOUNTER_ICONS_BOARD  = { xp_penalty:'💀', gold_penalty:'💸', xp_bonus:'✨', gold_bonus:'💰', slow:'🐌', luck:'🍀', store_discount:'🏷️' };
+const ENCOUNTER_LABELS_BOARD = { xp_penalty:'PENALIDADE XP', gold_penalty:'PENALIDADE GOLD', xp_bonus:'BÔNUS XP', gold_bonus:'BÔNUS GOLD', slow:'SLA REDUZIDO', luck:'SORTE ATIVA', store_discount:'DESCONTO NA LOJA' };
+const ENCOUNTER_COLORS_BOARD = {
+    xp_penalty:    { bg:'#1a0a0a', border:'#c0392b', text:'#e74c3c' },
+    gold_penalty:  { bg:'#1a0d00', border:'#e67e22', text:'#e67e22' },
+    xp_bonus:      { bg:'#0a1a0a', border:'#27ae60', text:'#2ecc71' },
+    gold_bonus:    { bg:'#0a0d0a', border:'#f1c40f', text:'#f1c40f' },
+    slow:          { bg:'#0d0d1a', border:'#8e44ad', text:'#9b59b6' },
+    luck:          { bg:'#0a1a10', border:'#1abc9c', text:'#1abc9c' },
+    store_discount:{ bg:'#1a1500', border:'#f39c12', text:'#f39c12' },
+};
+
+let _currentTplId = null;
+
+function openEncounterModal() {
+    const modal = document.getElementById('encounterModal');
+    if (!modal) return;
+    encShowLibrary();
+    modal.style.display = 'flex';
+}
+function closeEncounterModal() {
+    const modal = document.getElementById('encounterModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function encShowLibrary() {
+    document.getElementById('encViewLibrary').style.display = 'block';
+    document.getElementById('encViewCreate').style.display  = 'none';
+    document.getElementById('encViewTrigger').style.display = 'none';
+    document.getElementById('encBtnBack').style.display     = 'none';
+    document.getElementById('encModalTitle').textContent    = '⚡ EVENTOS';
+    encLoadTemplates();
+}
+function encShowCreate(tpl) {
+    document.getElementById('encViewLibrary').style.display = 'none';
+    document.getElementById('encViewCreate').style.display  = 'block';
+    document.getElementById('encViewTrigger').style.display = 'none';
+    document.getElementById('encBtnBack').style.display     = 'inline-block';
+    document.getElementById('encModalTitle').textContent    = tpl ? '✏️ EDITAR TEMPLATE' : '+ NOVO EVENTO';
+    _currentTplId = tpl ? tpl._id : null;
+    document.getElementById('encCreateForm').reset();
+    if (tpl) {
+        document.getElementById('encTplTitle').value    = tpl.title;
+        document.getElementById('encTplDesc').value     = tpl.description || '';
+        document.getElementById('encTplKind').value     = tpl.effect_kind;
+        document.getElementById('encTplValue').value    = Math.round(tpl.default_value * 100);
+        document.getElementById('encTplDuration').value = tpl.default_duration;
+        document.getElementById('encTplScope').value    = tpl.scope_type;
+    }
+}
+function encShowTrigger(tpl) {
+    document.getElementById('encViewLibrary').style.display = 'none';
+    document.getElementById('encViewCreate').style.display  = 'none';
+    document.getElementById('encViewTrigger').style.display = 'block';
+    document.getElementById('encBtnBack').style.display     = 'inline-block';
+    document.getElementById('encModalTitle').textContent    = '⚡ ACIONAR EVENTO';
+    _currentTplId = tpl._id;
+    const icon  = ENCOUNTER_ICONS_BOARD[tpl.effect_kind] || '⚡';
+    const label = ENCOUNTER_LABELS_BOARD[tpl.effect_kind] || tpl.effect_kind;
+    document.getElementById('encTriggerInfo').innerHTML = `
+        <div style="font-size:9px;color:#e056fd;margin-bottom:6px;">${icon} ${tpl.title}</div>
+        ${tpl.description ? `<div style="font-size:7px;color:#bdc3c7;margin-bottom:8px;">${tpl.description}</div>` : ''}
+        <div style="font-size:7px;color:#f1c40f;">${label} · ${Math.round(tpl.default_value * 100)}% · padrão ${tpl.default_duration}h</div>`;
+    document.getElementById('encTriggerDuration').value = tpl.default_duration;
+    document.getElementById('encTriggerScope').value    = tpl.scope_type;
+    encToggleFaction();
+}
+function encToggleFaction() {
+    const scope = document.getElementById('encTriggerScope').value;
+    document.getElementById('encTriggerFactionWrap').style.display = scope === 'faction' ? 'block' : 'none';
+}
+
+async function encLoadTemplates() {
+    const token     = localStorage.getItem('guild_token');
+    const container = document.getElementById('encTemplateList');
+    container.innerHTML = '<div style="font-size:8px;color:#7f8c8d;padding:12px 0;text-align:center;">Carregando...</div>';
+    try {
+        const res  = await fetch(`${API_URL}/event-templates`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const list = await res.json();
+        if (!list.length) {
+            container.innerHTML = '<div style="font-size:8px;color:#7f8c8d;padding:12px 0;text-align:center;">Nenhum template criado ainda.</div>';
+            return;
+        }
+        container.innerHTML = list.map(tpl => {
+            const icon  = ENCOUNTER_ICONS_BOARD[tpl.effect_kind]  || '⚡';
+            const label = ENCOUNTER_LABELS_BOARD[tpl.effect_kind] || tpl.effect_kind;
+            const col   = (ENCOUNTER_COLORS_BOARD[tpl.effect_kind] || ENCOUNTER_COLORS_BOARD.xp_bonus).border;
+            return `<div style="display:flex;align-items:center;gap:8px;padding:9px 10px;background:#0d1b2a;border:1px solid #2c3e50;margin-bottom:6px;">
+                <span style="font-size:13px;">${icon}</span>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:8px;color:#ecf0f1;margin-bottom:2px;">${tpl.title}</div>
+                    <div style="font-size:7px;color:${col};">${label} · ${Math.round(tpl.default_value*100)}% · ${tpl.default_duration}h · ${tpl.scope_type==='global'?'🌐 Global':'🏰 Facção'}</div>
+                </div>
+                <button class="btn-pixel btn-special" onclick="encShowTrigger(${JSON.stringify(tpl).replace(/"/g,'&quot;')})" data-cy="btn-enc-trigger-${tpl._id}"
+                        style="font-size:6px;padding:5px 8px;">⚡</button>
+                <button class="btn-pixel btn-neutral" onclick="encShowCreate(${JSON.stringify(tpl).replace(/"/g,'&quot;')})" data-cy="btn-enc-edit-${tpl._id}"
+                        style="font-size:6px;padding:5px 8px;">✏️</button>
+                <button class="btn-pixel btn-danger" onclick="encDeleteTemplate('${tpl._id}')" data-cy="btn-enc-delete-${tpl._id}"
+                        style="font-size:6px;padding:5px 8px;">🗑️</button>
+            </div>`;
+        }).join('');
+    } catch { container.innerHTML = '<div style="font-size:8px;color:#e74c3c;padding:12px 0;text-align:center;">Erro ao carregar biblioteca.</div>'; }
+}
+
+async function encSubmitCreate(event) {
+    event.preventDefault();
+    const token = localStorage.getItem('guild_token');
+    const body  = {
+        title:            document.getElementById('encTplTitle').value.trim(),
+        description:      document.getElementById('encTplDesc').value.trim(),
+        effect_kind:      document.getElementById('encTplKind').value,
+        default_value:    Number(document.getElementById('encTplValue').value) / 100,
+        default_duration: Number(document.getElementById('encTplDuration').value),
+        scope_type:       document.getElementById('encTplScope').value,
+    };
+    const url    = _currentTplId ? `${API_URL}/event-templates/${_currentTplId}` : `${API_URL}/event-templates`;
+    const method = _currentTplId ? 'PATCH' : 'POST';
+    try {
+        const res = await fetch(url, {
+            method,
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body:    JSON.stringify(body),
+        });
+        if (!res.ok) { const e = await res.json(); showToast(e.message || 'Erro ao salvar.', 'error'); return; }
+        showToast(_currentTplId ? 'Template atualizado!' : 'Template criado!', 'success');
+        encShowLibrary();
+    } catch { showToast('Erro de conexão.', 'error'); }
+}
+
+async function encDeleteTemplate(id) {
+    if (!confirm('Excluir este template de evento?')) return;
+    const token = localStorage.getItem('guild_token');
+    try {
+        const res = await fetch(`${API_URL}/event-templates/${id}`, {
+            method:  'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (!res.ok) { showToast('Erro ao excluir template.', 'error'); return; }
+        showToast('Template excluído.', 'success');
+        encLoadTemplates();
+    } catch { showToast('Erro de conexão.', 'error'); }
+}
+
+async function encSubmitTrigger() {
+    const token    = localStorage.getItem('guild_token');
+    const scope    = document.getElementById('encTriggerScope').value;
+    const duration = Number(document.getElementById('encTriggerDuration').value);
+    const body     = { template_id: _currentTplId, type: scope, duration_hours: duration };
+    if (scope === 'faction') body.affected_faction = document.getElementById('encTriggerFaction').value;
+    try {
+        const res = await fetch(`${API_URL}/encounters/trigger`, {
+            method:  'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body:    JSON.stringify(body),
+        });
+        if (!res.ok) { const e = await res.json(); showToast(e.message || 'Erro ao acionar evento.', 'error'); return; }
+        closeEncounterModal();
+        showToast('⚡ Evento acionado com sucesso!', 'success');
+        renderActiveEncountersBoard();
+    } catch { showToast('Erro de conexão ao acionar evento.', 'error'); }
+}
+
+async function renderActiveEncountersBoard() {
+    const boardToken = localStorage.getItem('guild_token');
+    const container  = document.getElementById('boardEncounterList');
+    if (!container) return;
+    try {
+        const res = await fetch(`${API_URL}/encounters/active`, {
+            headers: { 'Authorization': `Bearer ${boardToken}` },
+        });
+        if (!res.ok) { container.innerHTML = ''; return; }
+        const list = await res.json();
+        if (!list.length) {
+            container.innerHTML = '<span style="font-size:7px;color:#7f8c8d;">Nenhum evento ativo no momento.</span>';
+            return;
+        }
+        container.innerHTML = list.map(enc => {
+            const kind  = enc.effect?.kind || 'xp_bonus';
+            const col   = ENCOUNTER_COLORS_BOARD[kind]  || ENCOUNTER_COLORS_BOARD.xp_bonus;
+            const icon  = ENCOUNTER_ICONS_BOARD[kind]   || '⚡';
+            const label = ENCOUNTER_LABELS_BOARD[kind]  || 'EVENTO';
+            const pct   = Math.round(enc.effect.value * 100);
+            const until = enc.active_until ? new Date(enc.active_until) : null;
+            const h     = until ? Math.max(0, Math.floor((until - Date.now()) / 3_600_000)) : 0;
+            const m     = until ? Math.max(0, Math.floor(((until - Date.now()) % 3_600_000) / 60_000)) : 0;
+            const scope = enc.type === 'faction' ? enc.affected_faction : 'Todas';
+            return `<div style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:${col.bg};border:1px solid ${col.border};margin-right:6px;margin-bottom:6px;">
+                <span style="font-size:11px;">${icon}</span>
+                <span style="font-size:7px;color:${col.text};">${label} <strong>${pct}%</strong> · ${scope} · ${h}h${m}m</span>
+                <button onclick="deactivateEncounterBoard('${enc._id}')"
+                        style="background:transparent;border:none;color:#7f8c8d;font-size:9px;cursor:pointer;padding:0 2px;" title="Encerrar">✕</button>
+            </div>`;
+        }).join('');
+    } catch { container.innerHTML = ''; }
+}
+
+async function deactivateEncounterBoard(id) {
+    const boardToken = localStorage.getItem('guild_token');
+    try {
+        const res = await fetch(`${API_URL}/encounters/${id}`, {
+            method:  'DELETE',
+            headers: { 'Authorization': `Bearer ${boardToken}` },
+        });
+        if (res.ok) { showToast('Evento encerrado.', 'success'); renderActiveEncountersBoard(); }
+    } catch { showToast('Erro ao encerrar evento.', 'error'); }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    renderActiveEncountersBoard();
+    setInterval(renderActiveEncountersBoard, 30000);
+});
