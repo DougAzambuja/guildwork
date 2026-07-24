@@ -20,7 +20,7 @@
 
             <!-- Cabeçalho com busca, filtro e botão recrutar -->
             <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
-                <h2 class="section-title" style="margin:0; border:none; flex-shrink:0;">🛡️ ROSTER DA GUILDA</h2>
+                <h2 class="section-title section-title--flush" style="flex-shrink:0;">🛡️ ROSTER DA GUILDA</h2>
 
                 <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                     <input type="text" id="searchInput" class="pixel-input" placeholder="Buscar nome ou @username..."
@@ -100,8 +100,8 @@
                     </label>
                 </div>
                 <div class="actions" style="display:flex; gap:10px; margin-top:16px;">
-                    <button type="submit" class="btn-pixel" style="flex:1; background:#27ae60; padding:12px; font-size:8px; white-space:nowrap;" data-cy="btn-submit-recruit">RECRUTAR</button>
-                    <button type="button" class="btn-pixel" style="flex:1; background:#c0392b; padding:12px; font-size:8px; white-space:nowrap;" onclick="closeRecruitModal()">CANCELAR</button>
+                    <button type="submit" class="btn-pixel btn-success" style="flex:1; padding:12px; font-size:8px; white-space:nowrap;" data-cy="btn-submit-recruit">RECRUTAR</button>
+                    <button type="button" class="btn-pixel btn-danger" style="flex:1; padding:12px; font-size:8px; white-space:nowrap;" onclick="closeRecruitModal()">CANCELAR</button>
                 </div>
             </form>
         </div>
@@ -142,8 +142,8 @@
                     </label>
                 </div>
                 <div class="actions" style="display:flex; gap:10px; margin-top:16px;">
-                    <button type="submit" class="btn-pixel" style="flex:1; background:#27ae60; padding:12px; font-size:8px; white-space:nowrap;" data-cy="btn-submit-edit-user">SALVAR</button>
-                    <button type="button" class="btn-pixel" style="flex:1; background:#c0392b; padding:12px; font-size:8px; white-space:nowrap;" onclick="closeEditUserModal()">CANCELAR</button>
+                    <button type="submit" class="btn-pixel btn-success" style="flex:1; padding:12px; font-size:8px; white-space:nowrap;" data-cy="btn-submit-edit-user">SALVAR</button>
+                    <button type="button" class="btn-pixel btn-danger" style="flex:1; padding:12px; font-size:8px; white-space:nowrap;" onclick="closeEditUserModal()">CANCELAR</button>
                 </div>
             </form>
         </div>

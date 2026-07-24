@@ -1,4 +1,4 @@
-(async function () {
+﻿(async function () {
     const token = localStorage.getItem('guild_token');
     if (!token) { window.location.href = 'login.html'; return; }
 
@@ -115,7 +115,7 @@
         const notRanked = !rankings.some(r => r.isMe);
         const notRankedRow = notRanked ? `
         <tr>
-            <td colspan="5" style="text-align:center;padding:16px;font-size:9px;color:#7f8c8d;letter-spacing:1px;border-top:2px dashed #2c3e50;">
+            <td colspan="5" class="empty-state" style="padding:16px;letter-spacing:1px;border-top:2px dashed var(--surface-3);">
                 ⚔️ Você ainda não está no ranking desta semana — complete missões para aparecer aqui!
             </td>
         </tr>` : '';

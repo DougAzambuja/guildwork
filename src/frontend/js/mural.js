@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // 0. PROTEÇÃO DE ROTA E INICIALIZAÇÃO
 // ==========================================
 const token = localStorage.getItem('guild_token');
@@ -256,7 +256,7 @@ function renderKanbanStructure() {
     const toolbar = document.getElementById('kanban-toolbar');
     if (toolbar) {
         toolbar.innerHTML = isGuildLeader
-            ? `<button class="btn-pixel" data-cy="btn-edit-columns" onclick="openPlayerColumnsModal()" style="font-size:15px;padding:8px 14px;background:#8e44ad;border:2px solid #9b59b6;">⚙️</button>`
+            ? `<button class="btn-pixel btn-special" data-cy="btn-edit-columns" onclick="openPlayerColumnsModal()" style="font-size:15px;padding:8px 14px;">⚙️</button>`
             : '';
     }
 
@@ -417,7 +417,7 @@ function renderBoard(quests) {
 
         bodyEl.innerHTML = '';
         if (colQuests.length === 0) {
-            bodyEl.innerHTML = '<div style="font-size:8px;color:#bdc3c7;text-align:center;padding:20px;">Nenhuma missão aqui.</div>';
+            bodyEl.innerHTML = '<div class="empty-state" style="padding:20px;color:var(--text-secondary)">Nenhuma missão aqui.</div>';
             return;
         }
         const cardFn = col.status_map === 'todo'        ? (q => renderTodoCard(q, myWipCount))
@@ -467,7 +467,7 @@ function renderColumn(colId, quests, cardFn) {
     if (!body) return;
     body.innerHTML = '';
     if (quests.length === 0) {
-        body.innerHTML = '<div style="font-size:8px;color:#bdc3c7;text-align:center;padding:20px;">Nenhuma missão aqui.</div>';
+        body.innerHTML = '<div class="empty-state" style="padding:20px;color:var(--text-secondary)">Nenhuma missão aqui.</div>';
         return;
     }
     quests.forEach(q => body.appendChild(cardFn(q)));
@@ -660,7 +660,7 @@ async function openQuestModal(questId) {
     const subtaskForm      = document.getElementById('qdm-subtask-form');
     const subtaskSection   = document.getElementById('qdm-subtasks-section');
     if (checklistSection) checklistSection.style.display = 'none';
-    if (commentsList) commentsList.innerHTML = '<div style="color:#7f8c8d;font-size:9px;text-align:center;padding:10px;">Carregando...</div>';
+    if (commentsList) commentsList.innerHTML = '<div class="empty-state" style="padding:10px">Carregando...</div>';
     if (subtaskForm)    subtaskForm.style.display = 'none';
     if (subtaskSection) subtaskSection.style.display = 'none';
 
@@ -1623,28 +1623,6 @@ function updateBuffUI() {
 // ==========================================
 // RANDOM ENCOUNTERS
 // ==========================================
-const ENCOUNTER_ICONS = {
-    xp_penalty:     '💀', gold_penalty:   '💸',
-    xp_bonus:       '✨', gold_bonus:     '💰',
-    slow:           '🐌', luck:           '🍀',
-    store_discount: '🏷️',
-};
-const ENCOUNTER_LABELS = {
-    xp_penalty:     'PENALIDADE DE XP',   gold_penalty:   'PENALIDADE DE GOLD',
-    xp_bonus:       'BÔNUS DE XP',         gold_bonus:     'BÔNUS DE GOLD',
-    slow:           'SLA REDUZIDO',         luck:           'SORTE ATIVA',
-    store_discount: 'DESCONTO NA LOJA',
-};
-const ENCOUNTER_COLORS = {
-    xp_penalty:     { bg: '#1a0a0a', border: '#c0392b', text: '#e74c3c' },
-    gold_penalty:   { bg: '#1a0d00', border: '#e67e22', text: '#e67e22' },
-    xp_bonus:       { bg: '#0a1a0a', border: '#27ae60', text: '#2ecc71' },
-    gold_bonus:     { bg: '#0a0d0a', border: '#f1c40f', text: '#f1c40f' },
-    slow:           { bg: '#0d0d1a', border: '#8e44ad', text: '#9b59b6' },
-    luck:           { bg: '#0a1a10', border: '#1abc9c', text: '#1abc9c' },
-    store_discount: { bg: '#1a1500', border: '#f39c12', text: '#f39c12' },
-};
-
 let _activeEncounters = [];
 
 // Efeitos que merecem destaque positivo inline na sidebar
@@ -1668,9 +1646,9 @@ async function fetchAndRenderEncounters() {
 
         if (single && POSITIVE_EFFECT_KINDS.has(singleKind)) {
             // 1 evento positivo → card inline (mesmo formato do streak)
-            const col   = ENCOUNTER_COLORS[singleKind];
-            const icon  = ENCOUNTER_ICONS[singleKind]  || '⚡';
-            const label = ENCOUNTER_LABELS[singleKind] || 'EVENTO ATIVO';
+            const col   = ENC_COLORS[singleKind];
+            const icon  = ENC_ICONS[singleKind]  || '⚡';
+            const label = ENC_LABELS[singleKind] || 'EVENTO ATIVO';
             const pct   = Math.round((single.effect?.value || 0) * 100);
             const time  = _formatTimeRemaining(single.active_until);
 
@@ -1734,9 +1712,9 @@ window.openEncounterModal = function() {
     const renderModal = () => {
         body.innerHTML = _activeEncounters.map(enc => {
             const kind  = enc.effect?.kind || 'xp_bonus';
-            const col   = ENCOUNTER_COLORS[kind] || ENCOUNTER_COLORS.xp_bonus;
-            const icon  = ENCOUNTER_ICONS[kind]  || '⚡';
-            const label = ENCOUNTER_LABELS[kind] || 'EVENTO';
+            const col   = ENC_COLORS[kind] || ENC_COLORS.xp_bonus;
+            const icon  = ENC_ICONS[kind]  || '⚡';
+            const label = ENC_LABELS[kind] || 'EVENTO';
             const pct   = Math.round((enc.effect?.value || 0) * 100);
             const scope = enc.type === 'faction' ? `🏰 ${enc.affected_faction}` : '🌐 Todas as Facções';
             const time  = _formatTimeRemaining(enc.active_until);
@@ -2229,7 +2207,7 @@ function renderPlayerColumnsList() {
                    style="width:32px;height:32px;padding:2px;border:2px solid #34495e;background:#111;cursor:pointer;flex-shrink:0;">
             <span style="font-size:7px;padding:4px 8px;background:${tagColor};color:#fff;white-space:nowrap;flex-shrink:0;min-width:44px;text-align:center;">${tag}</span>
             <button onclick="_playerColDelete(${i})"
-                    class="btn-pixel" style="font-size:9px;padding:7px 10px;background:#c0392b;${delDis ? 'opacity:.35;cursor:not-allowed;' : ''}"
+                    class="btn-pixel btn-danger" style="font-size:9px;padding:7px 10px;${delDis ? 'opacity:.35;cursor:not-allowed;' : ''}"
                     ${delDis ? 'disabled' : ''}>✕</button>
         </div>`;
     }).join('');

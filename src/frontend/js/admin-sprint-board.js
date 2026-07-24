@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // 0. PROTEÇÃO E INICIALIZAÇÃO
 // ==========================================
 const token    = localStorage.getItem('guild_token');
@@ -395,7 +395,7 @@ function renderKanban() {
 }
 
 function emptyColumn() {
-    return '<div style="font-size:7px;color:#4a5568;text-align:center;padding:20px 0;">Nenhuma quest</div>';
+    return '<div class="empty-state" style="padding:20px 0">Nenhuma quest</div>';
 }
 
 function renderEmptyBoardState() {
@@ -411,8 +411,8 @@ function renderEmptyBoardState() {
         <div style="font-size:8px;color:#bdc3c7;margin-bottom:16px;line-height:1.8;">
             As quests do backlog não foram adicionadas a esta sprint ainda.
         </div>
-        <button onclick="importBacklogToSprint()" data-cy="btn-import-backlog"
-                style="font-family:'Press Start 2P',cursive;font-size:7px;padding:8px 14px;background:#27ae60;border:none;color:#fff;cursor:pointer;">
+        <button class="btn-pixel btn-success" onclick="importBacklogToSprint()" data-cy="btn-import-backlog"
+                style="font-size:7px;padding:8px 14px;">
             📥 Importar Backlog para esta Sprint
         </button>
     `;
@@ -1086,7 +1086,7 @@ window.openBoardQuestDetail = async (questId) => {
     modal.style.display = 'flex';
 
     const commentsEl = document.getElementById('bqd-comments');
-    if (commentsEl) commentsEl.innerHTML = '<div style="color:#7f8c8d;font-size:8px;text-align:center;padding:10px;">Carregando...</div>';
+    if (commentsEl) commentsEl.innerHTML = '<div class="empty-state" style="padding:10px">Carregando...</div>';
 
     try {
         const res = await fetch(`${API_URL}/quests/${questId}`, {
@@ -1374,7 +1374,7 @@ function renderBoardSubtasks(quest) {
         </div>
         <div style="background:#1a252f;height:4px;border-radius:2px;overflow:hidden;">
             <div style="width:${pct}%;height:100%;background:${pct===100?'#27ae60':'#3498db'};"></div>
-        </div>` : '<div style="font-size:8px;color:#7f8c8d;">Nenhuma subtask ainda.</div>';
+        </div>` : '<div class="label-tag">Nenhuma subtask ainda.</div>';
 
     listEl.innerHTML = subtasks.map(s => {
         const st       = _BQD_STATUS[s.status] || _BQD_STATUS.todo;
@@ -1453,7 +1453,7 @@ function renderBoardQuestComments(comments) {
     const sorted = [...comments].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
     if (!sorted.length) {
-        listEl.innerHTML = '<div style="color:#7f8c8d;font-size:8px;text-align:center;padding:8px;">Sem atividade ainda.</div>';
+        listEl.innerHTML = '<div class="empty-state empty-state--sm" style="padding:8px">Sem atividade ainda.</div>';
         return;
     }
 
@@ -1638,10 +1638,11 @@ function renderEditColumnsList() {
                    style="width:32px;height:32px;padding:2px;background:#0d1b2a;border:2px solid #2c3e50;cursor:pointer;flex-shrink:0;">
             <input type="text" value="${col.name}" data-cy="input-col-name-${i}"
                    oninput="_editColumnsData[${i}].name = this.value"
-                   style="flex:1;font-family:inherit;font-size:10px;padding:10px 12px;background:#0d1b2a;color:#ecf0f1;border:2px solid #2c3e50;outline:none;">
+                   class="pixel-input-dark"
+                   style="flex:1;font-size:10px;padding:10px 12px;">
             <span style="font-size:7px;padding:4px 8px;background:${tagBg};color:${tagText};white-space:nowrap;flex-shrink:0;min-width:44px;text-align:center;border:1px solid ${tagText}55;">${tag}</span>
-            <button onclick="_colDelete(${i})" data-cy="btn-delete-col-${i}"
-                    style="background:#c0392b;border:none;color:#fff;font-family:inherit;font-size:9px;padding:7px 10px;cursor:pointer;${delDis ? 'opacity:.35;cursor:not-allowed;' : ''}"
+            <button class="btn-pixel btn-danger" onclick="_colDelete(${i})" data-cy="btn-delete-col-${i}"
+                    style="font-size:9px;padding:7px 10px;${delDis ? 'opacity:.35;cursor:not-allowed;' : ''}"
                     ${delDis ? 'disabled' : ''}>✕</button>
         </div>`;
     }).join('');
@@ -1722,3 +1723,206 @@ window.saveColumnsEdit = async () => {
         if (btn) btn.disabled = false;
     }
 };
+
+// ==========================================
+// ENCOUNTER MODAL — lógica específica do board
+// ==========================================
+let _currentTplId = null;
+
+function openEncounterModal() {
+    const modal = document.getElementById('encounterModal');
+    if (!modal) return;
+    encShowLibrary();
+    modal.style.display = 'flex';
+}
+function closeEncounterModal() {
+    const modal = document.getElementById('encounterModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function encShowLibrary() {
+    document.getElementById('encViewLibrary').style.display = 'block';
+    document.getElementById('encViewCreate').style.display  = 'none';
+    document.getElementById('encViewTrigger').style.display = 'none';
+    document.getElementById('encBtnBack').style.display     = 'none';
+    document.getElementById('encModalTitle').textContent    = '⚡ EVENTOS';
+    encLoadTemplates();
+}
+function encShowCreate(tpl) {
+    document.getElementById('encViewLibrary').style.display = 'none';
+    document.getElementById('encViewCreate').style.display  = 'block';
+    document.getElementById('encViewTrigger').style.display = 'none';
+    document.getElementById('encBtnBack').style.display     = 'inline-block';
+    document.getElementById('encModalTitle').textContent    = tpl ? '✏️ EDITAR TEMPLATE' : '+ NOVO EVENTO';
+    _currentTplId = tpl ? tpl._id : null;
+    document.getElementById('encCreateForm').reset();
+    if (tpl) {
+        document.getElementById('encTplTitle').value    = tpl.title;
+        document.getElementById('encTplDesc').value     = tpl.description || '';
+        document.getElementById('encTplKind').value     = tpl.effect_kind;
+        document.getElementById('encTplValue').value    = Math.round(tpl.default_value * 100);
+        document.getElementById('encTplDuration').value = tpl.default_duration;
+        document.getElementById('encTplScope').value    = tpl.scope_type;
+    }
+}
+function encShowTrigger(tpl) {
+    document.getElementById('encViewLibrary').style.display = 'none';
+    document.getElementById('encViewCreate').style.display  = 'none';
+    document.getElementById('encViewTrigger').style.display = 'block';
+    document.getElementById('encBtnBack').style.display     = 'inline-block';
+    document.getElementById('encModalTitle').textContent    = '⚡ ACIONAR EVENTO';
+    _currentTplId = tpl._id;
+    const icon  = ENC_ICONS[tpl.effect_kind] || '⚡';
+    const label = ENC_LABELS[tpl.effect_kind] || tpl.effect_kind;
+    document.getElementById('encTriggerInfo').innerHTML = `
+        <div style="font-size:9px;color:#e056fd;margin-bottom:6px;">${icon} ${tpl.title}</div>
+        ${tpl.description ? `<div style="font-size:7px;color:#bdc3c7;margin-bottom:8px;">${tpl.description}</div>` : ''}
+        <div style="font-size:7px;color:#f1c40f;">${label} · ${Math.round(tpl.default_value * 100)}% · padrão ${tpl.default_duration}h</div>`;
+    document.getElementById('encTriggerDuration').value = tpl.default_duration;
+    document.getElementById('encTriggerScope').value    = tpl.scope_type;
+    encToggleFaction();
+}
+function encToggleFaction() {
+    const scope = document.getElementById('encTriggerScope').value;
+    document.getElementById('encTriggerFactionWrap').style.display = scope === 'faction' ? 'block' : 'none';
+}
+
+async function encLoadTemplates() {
+    const token     = localStorage.getItem('guild_token');
+    const container = document.getElementById('encTemplateList');
+    container.innerHTML = '<div class="empty-state" style="padding:12px 0">Carregando...</div>';
+    try {
+        const res  = await fetch(`${API_URL}/event-templates`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const list = await res.json();
+        if (!list.length) {
+            container.innerHTML = '<div class="empty-state" style="padding:12px 0">Nenhum template criado ainda.</div>';
+            return;
+        }
+        container.innerHTML = list.map(tpl => {
+            const icon  = ENC_ICONS[tpl.effect_kind]  || '⚡';
+            const label = ENC_LABELS[tpl.effect_kind] || tpl.effect_kind;
+            const col   = (ENC_COLORS[tpl.effect_kind] || ENC_COLORS.xp_bonus).border;
+            return `<div style="display:flex;align-items:center;gap:8px;padding:9px 10px;background:#0d1b2a;border:1px solid #2c3e50;margin-bottom:6px;">
+                <span style="font-size:13px;">${icon}</span>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:8px;color:#ecf0f1;margin-bottom:2px;">${tpl.title}</div>
+                    <div style="font-size:7px;color:${col};">${label} · ${Math.round(tpl.default_value*100)}% · ${tpl.default_duration}h · ${tpl.scope_type==='global'?'🌐 Global':'🏰 Facção'}</div>
+                </div>
+                <button class="btn-pixel btn-special" onclick="encShowTrigger(${JSON.stringify(tpl).replace(/"/g,'&quot;')})" data-cy="btn-enc-trigger-${tpl._id}"
+                        style="font-size:6px;padding:5px 8px;">⚡</button>
+                <button class="btn-pixel btn-neutral" onclick="encShowCreate(${JSON.stringify(tpl).replace(/"/g,'&quot;')})" data-cy="btn-enc-edit-${tpl._id}"
+                        style="font-size:6px;padding:5px 8px;">✏️</button>
+                <button class="btn-pixel btn-danger" onclick="encDeleteTemplate('${tpl._id}')" data-cy="btn-enc-delete-${tpl._id}"
+                        style="font-size:6px;padding:5px 8px;">🗑️</button>
+            </div>`;
+        }).join('');
+    } catch { container.innerHTML = '<div style="font-size:8px;color:#e74c3c;padding:12px 0;text-align:center;">Erro ao carregar biblioteca.</div>'; }
+}
+
+async function encSubmitCreate(event) {
+    event.preventDefault();
+    const token = localStorage.getItem('guild_token');
+    const body  = {
+        title:            document.getElementById('encTplTitle').value.trim(),
+        description:      document.getElementById('encTplDesc').value.trim(),
+        effect_kind:      document.getElementById('encTplKind').value,
+        default_value:    Number(document.getElementById('encTplValue').value) / 100,
+        default_duration: Number(document.getElementById('encTplDuration').value),
+        scope_type:       document.getElementById('encTplScope').value,
+    };
+    const url    = _currentTplId ? `${API_URL}/event-templates/${_currentTplId}` : `${API_URL}/event-templates`;
+    const method = _currentTplId ? 'PATCH' : 'POST';
+    try {
+        const res = await fetch(url, {
+            method,
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body:    JSON.stringify(body),
+        });
+        if (!res.ok) { const e = await res.json(); showToast(e.message || 'Erro ao salvar.', 'error'); return; }
+        showToast(_currentTplId ? 'Template atualizado!' : 'Template criado!', 'success');
+        encShowLibrary();
+    } catch { showToast('Erro de conexão.', 'error'); }
+}
+
+async function encDeleteTemplate(id) {
+    if (!confirm('Excluir este template de evento?')) return;
+    const token = localStorage.getItem('guild_token');
+    try {
+        const res = await fetch(`${API_URL}/event-templates/${id}`, {
+            method:  'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (!res.ok) { showToast('Erro ao excluir template.', 'error'); return; }
+        showToast('Template excluído.', 'success');
+        encLoadTemplates();
+    } catch { showToast('Erro de conexão.', 'error'); }
+}
+
+async function encSubmitTrigger() {
+    const token    = localStorage.getItem('guild_token');
+    const scope    = document.getElementById('encTriggerScope').value;
+    const duration = Number(document.getElementById('encTriggerDuration').value);
+    const body     = { template_id: _currentTplId, type: scope, duration_hours: duration };
+    if (scope === 'faction') body.affected_faction = document.getElementById('encTriggerFaction').value;
+    try {
+        const res = await fetch(`${API_URL}/encounters/trigger`, {
+            method:  'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body:    JSON.stringify(body),
+        });
+        if (!res.ok) { const e = await res.json(); showToast(e.message || 'Erro ao acionar evento.', 'error'); return; }
+        closeEncounterModal();
+        showToast('⚡ Evento acionado com sucesso!', 'success');
+        renderActiveEncountersBoard();
+    } catch { showToast('Erro de conexão ao acionar evento.', 'error'); }
+}
+
+async function renderActiveEncountersBoard() {
+    const boardToken = localStorage.getItem('guild_token');
+    const container  = document.getElementById('boardEncounterList');
+    if (!container) return;
+    try {
+        const res = await fetch(`${API_URL}/encounters/active`, {
+            headers: { 'Authorization': `Bearer ${boardToken}` },
+        });
+        if (!res.ok) { container.innerHTML = ''; return; }
+        const list = await res.json();
+        if (!list.length) {
+            container.innerHTML = '<span class="label-tag">Nenhum evento ativo no momento.</span>';
+            return;
+        }
+        container.innerHTML = list.map(enc => {
+            const kind  = enc.effect?.kind || 'xp_bonus';
+            const col   = ENC_COLORS[kind]  || ENC_COLORS.xp_bonus;
+            const icon  = ENC_ICONS[kind]   || '⚡';
+            const label = ENC_LABELS[kind]  || 'EVENTO';
+            const pct   = Math.round(enc.effect.value * 100);
+            const until = enc.active_until ? new Date(enc.active_until) : null;
+            const h     = until ? Math.max(0, Math.floor((until - Date.now()) / 3_600_000)) : 0;
+            const m     = until ? Math.max(0, Math.floor(((until - Date.now()) % 3_600_000) / 60_000)) : 0;
+            const scope = enc.type === 'faction' ? enc.affected_faction : 'Todas';
+            return `<div style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:${col.bg};border:1px solid ${col.border};margin-right:6px;margin-bottom:6px;">
+                <span style="font-size:11px;">${icon}</span>
+                <span style="font-size:7px;color:${col.text};">${label} <strong>${pct}%</strong> · ${scope} · ${h}h${m}m</span>
+                <button onclick="deactivateEncounterBoard('${enc._id}')"
+                        style="background:transparent;border:none;color:#7f8c8d;font-size:9px;cursor:pointer;padding:0 2px;" title="Encerrar">✕</button>
+            </div>`;
+        }).join('');
+    } catch { container.innerHTML = ''; }
+}
+
+async function deactivateEncounterBoard(id) {
+    const boardToken = localStorage.getItem('guild_token');
+    try {
+        const res = await fetch(`${API_URL}/encounters/${id}`, {
+            method:  'DELETE',
+            headers: { 'Authorization': `Bearer ${boardToken}` },
+        });
+        if (res.ok) { showToast('Evento encerrado.', 'success'); renderActiveEncountersBoard(); }
+    } catch { showToast('Erro ao encerrar evento.', 'error'); }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    renderActiveEncountersBoard();
+    setInterval(renderActiveEncountersBoard, 30000);
+});

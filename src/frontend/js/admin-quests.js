@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // 0. PROTEÇÃO E INICIALIZAÇÃO
 // ==========================================
 const token = localStorage.getItem('guild_token');
@@ -204,7 +204,7 @@ function renderQuestPage(quests) {
     if (!tableBody) return;
 
     if (!quests.length) {
-        tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#7f8c8d;padding:20px;">Nenhuma quest encontrada.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="10" class="empty-state" style="padding:20px">Nenhuma quest encontrada.</td></tr>';
         return;
     }
 
@@ -219,7 +219,7 @@ function renderQuestPage(quests) {
         const factionIcon = FACTION_BADGE[q.faction] || '🏰';
         const canReset    = q.status === 'in_progress';
         const detailBtn   = `<button class="btn-pixel" style="${BTN_ICON}background:#2980b9;" title="Ver detalhes" data-cy="btn-quest-detail" onclick="openQuestDetail('${q._id}')">👁</button>`;
-        const editBtn     = `<button class="btn-pixel" style="${BTN_ICON}background:#8e44ad;" title="Editar quest" data-cy="btn-edit-quest" onclick="openQuestDetail('${q._id}', true)">✏️</button>`;
+        const editBtn     = `<button class="btn-pixel btn-special" style="${BTN_ICON}" title="Editar quest" data-cy="btn-edit-quest" onclick="openQuestDetail('${q._id}', true)">✏️</button>`;
         const resetBtn    = `<button class="btn-pixel" style="${BTN_ICON}background:#e67e22;${!canReset ? 'opacity:.35;cursor:not-allowed;' : ''}" title="Resetar quest" data-cy="btn-reset-quest" onclick="resetQuest('${q._id}')" ${!canReset ? 'disabled' : ''}>↺</button>`;
         const deleteBtn   = `<button class="btn-pixel btn-delete" style="${BTN_ICON}" title="Excluir quest" data-cy="btn-delete-quest" onclick="deleteQuest('${q._id}', '${_aEsc(q.title).replace(/'/g, "\\'")}')">🗑</button>`;
 
@@ -338,7 +338,7 @@ window.openQuestDetail = async (questId, startInEditMode) => {
 
     modal.style.display = 'flex';
     const commentsEl = document.getElementById('qdm-a-comments');
-    if (commentsEl) commentsEl.innerHTML = '<div style="color:#7f8c8d;font-size:9px;text-align:center;padding:10px;">Carregando...</div>';
+    if (commentsEl) commentsEl.innerHTML = '<div class="empty-state" style="padding:10px">Carregando...</div>';
 
     try {
         const res = await fetch(`${API_URL}/quests/${questId}`, {
@@ -508,7 +508,7 @@ function renderAdminComments(comments) {
     const sorted = [...comments].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
     if (!sorted.length) {
-        listEl.innerHTML = '<div style="color:#7f8c8d;font-size:9px;text-align:center;padding:8px;">Sem atividade ainda.</div>';
+        listEl.innerHTML = '<div class="empty-state empty-state--sm" style="padding:8px">Sem atividade ainda.</div>';
         return;
     }
 
@@ -926,7 +926,7 @@ function renderAdminSubtasks(quest) {
         </div>
         <div style="background:#1a252f;height:4px;border-radius:2px;overflow:hidden;">
             <div style="width:${pct}%;height:100%;background:${pct===100?'#27ae60':'#3498db'};"></div>
-        </div>` : '<div style="font-size:8px;color:#7f8c8d;">Nenhuma subtask ainda.</div>';
+        </div>` : '<div class="label-tag">Nenhuma subtask ainda.</div>';
 
     listEl.innerHTML = subtasks.map(s => {
         const st       = _A_STATUS_SUBTASK[s.status] || _A_STATUS_SUBTASK.todo;

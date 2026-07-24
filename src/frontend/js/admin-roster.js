@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // 0. PROTEÇÃO E INICIALIZAÇÃO
 // ==========================================
 const token = localStorage.getItem('guild_token');
@@ -118,7 +118,7 @@ function renderUsersPage() {
     if (!tbody) return;
 
     if (filteredUsers.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;font-size:8px;color:#7f8c8d;">Nenhum membro encontrado.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="empty-state" style="padding:24px">Nenhum membro encontrado.</td></tr>`;
         document.getElementById('usersPagination').innerHTML = '';
         return;
     }
@@ -146,7 +146,7 @@ function renderUsersPage() {
                 <td><span class="status-badge ${p.is_cursed ? 'cursed' : 'online'}">
                     ${p.is_cursed ? '🚨 Maldição' : '✅ OK'}
                 </span></td>
-                <td><button class="btn-pixel" style="font-size:8px;padding:4px 8px;" data-cy="btn-edit-${p._id}" onclick="openEditUserModal('${p._id}')">Editar</button></td>
+                <td><button class="btn-pixel btn-info" style="font-size:8px;padding:4px 8px;" data-cy="btn-edit-${p._id}" onclick="openEditUserModal('${p._id}')">Editar</button></td>
             </tr>
         `;
     }).join('');

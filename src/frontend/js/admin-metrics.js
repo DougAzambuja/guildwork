@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // 0. PROTEÇÃO E ESTADO
 // ==========================================
 const token = localStorage.getItem('guild_token');
@@ -187,7 +187,7 @@ function renderCsat(csat) {
                     </div>
                 `;
             }).join('')
-            : '<div style="font-size:8px;color:#7f8c8d;">Sem avaliações CSAT registradas.</div>';
+            : '<div class="label-tag">Sem avaliações CSAT registradas.</div>';
     }
 }
 

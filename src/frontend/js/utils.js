@@ -2,6 +2,33 @@
 // UTILITÁRIOS COMPARTILHADOS (utils.js)
 // ==========================================
 
+// ── ENCOUNTER CONSTANTS ────────────────────────────────────────────────────
+// Fonte única de verdade — usada por admin.js, admin-events.js,
+// admin-sprint-board.js e mural.js.
+const ENC_ICONS = {
+    xp_bonus:       '✨', gold_bonus:     '💰',
+    xp_penalty:     '💀', gold_penalty:   '💸',
+    slow:           '🐌', luck:           '🍀',
+    store_discount: '🏷️',
+};
+const ENC_LABELS = {
+    xp_bonus:       'BÔNUS DE XP',       gold_bonus:     'BÔNUS DE GOLD',
+    xp_penalty:     'PENALIDADE DE XP',   gold_penalty:   'PENALIDADE DE GOLD',
+    slow:           'SLA REDUZIDO',        luck:           'SORTE ATIVA',
+    store_discount: 'DESCONTO NA LOJA',
+};
+// Formato rico: { bg, border, text } — .text para cor inline, .border para borda,
+// .bg para fundo de destaque. Fallback: ENC_COLORS.xp_bonus
+const ENC_COLORS = {
+    xp_bonus:       { bg: '#0a1a0a', border: '#27ae60', text: '#2ecc71' },
+    gold_bonus:     { bg: '#0a0d0a', border: '#f1c40f', text: '#f1c40f' },
+    xp_penalty:     { bg: '#1a0a0a', border: '#c0392b', text: '#e74c3c' },
+    gold_penalty:   { bg: '#1a0d00', border: '#e67e22', text: '#e67e22' },
+    slow:           { bg: '#0d0d1a', border: '#8e44ad', text: '#9b59b6' },
+    luck:           { bg: '#0a1a10', border: '#1abc9c', text: '#1abc9c' },
+    store_discount: { bg: '#1a1500', border: '#f39c12', text: '#f39c12' },
+};
+
 function xpParaProximoNivel(level) { return 200 * (level + 1) + 300; }
 
 function dicebearUrl(seed, opts = {}) {

@@ -231,8 +231,8 @@ function renderPerfil(p, me) {
                            oninput="onAvatarUrlInput(this.value)">
                 </div>
 
-                <button onclick="saveHero()" class="btn-pixel" data-cy="btn-salvar-heroi"
-                        style="width:100%;box-sizing:border-box;background:#27ae60;padding:14px;font-size:10px;">
+                <button onclick="saveHero()" class="btn-pixel btn-success" data-cy="btn-salvar-heroi"
+                        style="width:100%;box-sizing:border-box;padding:14px;font-size:10px;">
                     ⚔️ SALVAR HERÓI
                 </button>
             </div>`;

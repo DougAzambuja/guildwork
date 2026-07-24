@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // 0. PROTEÇÃO E INICIALIZAÇÃO
 // ==========================================
 const token = localStorage.getItem('guild_token');
@@ -165,7 +165,7 @@ function renderDashboardStats(players) {
                     <span style="color:#f1c40f;">${(p.xp || 0).toLocaleString('pt-BR')} XP</span>
                 </div>
             `).join('')
-            : '<div style="font-size:8px;color:#7f8c8d;">Nenhum aventureiro ainda.</div>';
+            : '<div class="empty-state" style="text-align:left">Nenhum aventureiro ainda.</div>';
     }
 
     const factions = {};
@@ -206,25 +206,13 @@ function renderDashboardStats(players) {
                     </div>
                 </div>
             `).join('')
-            : '<div style="font-size:8px;color:#7f8c8d;padding:10px;">Nenhum aventureiro recrutado ainda.</div>';
+            : '<div class="empty-state" style="padding:10px">Nenhum aventureiro recrutado ainda.</div>';
     }
 }
 
 // ==========================================
 // 3. MODAL — EVENTOS (BIBLIOTECA DE TEMPLATES)
 // ==========================================
-const ENC_ICONS  = { xp_penalty:'💀', gold_penalty:'💸', xp_bonus:'✨', gold_bonus:'💰', slow:'🐌', luck:'🍀', store_discount:'🏷️' };
-const ENC_LABELS = { xp_penalty:'PENALIDADE XP', gold_penalty:'PENALIDADE GOLD', xp_bonus:'BÔNUS XP', gold_bonus:'BÔNUS GOLD', slow:'SLA REDUZIDO', luck:'SORTE ATIVA', store_discount:'DESCONTO NA LOJA' };
-const ENC_COLORS = {
-    xp_penalty:    '#e74c3c',
-    gold_penalty:  '#e67e22',
-    xp_bonus:      '#2ecc71',
-    gold_bonus:    '#f1c40f',
-    slow:          '#9b59b6',
-    luck:          '#1abc9c',
-    store_discount:'#f39c12',
-};
-
 let _encCurrentTplId = null;
 
 function openEncounterModal() {
@@ -275,7 +263,7 @@ function encShowTrigger(tpl) {
     _encCurrentTplId = tpl._id;
     const icon  = ENC_ICONS[tpl.effect_kind]  || '⚡';
     const label = ENC_LABELS[tpl.effect_kind] || tpl.effect_kind;
-    const color = ENC_COLORS[tpl.effect_kind] || '#f1c40f';
+    const color = (ENC_COLORS[tpl.effect_kind] || ENC_COLORS.xp_bonus).text;
     document.getElementById('encTriggerInfo').innerHTML = `
         <div style="font-size:9px;color:#e056fd;margin-bottom:6px;">${icon} ${tpl.title}</div>
         ${tpl.description ? `<div style="font-size:7px;color:#bdc3c7;margin-bottom:8px;">${tpl.description}</div>` : ''}
@@ -292,30 +280,30 @@ function encToggleFaction() {
 
 async function encLoadTemplates() {
     const container = document.getElementById('encTemplateList');
-    container.innerHTML = '<div style="font-size:8px;color:#7f8c8d;padding:12px 0;text-align:center;">Carregando...</div>';
+    container.innerHTML = '<div class="empty-state" style="padding:12px 0">Carregando...</div>';
     try {
         const res  = await fetch(`${API_URL}/event-templates`, { headers: { 'Authorization': `Bearer ${token}` } });
         const list = await res.json();
         if (!list.length) {
-            container.innerHTML = '<div style="font-size:8px;color:#7f8c8d;padding:12px 0;text-align:center;">Nenhum template criado ainda.</div>';
+            container.innerHTML = '<div class="empty-state" style="padding:12px 0">Nenhum template criado ainda.</div>';
             return;
         }
         container.innerHTML = list.map(tpl => {
             const icon  = ENC_ICONS[tpl.effect_kind]  || '⚡';
             const label = ENC_LABELS[tpl.effect_kind] || tpl.effect_kind;
-            const color = ENC_COLORS[tpl.effect_kind] || '#f1c40f';
+            const color = (ENC_COLORS[tpl.effect_kind] || ENC_COLORS.xp_bonus).text;
             return `<div style="display:flex;align-items:center;gap:8px;padding:9px 10px;background:#0d1b2a;border:1px solid #2c3e50;margin-bottom:6px;">
                 <span style="font-size:13px;">${icon}</span>
                 <div style="flex:1;min-width:0;">
                     <div style="font-size:8px;color:#ecf0f1;margin-bottom:2px;">${tpl.title}</div>
                     <div style="font-size:7px;color:${color};">${label} · ${Math.round(tpl.default_value*100)}% · ${tpl.default_duration}h · ${tpl.scope_type==='global'?'🌐 Global':'🏰 Facção'}</div>
                 </div>
-                <button onclick="encShowTrigger(${JSON.stringify(tpl).replace(/"/g,'&quot;')})" data-cy="btn-enc-trigger-${tpl._id}"
-                        style="font-family:'Press Start 2P',cursive;font-size:6px;padding:5px 8px;background:#8e44ad;border:none;color:#fff;cursor:pointer;">⚡</button>
-                <button onclick="encShowCreate(${JSON.stringify(tpl).replace(/"/g,'&quot;')})" data-cy="btn-enc-edit-${tpl._id}"
-                        style="font-family:'Press Start 2P',cursive;font-size:6px;padding:5px 8px;background:#2c3e50;border:none;color:#fff;cursor:pointer;">✏️</button>
-                <button onclick="encDeleteTemplate('${tpl._id}')" data-cy="btn-enc-delete-${tpl._id}"
-                        style="font-family:'Press Start 2P',cursive;font-size:6px;padding:5px 8px;background:#c0392b;border:none;color:#fff;cursor:pointer;">🗑️</button>
+                <button class="btn-pixel btn-special" onclick="encShowTrigger(${JSON.stringify(tpl).replace(/"/g,'&quot;')})" data-cy="btn-enc-trigger-${tpl._id}"
+                        style="font-size:6px;padding:5px 8px;">⚡</button>
+                <button class="btn-pixel btn-neutral" onclick="encShowCreate(${JSON.stringify(tpl).replace(/"/g,'&quot;')})" data-cy="btn-enc-edit-${tpl._id}"
+                        style="font-size:6px;padding:5px 8px;">✏️</button>
+                <button class="btn-pixel btn-danger" onclick="encDeleteTemplate('${tpl._id}')" data-cy="btn-enc-delete-${tpl._id}"
+                        style="font-size:6px;padding:5px 8px;">🗑️</button>
             </div>`;
         }).join('');
     } catch { container.innerHTML = '<div style="font-size:8px;color:#e74c3c;padding:12px 0;text-align:center;">Erro ao carregar biblioteca.</div>'; }

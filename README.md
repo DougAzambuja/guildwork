@@ -6,7 +6,7 @@ Bem-vindo ao GuildWork! Um sistema de gestão de tarefas gamificado que transfor
 
 A arquitetura é leve, stateless e com autoridade no servidor para todas as regras de economia e gamificação:
 
-* **Front-end:** HTML5, CSS3 (variáveis globais e animações customizadas) e Vanilla JavaScript. Estética em Pixel Art servida via VS Code Live Server.
+* **Front-end:** HTML5, CSS3 com **Design System de tokens** (73 variáveis semânticas em `:root` — superfícies, cores, tipografia, z-index, bordas, spacing — eliminando ~450 valores hardcoded; blocos `<style>` locais de 7 HTMLs centralizados em `style.css`) e Vanilla JavaScript. Estética em Pixel Art servida via VS Code Live Server.
 * **Back-end:** Node.js (v18+) com Express. Arquitetura RESTful e stateless.
 * **Banco de Dados:** MongoDB Atlas (M0 free tier, cluster `GuildWork`, sa-east-1) via Mongoose 9.x com schemas estritos. Docker Compose disponível para uso local via profile `local-db`.
 * **Segurança:** JWT (8h de expiração), bcryptjs para hash de senha, validação de todas as regras de negócio exclusivamente no servidor.
@@ -342,6 +342,33 @@ npm run test:watch          # Modo watch para desenvolvimento
 | **Eventos Aleatórios — Biblioteca (#85)** | Sistema de buffs/debuffs passivos acionados pelo admin como Mestre do Jogo. Admin gerencia tudo na aba dedicada `admin-events.html`: **biblioteca de templates** (título, descrição, tipo de efeito, valor %, duração padrão, escopo global/facção) + lista de eventos ativos com ✏️ editar término e ✕ encerrar. Ao acionar um template, dois modos de configuração: **Duração** (horas + início imediato ou agendado) e **Período** (datetime início + datetime término com preview de duração calculada). Campo `start_at` no model suporta agendamento futuro — o evento fica salvo mas invisível aos jogadores até o horário. Admin vê todos os eventos independente de facção; players veem apenas global + própria facção. Efeitos: `xp_bonus`, `xp_penalty`, `gold_bonus`, `gold_penalty`, `luck` (2× XP), `slow` (SLA reduzido), `store_discount` (desconto na Loja). **UX do player:** sidebar exibe pill clicável neutro "⚡ EVENTO(S) ATIVO(S)" — 1 evento positivo → card inline com cor/ícone do efeito (não revela debuffs passivamente); negativo ou múltiplos → pill neutro dourado; clique abre modal com detalhes completos (efeito %, alcance, tempo restante com timer por minuto). Loja exibe preço original riscado quando `store_discount` ativo. Endpoints: `GET/POST/PATCH/DELETE /api/event-templates` + `POST /api/encounters/trigger` + `GET /api/encounters/active` + `PATCH /api/encounters/:id` + `DELETE /api/encounters/:id` |
 
 > Todas as telas do painel compartilham `admin-header.js` (header + nav gerados dinamicamente, aba ativa detectada pela URL) e `notifications.js` (sino com polling de 30s).
+
+---
+
+## 🎨 Design System
+
+O `style.css` é organizado em torno de um sistema de tokens declarado no `:root`:
+
+| Grupo | Tokens | Propósito |
+|---|---|---|
+| Superfícies | `--surface-page`, `--surface-0..4`, `--surface-card`, `--surface-light`, `--surface-paper` | Backgrounds em camadas (do mais escuro ao mais claro) |
+| Cores semânticas | `--color-success`, `--color-danger`, `--color-warning`, `--color-info`, `--color-special`, `--color-link` | Estados e ações com significado |
+| Ouro / Destaque | `--color-gold`, `--color-accent` | Identidade visual pixel RPG |
+| Tipografia | `--text-primary`, `--text-secondary`, `--text-muted` | Hierarquia de texto |
+| Bordas | `--border-subtle`, `--border-thin`, `--border-color-subtle` | Separadores sutis |
+| Legados | `--coin-color`, `--paper-color`, `--danger-color`, `--header-bg` | Aliases retrocompatíveis → novos tokens |
+
+Fases planejadas:
+- ✅ **Fase 1 — Tokens:** `:root` com ~25 tokens; substituição sistemática de ~350 valores hardcoded
+- ✅ **Fase 2 — Botões:** 6 modificadores semânticos (`.btn-success/danger/info/muted/special/neutral`); eliminados `style="background:#hex"` de botões em HTML e JS
+- ✅ **Fase 3 — Inputs:** `.pixel-input-dark` + `.pixel-input-gold` para inputs/selects escuros; `.form-field` de admin-events migrado para tokens; todos os inline dark inputs padronizados
+- ✅ **Fase 4 — Títulos:** `.section-title--flush` e `--sm` como modificadores; `bqd-label` e `ev-panel-title` movidos para `style.css` com tokens; hardcoded em `profile-section-title` / `perfil-section-title` tokenizados
+- ✅ **Fase 5 — Modais e z-index:** tokens `--z-encounter/modal/toast/overlay` aplicados a todos os z-index do `style.css`; encounter modal HTML deduplicado em `js/encounter-modal.js` (IIFE de injeção); inline script do board movido para `admin-sprint-board.js`
+- ✅ **Fase 6 — Tipografia e tokens ausentes:** escala tipográfica `--text-xxs` (7px) a `--text-2xl` (16px); 83 `font-size: Npx` substituídos; tokens de superfície/cor/overlay ausentes adicionados ao `:root` (`--surface-deep`, `--overlay-soft/medium`, `--border-color-mid`, `--color-silver/teal/xp/warning-dark/link-hover`)
+- ✅ **Fase 7 — CSS centralizado:** blocos `<style>` locais de 7 HTMLs migrados para `style.css` com todos os tokens aplicados; conflitos de seletor resolvidos (`.kanban-board .kanban-col-header`, `.burndown-legend .legend-item`); `change-password.html` corrigido (tokens falsos removidos)
+- ✅ **Fase 8 — Limpeza residual:** segunda passagem com regex ampla substituiu 30 hex adicionais nos blocos migrados; residuais restantes são intencionais (gradientes de XP, hover states derivados, cores pixel art)
+- ✅ **Fase 9 — Empty states e label tags:** classes `.empty-state` (centrado, padding 16px, muted) + `.empty-state--sm` (compacto) + `.label-tag` (muted inline sem align) em `style.css`; 29 ocorrências substituídas em 9 arquivos JS (admin.js, admin-events, admin-quests, admin-roster, admin-sprint-board, admin-sprints, admin-metrics, mural.js, leaderboard.js, encounter-modal.js)
+- ✅ **Fase 10 — Constantes ENC centralizadas:** `ENC_ICONS`, `ENC_LABELS`, `ENC_COLORS` (formato rico `{bg, border, text}`) declaradas uma única vez em `utils.js`; declarações locais removidas de 4 arquivos (admin.js, admin-events.js, mural.js, admin-sprint-board.js); referências `ENCOUNTER_*` e `ENCOUNTER_*_BOARD` renomeadas para `ENC_*`; usages de string plana atualizados para `.text`/`.border`/`.bg`
 
 ---
 

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -6,188 +6,6 @@
     <title>GuildWork - Eventos</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
     <link rel="stylesheet" href="css/style.css">
-    <style>
-        .events-layout {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) 380px;
-            gap: 20px;
-            align-items: start;
-        }
-        @media (max-width: 900px) {
-            .events-layout { grid-template-columns: 1fr; }
-        }
-
-        /* Divisor interno entre seções do bloco esquerdo */
-        .events-divider {
-            border: none;
-            border-top: 4px dashed #3d5166;
-            margin: 20px 0;
-        }
-
-        /* Cards de template */
-        .tpl-card {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 14px;
-            background: #0d1b2a;
-            border: 1px solid #2c3e50;
-            margin-bottom: 8px;
-            transition: border-color 0.15s;
-        }
-        .tpl-card:hover { border-color: #3498db; }
-        .tpl-card-body  { flex: 1; min-width: 0; }
-        .tpl-card-title { font-size: 11px; color: #ecf0f1; margin-bottom: 5px; }
-        .tpl-card-meta  { font-size: 10px; }
-        .tpl-actions    { display: flex; gap: 6px; flex-shrink: 0; }
-        .tpl-btn {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 11px;
-            width: 32px;
-            height: 32px;
-            border: none;
-            color: #fff;
-            cursor: pointer;
-            line-height: 1;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        .tpl-btn:hover { filter: brightness(1.2); }
-
-        /* Cards de evento ativo */
-        .active-event-card {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 14px;
-            margin-bottom: 10px;
-            border: 3px solid;
-            box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
-        }
-
-        /* Formulários do painel direito */
-        .form-field { margin-bottom: 14px; }
-        .form-field label {
-            display: block;
-            font-size: 9px;
-            color: #bdc3c7;
-            margin-bottom: 5px;
-        }
-        .form-field input,
-        .form-field select {
-            width: 100%;
-            box-sizing: border-box;
-            font-family: 'Press Start 2P', cursive;
-            font-size: 9px;
-            padding: 8px 10px;
-            background: #0d1b2a;
-            color: #fff;
-            border: 2px solid #2c3e50;
-            outline: none;
-        }
-        .form-field input:focus,
-        .form-field select:focus { border-color: #3498db; }
-        .form-field input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-            filter: invert(1) brightness(0.75);
-            cursor: pointer;
-            width: 18px;
-            height: 18px;
-            padding: 2px;
-            border-radius: 2px;
-        }
-        .form-field input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
-            filter: invert(1) brightness(1);
-        }
-        .form-row { display: flex; gap: 12px; }
-        .form-row .form-field { flex: 1; }
-
-        /* Tabs de seção */
-        .events-tab-bar {
-            display: flex;
-            border-bottom: 4px solid #2c3e50;
-            margin-bottom: 20px;
-            gap: 0;
-        }
-        .events-tab-btn {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 9px;
-            padding: 10px 14px;
-            border: none;
-            background: transparent;
-            color: #7f8c8d;
-            cursor: pointer;
-            border-bottom: 4px solid transparent;
-            margin-bottom: -4px;
-            line-height: 1.4;
-        }
-        .events-tab-btn.active { color: #f1c40f; border-bottom-color: #f1c40f; }
-        .events-tab-btn:hover:not(.active) { color: #ecf0f1; }
-
-        /* Cards de evento social */
-        .social-event-card {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 14px;
-            background: #0d1b2a;
-            border: 1px solid #2c3e50;
-            margin-bottom: 8px;
-            transition: border-color 0.15s;
-        }
-        .social-event-card:hover { border-color: #2980b9; }
-        .social-event-card.past { opacity: 0.5; }
-        .social-event-icon {
-            font-size: 22px;
-            flex-shrink: 0;
-            width: 36px;
-            text-align: center;
-        }
-        .social-event-body { flex: 1; min-width: 0; }
-        .social-event-title { font-size: 11px; color: #ecf0f1; margin-bottom: 4px; }
-        .social-event-meta  { font-size: 9px; color: #7f8c8d; }
-
-        /* Painel direito */
-        .ev-panel {
-            background: #1a252f;
-            border: 6px solid #111;
-            padding: 20px;
-            box-shadow: 8px 8px 0px rgba(0,0,0,0.6);
-        }
-        .ev-panel-title {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 12px;
-            color: #f1c40f;
-            margin: 0 0 14px;
-            padding-bottom: 10px;
-            border-bottom: 4px dashed #3d5166;
-        }
-        .ev-panel-text {
-            font-size: 10px;
-            color: #7f8c8d;
-            line-height: 2;
-        }
-        .trigger-preview {
-            background: #0d1b2a;
-            border: 1px solid #8e44ad;
-            padding: 14px;
-            margin-bottom: 16px;
-        }
-
-        /* Botões de ação do painel */
-        .ev-btn {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 10px;
-            padding: 10px 16px;
-            border: none;
-            color: #fff;
-            cursor: pointer;
-            line-height: 1;
-        }
-        .ev-btn:hover { filter: brightness(1.15); }
-        .ev-btn:disabled { opacity: .5; cursor: not-allowed; }
-    </style>
 </head>
 <body class="admin-page">
     <div id="loading-overlay" data-cy="loading-overlay">
@@ -224,11 +42,11 @@
 
                     <!-- ── BIBLIOTECA DE TEMPLATES ── -->
                     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
-                        <h3 class="section-title" style="font-size:12px; margin:0; border:none; padding:0;">
+                        <h3 class="section-title section-title--flush" style="font-size:12px;">
                             📚 BIBLIOTECA DE TEMPLATES
                         </h3>
-                        <button class="ev-btn" data-cy="btn-new-template" onclick="showCreateForm()"
-                                style="background:#f39c12; color:#1a252f;">
+                        <button class="btn-pixel" data-cy="btn-new-template" onclick="showCreateForm()"
+                                style="font-size:10px; padding:10px 16px; background:#f39c12; color:#1a252f;">
                             + Novo Template
                         </button>
                     </div>
@@ -253,11 +71,11 @@
 
                     <!-- Agenda de eventos sociais -->
                     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
-                        <h3 class="section-title" style="font-size:12px; margin:0; border:none; padding:0;">
+                        <h3 class="section-title section-title--flush" style="font-size:12px;">
                             📅 AGENDA SOCIAL
                         </h3>
-                        <button class="ev-btn" data-cy="btn-new-social-event" onclick="showSocialPanel()"
-                                style="background:#2980b9;">
+                        <button class="btn-pixel btn-info" data-cy="btn-new-social-event" onclick="showSocialPanel()"
+                                style="font-size:10px; padding:10px 16px;">
                             + Novo Evento
                         </button>
                     </div>
@@ -349,8 +167,8 @@
                             </div>
                         </div>
                         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;">
-                            <button type="button" class="ev-btn" onclick="showIdle()" style="background:#34495e;">Cancelar</button>
-                            <button type="submit" class="ev-btn" data-cy="btn-save-template" style="background:#27ae60;">💾 Salvar</button>
+                            <button type="button" class="btn-pixel btn-muted" onclick="showIdle()" style="font-size:10px;padding:10px 16px;border:none;box-shadow:none;">Cancelar</button>
+                            <button type="submit" class="btn-pixel btn-success" data-cy="btn-save-template" style="font-size:10px;padding:10px 16px;border:none;box-shadow:none;">💾 Salvar</button>
                         </div>
                     </form>
                 </div>
@@ -438,8 +256,8 @@
                         </div>
                     </div>
                     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;">
-                        <button type="button" class="ev-btn" onclick="showIdle()" style="background:#34495e;">Cancelar</button>
-                        <button type="button" class="ev-btn" data-cy="btn-confirm-trigger" onclick="submitTrigger()" style="background:#8e44ad;">⚡ Acionar!</button>
+                        <button type="button" class="btn-pixel btn-muted" onclick="showIdle()" style="font-size:10px;padding:10px 16px;border:none;box-shadow:none;">Cancelar</button>
+                        <button type="button" class="btn-pixel btn-special" data-cy="btn-confirm-trigger" onclick="submitTrigger()" style="font-size:10px;padding:10px 16px;border:none;box-shadow:none;">⚡ Acionar!</button>
                     </div>
                 </div>
 
@@ -484,8 +302,8 @@
                             </select>
                         </div>
                         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;">
-                            <button type="button" class="ev-btn" onclick="showIdle()" style="background:#34495e;">Cancelar</button>
-                            <button type="submit" class="ev-btn" data-cy="btn-save-social-event" style="background:#2980b9;">💾 Salvar</button>
+                            <button type="button" class="btn-pixel btn-muted" onclick="showIdle()" style="font-size:10px;padding:10px 16px;border:none;box-shadow:none;">Cancelar</button>
+                            <button type="submit" class="btn-pixel btn-info" data-cy="btn-save-social-event" style="font-size:10px;padding:10px 16px;border:none;box-shadow:none;">💾 Salvar</button>
                         </div>
                     </form>
                 </div>
@@ -507,8 +325,8 @@
                 <input id="editEncounterUntil" data-cy="input-edit-encounter-until" type="datetime-local">
             </div>
             <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;">
-                <button type="button" class="ev-btn" onclick="closeEditEncounterModal()" style="background:#34495e;">Cancelar</button>
-                <button type="button" class="ev-btn" data-cy="btn-save-edit-encounter" onclick="submitEditEncounter()" style="background:#27ae60;">💾 Salvar</button>
+                <button type="button" class="btn-pixel btn-muted" onclick="closeEditEncounterModal()" style="font-size:10px;padding:10px 16px;border:none;box-shadow:none;">Cancelar</button>
+                <button type="button" class="btn-pixel btn-success" data-cy="btn-save-edit-encounter" onclick="submitEditEncounter()" style="font-size:10px;padding:10px 16px;border:none;box-shadow:none;">💾 Salvar</button>
             </div>
         </div>
     </div>

@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // 0. PROTEÇÃO E INICIALIZAÇÃO
 // ==========================================
 const token = localStorage.getItem('guild_token');
@@ -116,7 +116,7 @@ function renderActiveSprint({ sprint, metrics, by_faction, top_performers }) {
                 </div>
             `;
         }).join('')
-        : '<div style="font-size:8px; color:#7f8c8d;">Nenhuma quest nesta sprint ainda.</div>';
+        : '<div class="label-tag">Nenhuma quest nesta sprint ainda.</div>';
 
     // Top performers — cards enriquecidos
     const performersEl = document.getElementById('sprintTopPerformers');
@@ -149,7 +149,7 @@ function renderActiveSprint({ sprint, metrics, by_faction, top_performers }) {
                 </div>`;
             }).join('')}
            </div>`
-        : '<div style="font-size:8px; color:#7f8c8d; padding:8px 0;">Nenhuma quest concluída ainda.</div>';
+        : '<div class="empty-state empty-state--sm">Nenhuma quest concluída ainda.</div>';
 
     // Exibe "ADICIONAR QUESTS" somente quando visualizando a sprint ativa
     const addSection = document.getElementById('addQuestsSection');
@@ -275,7 +275,7 @@ function populateSprintSelector(sprints) {
 function renderSprintsList(sprints) {
     const container = document.getElementById('sprintsList');
     if (!sprints.length) {
-        container.innerHTML = '<div style="font-size:8px; color:#7f8c8d; padding:12px;">Nenhuma sprint forjada ainda.</div>';
+        container.innerHTML = '<div class="empty-state" style="padding:12px">Nenhuma sprint forjada ainda.</div>';
         return;
     }
 
@@ -301,7 +301,7 @@ function renderSprintsList(sprints) {
                         <span class="status-badge" style="background:${st.color}; font-size:8px; padding:3px 8px;">${st.label}</span>
                         <span style="font-size:9px; color:#2ecc71;">${s.quests_done || 0}/${s.quest_count || 0} quests</span>
                         <button class="btn-pixel" data-cy="btn-view-board" style="font-size:7px; padding:4px 8px; background:#2980b9;" onclick="goToBoard('${s._id}')">Board</button>
-                        <button class="btn-pixel" data-cy="btn-edit-sprint" style="font-size:7px; padding:4px 8px;" onclick="openEditSprintModal('${s._id}', ${JSON.stringify(s).replace(/"/g, '&quot;')})">Editar</button>
+                        <button class="btn-pixel btn-info" data-cy="btn-edit-sprint" style="font-size:7px; padding:4px 8px;" onclick="openEditSprintModal('${s._id}', ${JSON.stringify(s).replace(/"/g, '&quot;')})">Editar</button>
                         <button class="btn-pixel" data-cy="btn-delete-sprint" style="font-size:7px; padding:4px 8px; background:#e74c3c;" onclick="deleteSprint('${s._id}')">Excluir</button>
                     </div>
                 </div>

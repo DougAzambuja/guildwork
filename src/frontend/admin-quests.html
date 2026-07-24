@@ -66,7 +66,7 @@
                         <label for="questLabels">Labels (opcional, separadas por vírgula)</label>
                         <input type="text" id="questLabels" class="pixel-input" data-cy="input-quest-labels" placeholder="Ex: bug, ux, p1">
                     </div>
-                    <button type="submit" class="btn-pixel" data-cy="btn-submit-quest" style="background-color: #c0392b; padding: 15px;">FORJAR QUEST</button>
+                    <button type="submit" class="btn-pixel btn-danger" data-cy="btn-submit-quest" style="padding: 15px;">FORJAR QUEST</button>
                 </form>
             </div>
 
@@ -117,7 +117,8 @@
                     <button id="btnQuestPrev" class="btn-pixel" style="font-size:8px;padding:8px 12px;flex-shrink:0;" data-cy="btn-quest-prev">← Anterior</button>
                     <span id="paginationPageInfo" class="pagination-info" style="white-space:nowrap;"></span>
                     <select id="filterLimit" data-cy="select-filter-limit"
-                            style="font-size:11px;padding:7px 10px;width:155px;flex-shrink:0;background:#1a252f;border:2px solid #2c3e50;color:#f1c40f;cursor:pointer;font-family:inherit;">
+                            class="pixel-input-dark pixel-input-gold"
+                            style="font-size:11px;padding:7px 10px;width:155px;flex-shrink:0;cursor:pointer;">
                         <option value="10">10 / pág.</option>
                         <option value="25">25 / pág.</option>
                         <option value="50">50 / pág.</option>
@@ -135,7 +136,7 @@
     <!-- Modal de Detalhe da Quest (Admin) -->
     <div id="questAdminDetailModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeQuestDetail()">
         <div class="modal-content" style="max-width:540px;width:95%;max-height:88vh;overflow-y:auto;position:relative;">
-            <button class="btn-pixel" style="position:absolute;top:14px;right:14px;font-size:10px;padding:7px 11px;background:#2c3e50;z-index:2;" data-cy="btn-close-quest-detail" onclick="closeQuestDetail()">✕</button>
+            <button class="btn-pixel btn-neutral" style="position:absolute;top:14px;right:14px;font-size:10px;padding:7px 11px;z-index:2;" data-cy="btn-close-quest-detail" onclick="closeQuestDetail()">✕</button>
 
             <div style="padding-right:52px;">
                 <div id="qdm-a-type-badge"></div>
@@ -145,7 +146,7 @@
 
             <!-- Controles do admin -->
             <div id="qdm-a-controls" style="display:flex;gap:8px;margin-bottom:12px;">
-                <button type="button" class="btn-pixel" data-cy="btn-admin-edit-quest" style="flex:1;font-size:8px;background:#2980b9;" onclick="adminToggleEditMode(true)">✏️ EDITAR</button>
+                <button type="button" class="btn-pixel btn-info" data-cy="btn-admin-edit-quest" style="flex:1;font-size:8px;" onclick="adminToggleEditMode(true)">✏️ EDITAR</button>
             </div>
 
             <!-- Formulário de edição (admin) — título, tipo, XP/Gold, SLA, guilda, sprint, labels -->
@@ -244,26 +245,29 @@
                            placeholder="Título da subtask..." style="font-size:9px;padding:6px;width:100%;box-sizing:border-box;"
                            onkeydown="if(event.key==='Enter'){event.preventDefault();adminCreateSubtask();}">
                     <select id="qdm-a-subtask-assignee-select" data-cy="select-admin-subtask-assignee"
-                            style="font-family:'Press Start 2P',cursive;font-size:8px;padding:6px;background:#1a252f;color:#ecf0f1;border:2px solid #2c3e50;width:100%;outline:none;">
+                            class="pixel-input-dark"
+                            style="font-size:8px;padding:6px;">
                         <option value="">👤 Sem atribuição</option>
                     </select>
                     <div style="display:flex;gap:6px;">
                         <div style="flex:1;">
                             <div style="font-size:7px;color:#7f8c8d;margin-bottom:3px;">XP</div>
                             <input type="number" id="qdm-a-subtask-xp-input" data-cy="input-admin-subtask-xp" min="0" value="0"
-                                   style="width:100%;box-sizing:border-box;font-family:'Press Start 2P',cursive;font-size:8px;padding:5px;background:#1a252f;color:#2ecc71;border:2px solid #2c3e50;outline:none;">
+                                   class="pixel-input-dark"
+                                   style="font-size:8px;padding:5px;color:var(--color-success-bright);">
                         </div>
                         <div style="flex:1;">
                             <div style="font-size:7px;color:#7f8c8d;margin-bottom:3px;">Gold</div>
                             <input type="number" id="qdm-a-subtask-gold-input" data-cy="input-admin-subtask-gold" min="0" value="0"
-                                   style="width:100%;box-sizing:border-box;font-family:'Press Start 2P',cursive;font-size:8px;padding:5px;background:#1a252f;color:#f1c40f;border:2px solid #2c3e50;outline:none;">
+                                   class="pixel-input-dark pixel-input-gold"
+                                   style="font-size:8px;padding:5px;">
                         </div>
                     </div>
                     <div style="display:flex;gap:6px;">
-                        <button type="button" data-cy="btn-admin-confirm-subtask" onclick="adminCreateSubtask()"
-                                style="background:#27ae60;border:none;color:#fff;font-family:'Press Start 2P',cursive;font-size:7px;padding:6px 10px;cursor:pointer;flex:1;">CRIAR</button>
-                        <button type="button" onclick="adminToggleSubtaskForm()"
-                                style="background:#7f8c8d;border:none;color:#fff;font-family:'Press Start 2P',cursive;font-size:7px;padding:6px 10px;cursor:pointer;">✕</button>
+                        <button type="button" class="btn-pixel btn-success" data-cy="btn-admin-confirm-subtask" onclick="adminCreateSubtask()"
+                                style="font-size:7px;padding:6px 10px;flex:1;">CRIAR</button>
+                        <button type="button" class="btn-pixel btn-muted" onclick="adminToggleSubtaskForm()"
+                                style="font-size:7px;padding:6px 10px;">✕</button>
                     </div>
                 </div>
                 <div id="qdm-a-subtask-list"></div>
@@ -271,8 +275,8 @@
 
             <!-- Rodapé de ações da edição -->
             <div id="qdm-a-edit-actions" style="display:none;gap:8px;margin-bottom:14px;">
-                <button type="button" class="btn-pixel" data-cy="btn-admin-save-edit" style="flex:1;background:#27ae60;" onclick="adminSaveEdit()">SALVAR</button>
-                <button type="button" class="btn-pixel" data-cy="btn-admin-cancel-edit" style="flex:1;background:#7f8c8d;" onclick="adminCancelEdit()">CANCELAR</button>
+                <button type="button" class="btn-pixel btn-success" data-cy="btn-admin-save-edit" style="flex:1;" onclick="adminSaveEdit()">SALVAR</button>
+                <button type="button" class="btn-pixel btn-muted" data-cy="btn-admin-cancel-edit" style="flex:1;" onclick="adminCancelEdit()">CANCELAR</button>
             </div>
 
             <!-- Timeline de atividade + comentários -->
@@ -301,8 +305,8 @@
                 Você tem alterações não salvas. Sair agora vai descartar tudo.
             </p>
             <div style="display:flex;gap:10px;">
-                <button class="btn-pixel" style="flex:1;background:#7f8c8d;" data-cy="btn-admin-keep-editing" onclick="adminCancelDiscard()">CONTINUAR EDITANDO</button>
-                <button class="btn-pixel" style="flex:1;background:#c0392b;" data-cy="btn-admin-discard-edit" onclick="adminConfirmDiscard()">SAIR SEM SALVAR</button>
+                <button class="btn-pixel btn-muted" style="flex:1;" data-cy="btn-admin-keep-editing" onclick="adminCancelDiscard()">CONTINUAR EDITANDO</button>
+                <button class="btn-pixel btn-danger" style="flex:1;" data-cy="btn-admin-discard-edit" onclick="adminConfirmDiscard()">SAIR SEM SALVAR</button>
             </div>
         </div>
     </div>
@@ -316,8 +320,8 @@
                 Esta ação não pode ser desfeita.
             </p>
             <div style="display:flex;gap:10px;">
-                <button class="btn-pixel" style="flex:1;background:#7f8c8d;" data-cy="btn-cancel-delete-quest" onclick="closeDeleteConfirmModal()">CANCELAR</button>
-                <button class="btn-pixel" style="flex:1;background:#c0392b;" data-cy="btn-confirm-delete-quest" onclick="confirmDeleteQuest()">EXCLUIR</button>
+                <button class="btn-pixel btn-muted" style="flex:1;" data-cy="btn-cancel-delete-quest" onclick="closeDeleteConfirmModal()">CANCELAR</button>
+                <button class="btn-pixel btn-danger" style="flex:1;" data-cy="btn-confirm-delete-quest" onclick="confirmDeleteQuest()">EXCLUIR</button>
             </div>
         </div>
     </div>

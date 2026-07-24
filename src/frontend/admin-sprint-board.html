@@ -6,246 +6,6 @@
     <title>GuildWork - Board da Sprint</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
     <link rel="stylesheet" href="css/style.css">
-    <style>
-        /* ---- KANBAN BOARD ---- */
-        .board-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-        .board-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-            font-size: 8px;
-            color: #bdc3c7;
-            margin-top: 4px;
-        }
-        .board-meta span { color: #7f8c8d; }
-        .board-meta strong { color: #f1c40f; }
-
-        .faction-filters {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            margin-bottom: 16px;
-        }
-        .faction-filter-btn {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 7px;
-            padding: 6px 10px;
-            border: 2px solid #2c3e50;
-            background: #1a252f;
-            color: #bdc3c7;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-        .faction-filter-btn.active,
-        .faction-filter-btn:hover {
-            background: #2c3e50;
-            color: #f1c40f;
-            border-color: #f1c40f;
-        }
-
-        .kanban-board {
-            display: flex;
-            gap: 12px;
-            align-items: stretch;
-            overflow-x: auto;
-        }
-        .kanban-board::-webkit-scrollbar { height: 6px; }
-        .kanban-board::-webkit-scrollbar-track { background: #0d1b2a; }
-        .kanban-board::-webkit-scrollbar-thumb { background: #3498db; }
-        .kanban-board::-webkit-scrollbar-thumb:hover { background: #2980b9; }
-        .kanban-board .kanban-col {
-            flex: 1;
-            min-width: 280px;
-        }
-        @media (max-width: 800px) {
-            .kanban-board { flex-direction: column; }
-            .kanban-board .kanban-col { flex: 1 1 auto; min-width: 0; }
-        }
-
-        .kanban-col {
-            background: #1a252f;
-            border: 2px solid #2c3e50;
-            border-radius: 2px;
-            padding: 10px;
-        }
-        .kanban-col-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #2c3e50;
-            background: #181a25;
-        }
-        .kanban-col-title {
-            font-size: 8px;
-            font-weight: bold;
-        }
-        .kanban-count {
-            font-size: 9px;
-            height: 26px;
-            line-height: 26px;
-            color: #3498db;
-            background: #0d1b2a;
-            padding: 0 8px;
-            border: 1px solid #2980b9;
-            box-sizing: border-box;
-            display: inline-block;
-        }
-
-        .kanban-cards-body {
-            height: 520px;
-            overflow-y: auto;
-            padding-right: 2px;
-        }
-        .kanban-cards-body::-webkit-scrollbar { width: 4px; }
-        .kanban-cards-body::-webkit-scrollbar-track { background: #1a252f; }
-        .kanban-cards-body::-webkit-scrollbar-thumb { background: #2c3e50; border-radius: 2px; }
-
-        .quest-card {
-            background: #0d1b2a;
-            border: 2px solid #2c3e50;
-            border-left: 4px solid #3498db;
-            padding: 8px 10px;
-            margin-bottom: 8px;
-            cursor: default;
-        }
-        .quest-card[data-status="done"] { border-left-color: #27ae60; opacity: 0.80; }
-        .quest-card[data-status="in_progress"] { border-left-color: #e67e22; }
-        .quest-card[data-status="todo"] { border-left-color: #3498db; }
-
-        .quest-card-title {
-            font-size: 9px;
-            color: #ecf0f1;
-            margin-bottom: 6px;
-            line-height: 1.5;
-        }
-        .quest-card-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-            margin-bottom: 6px;
-        }
-        .quest-tag {
-            font-size: 8px;
-            padding: 2px 6px;
-            border: 1px solid #2c3e50;
-            color: #7f8c8d;
-        }
-        .quest-tag.xp { color: #2ecc71; border-color: #27ae60; }
-        .quest-tag.gold { color: #f1c40f; border-color: #d4ac0d; }
-        .quest-tag.assignee { color: #9b59b6; border-color: #8e44ad; }
-        .quest-tag.faction { color: #3498db; border-color: #2980b9; }
-
-        .quest-card-actions {
-            display: flex;
-            gap: 4px;
-            flex-wrap: wrap;
-            margin-top: 4px;
-        }
-        .quest-action-btn {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 6px;
-            padding: 4px 6px;
-            border: 1px solid #2c3e50;
-            background: #1a252f;
-            color: #bdc3c7;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-        .quest-action-btn:hover { background: #2c3e50; color: #f1c40f; }
-        .quest-action-btn.detail { border-color: #2980b9; color: #3498db; }
-        .quest-action-btn.detail:hover { background: #1a3a5c; color: #f1c40f; }
-        .quest-action-btn.copy { border-color: #8e44ad; color: #9b59b6; }
-        .quest-action-btn.copy:hover { background: #6c3483; color: #f1c40f; }
-        .quest-action-btn.remove { border-color: #e74c3c; color: #e74c3c; }
-
-        /* ── Sort select ── */
-        .col-sort-select {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 10px;
-            height: 26px;
-            padding: 0 5px;
-            box-sizing: border-box;
-            background: #0d1b2a;
-            color: #3498db;
-            border: 1px solid #2980b9;
-            cursor: pointer;
-            outline: none;
-        }
-        .col-sort-select:focus { border-color: #5dade2; color: #5dade2; }
-
-        /* ── Drag-and-drop ── */
-        .quest-card[draggable="true"] { cursor: grab; }
-        .quest-card.dragging { opacity: 0.35; border-style: dashed; cursor: grabbing; }
-        .kanban-col.dnd-over {
-            background: rgba(52, 152, 219, 0.07);
-            outline: 3px dashed #3498db;
-            outline-offset: -3px;
-        }
-        .quest-card.dnd-before { border-top: 3px solid #3498db; }
-        .quest-card.dnd-after  { border-bottom: 3px solid #3498db; }
-        .quest-action-btn.remove:hover { background: #922b21; color: #fff; }
-
-        /* ---- MODAL DETALHE DA QUEST (mais largo) ---- */
-        .modal-board-detail { max-width: 640px; width: 94%; max-height: 88vh; overflow-y: auto; padding: 20px; }
-        .bqd-section { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 2px solid #1a252f; }
-        .bqd-label { font-size: 8px; color: #f1c40f; margin-bottom: 8px; }
-        .bqd-comments-list { max-height: 160px; overflow-y: auto; margin-bottom: 10px; }
-        .bqd-comments-list::-webkit-scrollbar { width: 3px; }
-        .bqd-comments-list::-webkit-scrollbar-thumb { background: #2c3e50; }
-
-        /* ---- BURNDOWN CHART ---- */
-        .burndown-section {
-            margin-top: 24px;
-        }
-        .burndown-canvas-wrapper {
-            background: #1a252f;
-            border: 2px solid #2c3e50;
-            padding: 16px;
-            position: relative;
-        }
-        #burndownCanvas {
-            display: block;
-            max-width: 100%;
-        }
-        .burndown-legend {
-            display: flex;
-            gap: 16px;
-            margin-top: 10px;
-            font-size: 7px;
-        }
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .legend-dot {
-            width: 12px;
-            height: 3px;
-            display: inline-block;
-        }
-
-        /* ---- MODAIS ---- */
-        .modal-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .modal-hint {
-            font-size: 7px;
-            color: #7f8c8d;
-            margin-top: 4px;
-        }
-    </style>
 </head>
 <body class="admin-page">
     <div id="loading-overlay" data-cy="loading-overlay">
@@ -260,16 +20,16 @@
         <div class="dashboard-section" data-cy="board-header-section">
             <div class="board-header">
                 <div>
-                    <a href="admin-sprints.html" class="btn-pixel" style="font-size:7px; padding:6px 10px; text-decoration:none; background:#2c3e50;" data-cy="btn-back-sprints">← VOLTAR</a>
+                    <a href="admin-sprints.html" class="btn-pixel btn-neutral" style="font-size:7px; padding:6px 10px; text-decoration:none;" data-cy="btn-back-sprints">← VOLTAR</a>
                     <h2 class="section-title" id="sprintTitle" style="margin-top:12px; margin-bottom:4px;">Carregando sprint...</h2>
                     <div class="board-meta" id="sprintMeta" data-cy="sprint-board-meta"></div>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                     <span id="sprintHealthBadge" class="status-badge" style="font-size:8px; padding:4px 10px;"></span>
                     <span id="sprintStatusBadge" class="status-badge" style="font-size:7px; padding:4px 8px; background:#2c3e50;"></span>
-                    <button class="btn-pixel" data-cy="btn-trigger-encounter"
+                    <button class="btn-pixel btn-special" data-cy="btn-trigger-encounter"
                             onclick="openEncounterModal()"
-                            style="font-size:7px; padding:5px 10px; background:#8e44ad; border:none; cursor:pointer;">
+                            style="font-size:7px; padding:5px 10px;">
                         ⚡ Evento
                     </button>
                 </div>
@@ -300,7 +60,7 @@
         <div class="dashboard-section" data-cy="board-encounters-section" id="boardEncountersSection"
              style="padding:12px 16px;">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
-                <h2 class="section-title" style="margin:0; border:none; font-size:9px;">⚡ EVENTOS ATIVOS</h2>
+                <h2 class="section-title section-title--flush section-title--sm">⚡ EVENTOS ATIVOS</h2>
             </div>
             <div id="boardEncounterList" style="display:flex; flex-wrap:wrap; align-items:center; min-height:28px;">
                 <span style="font-size:7px;color:#7f8c8d;">Carregando...</span>
@@ -311,8 +71,8 @@
         <div class="dashboard-section" data-cy="board-kanban-section">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
                 <div style="display:flex;align-items:center;gap:10px;">
-                    <h2 class="section-title" style="margin:0; border:none;">⚔️ BOARD DE MISSÕES</h2>
-                    <button class="btn-pixel" data-cy="btn-edit-columns" onclick="openEditColumnsModal()" style="font-size:8px;padding:5px 10px;background:#2c3e50;">⚙️ Colunas</button>
+                    <h2 class="section-title section-title--flush">⚔️ BOARD DE MISSÕES</h2>
+                    <button class="btn-pixel btn-neutral" data-cy="btn-edit-columns" onclick="openEditColumnsModal()" style="font-size:8px;padding:5px 10px;">⚙️ Colunas</button>
                 </div>
                 <div class="faction-filters" data-cy="guild-filters" id="guildFilters">
                     <button class="faction-filter-btn active" data-cy="filter-all-guilds" onclick="setGuildFilter(null, this)">🏰 Todas</button>
@@ -360,9 +120,9 @@
                 <div style="flex:1;min-width:0;margin-right:12px;">
                     <div id="bqd-type-badge" style="margin-bottom:6px;"></div>
                     <div id="bqd-parent-breadcrumb" style="display:none;margin-bottom:6px;"></div>
-                    <h2 id="bqd-title" class="section-title" style="margin:0;border:none;font-size:9px;word-break:break-word;"></h2>
+                    <h2 id="bqd-title" class="section-title section-title--flush section-title--sm" style="word-break:break-word;"></h2>
                 </div>
-                <button class="btn-pixel" style="font-size:10px;padding:4px 10px;background:#c0392b;border-color:#e74c3c;flex-shrink:0;" data-cy="btn-close-board-quest-detail" onclick="closeBoardQuestDetail()">✕</button>
+                <button class="btn-pixel btn-neutral" style="font-size:10px;padding:4px 10px;flex-shrink:0;" data-cy="btn-close-board-quest-detail" onclick="closeBoardQuestDetail()">✕</button>
             </div>
 
             <!-- Meta chips -->
@@ -375,10 +135,11 @@
                 <div class="bqd-label">👤 RESPONSÁVEL</div>
                 <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
                     <select id="bqd-assignee-select" data-cy="select-admin-assignee"
-                            style="flex:1;font-family:'Press Start 2P',cursive;font-size:8px;padding:8px 6px;background:#0d1b2a;color:#ecf0f1;border:2px solid #2c3e50;outline:none;cursor:pointer;"></select>
-                    <button class="btn-pixel" data-cy="btn-admin-save-assignee"
+                            class="pixel-input-dark"
+                            style="flex:1;font-size:8px;padding:8px 6px;cursor:pointer;"></select>
+                    <button class="btn-pixel btn-success" data-cy="btn-admin-save-assignee"
                             onclick="saveAdminQuestAssignee()"
-                            style="font-size:7px;padding:8px 14px;background:#27ae60;flex-shrink:0;">✔ SALVAR</button>
+                            style="font-size:7px;padding:8px 14px;flex-shrink:0;">✔ SALVAR</button>
                 </div>
             </div>
 
@@ -387,10 +148,11 @@
                 <div class="bqd-label">🔀 MOVER PARA COLUNA</div>
                 <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
                     <select id="bqd-move-column-select" data-cy="select-admin-move-column"
-                            style="flex:1;font-family:'Press Start 2P',cursive;font-size:8px;padding:8px 6px;background:#0d1b2a;color:#ecf0f1;border:2px solid #2c3e50;outline:none;cursor:pointer;"></select>
-                    <button class="btn-pixel" data-cy="btn-admin-move-column"
+                            class="pixel-input-dark"
+                            style="flex:1;font-size:8px;padding:8px 6px;cursor:pointer;"></select>
+                    <button class="btn-pixel btn-special" data-cy="btn-admin-move-column"
                             onclick="moveAdminCardToColumn()"
-                            style="font-size:7px;padding:8px 14px;background:#8e44ad;flex-shrink:0;">➤ MOVER</button>
+                            style="font-size:7px;padding:8px 14px;flex-shrink:0;">➤ MOVER</button>
                 </div>
             </div>
 
@@ -431,7 +193,7 @@
                         <input type="text" id="bqd-edit-labels" class="pixel-input" data-cy="input-bqd-labels" style="font-size:8px;" placeholder="bug, urgente, frontend">
                     </div>
                     <div>
-                        <button class="btn-pixel" style="font-size:7px;padding:6px 14px;background:#27ae60;" data-cy="btn-save-board-quest" onclick="submitBoardQuestEdit()">SALVAR</button>
+                        <button class="btn-pixel btn-success" style="font-size:7px;padding:6px 14px;" data-cy="btn-save-board-quest" onclick="submitBoardQuestEdit()">SALVAR</button>
                     </div>
                 </div>
             </div>
@@ -446,10 +208,11 @@
                 <div style="display:flex;gap:6px;margin-top:8px;">
                     <input type="text" id="bqd-checklist-new-item" data-cy="input-bqd-checklist-new"
                            placeholder="Novo item..."
-                           style="flex:1;font-family:'Press Start 2P',cursive;font-size:7px;padding:5px;background:#1a252f;color:#ecf0f1;border:2px solid #2c3e50;outline:none;"
+                           class="pixel-input-dark"
+                           style="flex:1;font-size:7px;padding:5px;"
                            onkeydown="if(event.key==='Enter'){event.preventDefault();bqdAddChecklistItem();}">
-                    <button type="button" data-cy="btn-bqd-add-checklist-item" onclick="bqdAddChecklistItem()"
-                            style="background:#27ae60;border:none;color:#fff;font-family:'Press Start 2P',cursive;font-size:7px;padding:5px 10px;cursor:pointer;">+ ADD</button>
+                    <button type="button" class="btn-pixel btn-success" data-cy="btn-bqd-add-checklist-item" onclick="bqdAddChecklistItem()"
+                            style="font-size:7px;padding:5px 10px;">+ ADD</button>
                 </div>
             </div>
 
@@ -457,37 +220,41 @@
             <div id="bqd-subtasks-section" class="bqd-section" data-cy="section-bqd-subtasks">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                     <div class="bqd-label" style="margin:0;">🔗 SUBTASKS</div>
-                    <button type="button" id="bqd-subtask-add-btn" data-cy="btn-bqd-add-subtask"
+                    <button type="button" id="bqd-subtask-add-btn" class="btn-pixel btn-special" data-cy="btn-bqd-add-subtask"
                             onclick="bqdToggleSubtaskForm()"
-                            style="background:#8e44ad;border:none;color:#fff;font-family:'Press Start 2P',cursive;font-size:7px;padding:4px 8px;cursor:pointer;">+ Subtask</button>
+                            style="font-size:7px;padding:4px 8px;">+ Subtask</button>
                 </div>
                 <div id="bqd-subtasks-progress" style="margin-bottom:8px;"></div>
                 <div id="bqd-subtask-form" style="display:none;background:#0d1b2a;border:1px solid #2c3e50;padding:10px;margin-bottom:8px;">
                     <input type="text" id="bqd-subtask-title" data-cy="input-bqd-subtask-title"
                            placeholder="Título da subtask..."
-                           style="width:100%;box-sizing:border-box;font-family:'Press Start 2P',cursive;font-size:8px;padding:6px;background:#1a252f;color:#ecf0f1;border:2px solid #2c3e50;margin-bottom:6px;outline:none;"
+                           class="pixel-input-dark"
+                           style="font-size:8px;padding:6px;margin-bottom:6px;"
                            onkeydown="if(event.key==='Enter'){event.preventDefault();bqdCreateSubtask();}">
                     <select id="bqd-subtask-assignee" data-cy="select-bqd-subtask-assignee"
-                            style="width:100%;font-family:'Press Start 2P',cursive;font-size:8px;padding:6px;background:#1a252f;color:#ecf0f1;border:2px solid #2c3e50;margin-bottom:6px;outline:none;">
+                            class="pixel-input-dark"
+                            style="font-size:8px;padding:6px;margin-bottom:6px;">
                         <option value="">👤 Sem atribuição</option>
                     </select>
                     <div style="display:flex;gap:6px;margin-bottom:6px;">
                         <div style="flex:1;">
                             <div style="font-size:7px;color:#7f8c8d;margin-bottom:3px;">XP</div>
                             <input type="number" id="bqd-subtask-xp" data-cy="input-bqd-subtask-xp" min="0" value="0"
-                                   style="width:100%;box-sizing:border-box;font-family:'Press Start 2P',cursive;font-size:7px;padding:5px;background:#1a252f;color:#2ecc71;border:2px solid #2c3e50;outline:none;">
+                                   class="pixel-input-dark"
+                                   style="font-size:7px;padding:5px;color:var(--color-success-bright);">
                         </div>
                         <div style="flex:1;">
                             <div style="font-size:7px;color:#7f8c8d;margin-bottom:3px;">Gold</div>
                             <input type="number" id="bqd-subtask-gold" data-cy="input-bqd-subtask-gold" min="0" value="0"
-                                   style="width:100%;box-sizing:border-box;font-family:'Press Start 2P',cursive;font-size:7px;padding:5px;background:#1a252f;color:#f1c40f;border:2px solid #2c3e50;outline:none;">
+                                   class="pixel-input-dark pixel-input-gold"
+                                   style="font-size:7px;padding:5px;">
                         </div>
                     </div>
                     <div style="display:flex;gap:6px;">
-                        <button type="button" data-cy="btn-bqd-confirm-subtask" onclick="bqdCreateSubtask()"
-                                style="flex:1;background:#27ae60;border:none;color:#fff;font-family:'Press Start 2P',cursive;font-size:7px;padding:6px;cursor:pointer;">CRIAR</button>
-                        <button type="button" onclick="bqdToggleSubtaskForm()"
-                                style="background:#7f8c8d;border:none;color:#fff;font-family:'Press Start 2P',cursive;font-size:7px;padding:6px 10px;cursor:pointer;">✕</button>
+                        <button type="button" class="btn-pixel btn-success" data-cy="btn-bqd-confirm-subtask" onclick="bqdCreateSubtask()"
+                                style="flex:1;font-size:7px;padding:6px;">CRIAR</button>
+                        <button type="button" class="btn-pixel btn-muted" onclick="bqdToggleSubtaskForm()"
+                                style="font-size:7px;padding:6px 10px;">✕</button>
                     </div>
                 </div>
                 <div id="bqd-subtask-list"></div>
@@ -507,7 +274,7 @@
                     <input type="text" id="bqd-comment-input" class="pixel-input" data-cy="input-bqd-comment"
                            style="flex:1;font-size:8px;" placeholder="Adicionar comentário..."
                            onkeydown="if(event.key==='Enter')submitBoardComment()">
-                    <button class="btn-pixel" style="font-size:7px;padding:6px 10px;background:#2980b9;flex-shrink:0;" data-cy="btn-send-board-comment" onclick="submitBoardComment()">ENVIAR</button>
+                    <button class="btn-pixel btn-info" style="font-size:7px;padding:6px 10px;flex-shrink:0;" data-cy="btn-send-board-comment" onclick="submitBoardComment()">ENVIAR</button>
                 </div>
             </div>
         </div>
@@ -528,8 +295,8 @@
                     <div class="modal-hint">Selecione uma sprint ou deixe em branco para mover ao backlog.</div>
                 </div>
                 <div style="display:flex; gap:8px; margin-top:6px;">
-                    <button class="btn-pixel" data-cy="btn-confirm-transfer-sprint" onclick="confirmTransferSprint()" style="background:#27ae60;">MOVER</button>
-                    <button class="btn-pixel" style="background:#7f8c8d;" onclick="closeModal('modalTransferSprint')">CANCELAR</button>
+                    <button class="btn-pixel btn-success" data-cy="btn-confirm-transfer-sprint" onclick="confirmTransferSprint()">MOVER</button>
+                    <button class="btn-pixel btn-muted" onclick="closeModal('modalTransferSprint')">CANCELAR</button>
                 </div>
             </div>
         </div>
@@ -551,8 +318,8 @@
                     </select>
                 </div>
                 <div style="display:flex; gap:8px; margin-top:6px;">
-                    <button class="btn-pixel" data-cy="btn-confirm-transfer-faction" onclick="confirmTransferFaction()" style="background:#2980b9;">TRANSFERIR</button>
-                    <button class="btn-pixel" style="background:#7f8c8d;" onclick="closeModal('modalTransferFaction')">CANCELAR</button>
+                    <button class="btn-pixel btn-info" data-cy="btn-confirm-transfer-faction" onclick="confirmTransferFaction()">TRANSFERIR</button>
+                    <button class="btn-pixel btn-muted" onclick="closeModal('modalTransferFaction')">CANCELAR</button>
                 </div>
             </div>
         </div>
@@ -582,8 +349,8 @@
                     <div class="modal-hint">A cópia sempre começa como "A Fazer" sem atribuição.</div>
                 </div>
                 <div style="display:flex; gap:8px; margin-top:6px;">
-                    <button class="btn-pixel" data-cy="btn-confirm-copy-quest" onclick="confirmCopyQuest()" style="background:#8e44ad;">COPIAR</button>
-                    <button class="btn-pixel" style="background:#7f8c8d;" onclick="closeModal('modalCopyQuest')">CANCELAR</button>
+                    <button class="btn-pixel btn-special" data-cy="btn-confirm-copy-quest" onclick="confirmCopyQuest()">COPIAR</button>
+                    <button class="btn-pixel btn-muted" onclick="closeModal('modalCopyQuest')">CANCELAR</button>
                 </div>
             </div>
         </div>
@@ -599,355 +366,20 @@
                 A quest será movida para o backlog. O status e atribuição não serão alterados.
             </p>
             <div style="display:flex; gap:8px;">
-                <button class="btn-pixel" data-cy="btn-confirm-remove-quest" onclick="confirmRemoveQuest()" style="background:#e74c3c;">REMOVER</button>
-                <button class="btn-pixel" style="background:#7f8c8d;" onclick="closeModal('modalRemoveQuest')">CANCELAR</button>
+                <button class="btn-pixel btn-danger" data-cy="btn-confirm-remove-quest" onclick="confirmRemoveQuest()">REMOVER</button>
+                <button class="btn-pixel btn-muted" onclick="closeModal('modalRemoveQuest')">CANCELAR</button>
             </div>
         </div>
     </div>
 
     <div id="toast-container" data-cy="toast-container"></div>
 
-    <!-- ═══ MODAL EVENTOS — BIBLIOTECA + ACIONAR ═══ -->
-    <div id="encounterModal" data-cy="encounter-modal"
-         style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:9000; align-items:flex-start; justify-content:center; padding-top:48px; overflow-y:auto;"
-         onclick="if(event.target===this)closeEncounterModal()">
-        <div style="background:#1a252f; border:2px solid #8e44ad; width:100%; max-width:520px; margin:0 16px 48px; box-sizing:border-box;">
-
-            <!-- HEADER -->
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:2px solid #2c3e50;">
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <button id="encBtnBack" data-cy="btn-enc-back" onclick="encShowLibrary()"
-                            style="display:none; background:transparent; border:none; color:#8e44ad; font-size:14px; cursor:pointer; padding:0;">←</button>
-                    <span id="encModalTitle" style="font-family:'Press Start 2P',cursive; font-size:10px; color:#e056fd;">⚡ EVENTOS</span>
-                </div>
-                <button onclick="closeEncounterModal()" style="background:transparent; border:none; color:#7f8c8d; font-size:14px; cursor:pointer;">✕</button>
-            </div>
-
-            <!-- VIEW: BIBLIOTECA -->
-            <div id="encViewLibrary" style="padding:20px;">
-                <div id="encTemplateList" data-cy="encounter-template-list">
-                    <div style="font-size:8px; color:#7f8c8d; padding:20px 0; text-align:center;">Carregando biblioteca...</div>
-                </div>
-                <button class="btn-pixel" data-cy="btn-enc-new-template" onclick="encShowCreate()"
-                        style="width:100%; margin-top:12px; font-size:7px; padding:9px; background:#2c3e50; border:none; cursor:pointer;">
-                    + Criar Novo Evento
-                </button>
-            </div>
-
-            <!-- VIEW: CRIAR TEMPLATE -->
-            <div id="encViewCreate" style="display:none; padding:20px;">
-                <form id="encCreateForm" data-cy="form-enc-create" onsubmit="encSubmitCreate(event)">
-                    <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">TÍTULO *</label>
-                    <input id="encTplTitle" data-cy="input-enc-tpl-title" type="text" required
-                           style="width:100%; box-sizing:border-box; font-family:'Press Start 2P',cursive; font-size:8px; padding:7px 9px; background:#0d1b2a; color:#fff; border:2px solid #2c3e50; outline:none; margin-bottom:12px;"
-                           placeholder="Ex: Semana Dourada">
-
-                    <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">DESCRIÇÃO</label>
-                    <input id="encTplDesc" data-cy="input-enc-tpl-desc" type="text"
-                           style="width:100%; box-sizing:border-box; font-family:'Press Start 2P',cursive; font-size:8px; padding:7px 9px; background:#0d1b2a; color:#fff; border:2px solid #2c3e50; outline:none; margin-bottom:12px;"
-                           placeholder="Detalhes do evento (opcional)">
-
-                    <div style="display:flex; gap:12px; margin-bottom:12px;">
-                        <div style="flex:1;">
-                            <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">EFEITO *</label>
-                            <select id="encTplKind" data-cy="select-enc-tpl-kind" required
-                                    style="width:100%; font-family:'Press Start 2P',cursive; font-size:7px; padding:7px 6px; background:#0d1b2a; color:#f1c40f; border:2px solid #2c3e50; outline:none; cursor:pointer;">
-                                <option value="xp_bonus">✨ Bônus de XP</option>
-                                <option value="gold_bonus">💰 Bônus de Gold</option>
-                                <option value="xp_penalty">💀 Penalidade de XP</option>
-                                <option value="gold_penalty">💸 Penalidade de Gold</option>
-                                <option value="luck">🍀 Sorte (2x XP)</option>
-                                <option value="slow">🐌 Lentidão (SLA)</option>
-                                <option value="store_discount">🏷️ Desconto na Loja</option>
-                            </select>
-                        </div>
-                        <div style="flex:1;">
-                            <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">VALOR (%) *</label>
-                            <input id="encTplValue" data-cy="input-enc-tpl-value" type="number" required min="1" max="100" value="50"
-                                   style="width:100%; box-sizing:border-box; font-family:'Press Start 2P',cursive; font-size:8px; padding:7px 9px; background:#0d1b2a; color:#fff; border:2px solid #2c3e50; outline:none;">
-                        </div>
-                    </div>
-
-                    <div style="display:flex; gap:12px; margin-bottom:20px;">
-                        <div style="flex:1;">
-                            <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">DURAÇÃO PADRÃO (h) *</label>
-                            <input id="encTplDuration" data-cy="input-enc-tpl-duration" type="number" required min="1" max="168" value="2"
-                                   style="width:100%; box-sizing:border-box; font-family:'Press Start 2P',cursive; font-size:8px; padding:7px 9px; background:#0d1b2a; color:#fff; border:2px solid #2c3e50; outline:none;">
-                        </div>
-                        <div style="flex:1;">
-                            <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">ESCOPO PADRÃO</label>
-                            <select id="encTplScope" data-cy="select-enc-tpl-scope"
-                                    style="width:100%; font-family:'Press Start 2P',cursive; font-size:7px; padding:7px 6px; background:#0d1b2a; color:#f1c40f; border:2px solid #2c3e50; outline:none; cursor:pointer;">
-                                <option value="global">🌐 Global</option>
-                                <option value="faction">🏰 Facção</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div style="display:flex; gap:8px; justify-content:flex-end;">
-                        <button type="button" class="btn-pixel" onclick="encShowLibrary()"
-                                style="font-size:7px; padding:7px 12px; background:#34495e; border:none; cursor:pointer;">Cancelar</button>
-                        <button type="submit" class="btn-pixel" data-cy="btn-enc-save-template"
-                                style="font-size:7px; padding:7px 12px; background:#27ae60; border:none; cursor:pointer;">💾 Salvar</button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- VIEW: ACIONAR -->
-            <div id="encViewTrigger" style="display:none; padding:20px;">
-                <div id="encTriggerInfo" style="background:#0d1b2a; border:1px solid #8e44ad; padding:12px; margin-bottom:16px;"></div>
-
-                <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">DURAÇÃO (horas)</label>
-                <input id="encTriggerDuration" data-cy="input-enc-trigger-duration" type="number" min="1" max="168"
-                       style="width:100%; box-sizing:border-box; font-family:'Press Start 2P',cursive; font-size:8px; padding:7px 9px; background:#0d1b2a; color:#fff; border:2px solid #2c3e50; outline:none; margin-bottom:12px;">
-
-                <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">ESCOPO</label>
-                <select id="encTriggerScope" data-cy="select-enc-trigger-scope"
-                        style="width:100%; font-family:'Press Start 2P',cursive; font-size:7px; padding:7px 6px; background:#0d1b2a; color:#f1c40f; border:2px solid #2c3e50; outline:none; cursor:pointer; margin-bottom:12px;"
-                        onchange="encToggleFaction()">
-                    <option value="global">🌐 Global</option>
-                    <option value="faction">🏰 Facção específica</option>
-                </select>
-
-                <div id="encTriggerFactionWrap" style="display:none; margin-bottom:16px;">
-                    <label style="display:block; font-size:8px; color:#bdc3c7; margin-bottom:4px;">FACÇÃO</label>
-                    <select id="encTriggerFaction" data-cy="select-enc-trigger-faction"
-                            style="width:100%; font-family:'Press Start 2P',cursive; font-size:7px; padding:7px 6px; background:#0d1b2a; color:#f1c40f; border:2px solid #2c3e50; outline:none; cursor:pointer;">
-                        <option value="Produto">📦 Produto</option>
-                        <option value="Suporte">🎧 Suporte</option>
-                        <option value="Customer Service">📣 Customer Service</option>
-                    </select>
-                </div>
-
-                <div style="display:flex; gap:8px; justify-content:flex-end;">
-                    <button type="button" class="btn-pixel" onclick="encShowLibrary()"
-                            style="font-size:7px; padding:7px 12px; background:#34495e; border:none; cursor:pointer;">Cancelar</button>
-                    <button type="button" class="btn-pixel" data-cy="btn-enc-confirm-trigger" onclick="encSubmitTrigger()"
-                            style="font-size:7px; padding:7px 12px; background:#8e44ad; border:none; cursor:pointer;">⚡ Acionar!</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/admin-header.js"></script>
     <script src="js/notifications.js"></script>
+    <script src="js/encounter-modal.js"></script>
     <script src="js/admin-sprint-board.js"></script>
-
-    <script>
-        const ENCOUNTER_ICONS_BOARD  = { xp_penalty:'💀', gold_penalty:'💸', xp_bonus:'✨', gold_bonus:'💰', slow:'🐌', luck:'🍀', store_discount:'🏷️' };
-        const ENCOUNTER_LABELS_BOARD = { xp_penalty:'PENALIDADE XP', gold_penalty:'PENALIDADE GOLD', xp_bonus:'BÔNUS XP', gold_bonus:'BÔNUS GOLD', slow:'SLA REDUZIDO', luck:'SORTE ATIVA', store_discount:'DESCONTO NA LOJA' };
-        const ENCOUNTER_COLORS_BOARD = {
-            xp_penalty:    { bg:'#1a0a0a', border:'#c0392b', text:'#e74c3c' },
-            gold_penalty:  { bg:'#1a0d00', border:'#e67e22', text:'#e67e22' },
-            xp_bonus:      { bg:'#0a1a0a', border:'#27ae60', text:'#2ecc71' },
-            gold_bonus:    { bg:'#0a0d0a', border:'#f1c40f', text:'#f1c40f' },
-            slow:          { bg:'#0d0d1a', border:'#8e44ad', text:'#9b59b6' },
-            luck:          { bg:'#0a1a10', border:'#1abc9c', text:'#1abc9c' },
-            store_discount:{ bg:'#1a1500', border:'#f39c12', text:'#f39c12' },
-        };
-
-        let _currentTplId = null;
-
-        function openEncounterModal() {
-            const modal = document.getElementById('encounterModal');
-            if (!modal) return;
-            encShowLibrary();
-            modal.style.display = 'flex';
-        }
-        function closeEncounterModal() {
-            const modal = document.getElementById('encounterModal');
-            if (modal) modal.style.display = 'none';
-        }
-
-        function encShowLibrary() {
-            document.getElementById('encViewLibrary').style.display = 'block';
-            document.getElementById('encViewCreate').style.display  = 'none';
-            document.getElementById('encViewTrigger').style.display = 'none';
-            document.getElementById('encBtnBack').style.display     = 'none';
-            document.getElementById('encModalTitle').textContent    = '⚡ EVENTOS';
-            encLoadTemplates();
-        }
-        function encShowCreate(tpl) {
-            document.getElementById('encViewLibrary').style.display = 'none';
-            document.getElementById('encViewCreate').style.display  = 'block';
-            document.getElementById('encViewTrigger').style.display = 'none';
-            document.getElementById('encBtnBack').style.display     = 'inline-block';
-            document.getElementById('encModalTitle').textContent    = tpl ? '✏️ EDITAR TEMPLATE' : '+ NOVO EVENTO';
-            _currentTplId = tpl ? tpl._id : null;
-            document.getElementById('encCreateForm').reset();
-            if (tpl) {
-                document.getElementById('encTplTitle').value    = tpl.title;
-                document.getElementById('encTplDesc').value     = tpl.description || '';
-                document.getElementById('encTplKind').value     = tpl.effect_kind;
-                document.getElementById('encTplValue').value    = Math.round(tpl.default_value * 100);
-                document.getElementById('encTplDuration').value = tpl.default_duration;
-                document.getElementById('encTplScope').value    = tpl.scope_type;
-            }
-        }
-        function encShowTrigger(tpl) {
-            document.getElementById('encViewLibrary').style.display = 'none';
-            document.getElementById('encViewCreate').style.display  = 'none';
-            document.getElementById('encViewTrigger').style.display = 'block';
-            document.getElementById('encBtnBack').style.display     = 'inline-block';
-            document.getElementById('encModalTitle').textContent    = '⚡ ACIONAR EVENTO';
-            _currentTplId = tpl._id;
-            const icon  = ENCOUNTER_ICONS_BOARD[tpl.effect_kind] || '⚡';
-            const label = ENCOUNTER_LABELS_BOARD[tpl.effect_kind] || tpl.effect_kind;
-            document.getElementById('encTriggerInfo').innerHTML = `
-                <div style="font-size:9px;color:#e056fd;margin-bottom:6px;">${icon} ${tpl.title}</div>
-                ${tpl.description ? `<div style="font-size:7px;color:#bdc3c7;margin-bottom:8px;">${tpl.description}</div>` : ''}
-                <div style="font-size:7px;color:#f1c40f;">${label} · ${Math.round(tpl.default_value * 100)}% · padrão ${tpl.default_duration}h</div>`;
-            document.getElementById('encTriggerDuration').value = tpl.default_duration;
-            document.getElementById('encTriggerScope').value    = tpl.scope_type;
-            encToggleFaction();
-        }
-        function encToggleFaction() {
-            const scope = document.getElementById('encTriggerScope').value;
-            document.getElementById('encTriggerFactionWrap').style.display = scope === 'faction' ? 'block' : 'none';
-        }
-
-        async function encLoadTemplates() {
-            const token     = localStorage.getItem('guild_token');
-            const container = document.getElementById('encTemplateList');
-            container.innerHTML = '<div style="font-size:8px;color:#7f8c8d;padding:12px 0;text-align:center;">Carregando...</div>';
-            try {
-                const res  = await fetch(`${API_URL}/event-templates`, { headers: { 'Authorization': `Bearer ${token}` } });
-                const list = await res.json();
-                if (!list.length) {
-                    container.innerHTML = '<div style="font-size:8px;color:#7f8c8d;padding:12px 0;text-align:center;">Nenhum template criado ainda.</div>';
-                    return;
-                }
-                container.innerHTML = list.map(tpl => {
-                    const icon  = ENCOUNTER_ICONS_BOARD[tpl.effect_kind]  || '⚡';
-                    const label = ENCOUNTER_LABELS_BOARD[tpl.effect_kind] || tpl.effect_kind;
-                    const col   = (ENCOUNTER_COLORS_BOARD[tpl.effect_kind] || ENCOUNTER_COLORS_BOARD.xp_bonus).border;
-                    return `<div style="display:flex;align-items:center;gap:8px;padding:9px 10px;background:#0d1b2a;border:1px solid #2c3e50;margin-bottom:6px;">
-                        <span style="font-size:13px;">${icon}</span>
-                        <div style="flex:1;min-width:0;">
-                            <div style="font-size:8px;color:#ecf0f1;margin-bottom:2px;">${tpl.title}</div>
-                            <div style="font-size:7px;color:${col};">${label} · ${Math.round(tpl.default_value*100)}% · ${tpl.default_duration}h · ${tpl.scope_type==='global'?'🌐 Global':'🏰 Facção'}</div>
-                        </div>
-                        <button onclick="encShowTrigger(${JSON.stringify(tpl).replace(/"/g,'&quot;')})" data-cy="btn-enc-trigger-${tpl._id}"
-                                style="font-family:'Press Start 2P',cursive;font-size:6px;padding:5px 8px;background:#8e44ad;border:none;color:#fff;cursor:pointer;">⚡</button>
-                        <button onclick="encShowCreate(${JSON.stringify(tpl).replace(/"/g,'&quot;')})" data-cy="btn-enc-edit-${tpl._id}"
-                                style="font-family:'Press Start 2P',cursive;font-size:6px;padding:5px 8px;background:#2c3e50;border:none;color:#fff;cursor:pointer;">✏️</button>
-                        <button onclick="encDeleteTemplate('${tpl._id}')" data-cy="btn-enc-delete-${tpl._id}"
-                                style="font-family:'Press Start 2P',cursive;font-size:6px;padding:5px 8px;background:#c0392b;border:none;color:#fff;cursor:pointer;">🗑️</button>
-                    </div>`;
-                }).join('');
-            } catch { container.innerHTML = '<div style="font-size:8px;color:#e74c3c;padding:12px 0;text-align:center;">Erro ao carregar biblioteca.</div>'; }
-        }
-
-        async function encSubmitCreate(event) {
-            event.preventDefault();
-            const token = localStorage.getItem('guild_token');
-            const body  = {
-                title:            document.getElementById('encTplTitle').value.trim(),
-                description:      document.getElementById('encTplDesc').value.trim(),
-                effect_kind:      document.getElementById('encTplKind').value,
-                default_value:    Number(document.getElementById('encTplValue').value) / 100,
-                default_duration: Number(document.getElementById('encTplDuration').value),
-                scope_type:       document.getElementById('encTplScope').value,
-            };
-            const url    = _currentTplId ? `${API_URL}/event-templates/${_currentTplId}` : `${API_URL}/event-templates`;
-            const method = _currentTplId ? 'PATCH' : 'POST';
-            try {
-                const res = await fetch(url, {
-                    method,
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                    body:    JSON.stringify(body),
-                });
-                if (!res.ok) { const e = await res.json(); showToast(e.message || 'Erro ao salvar.', 'error'); return; }
-                showToast(_currentTplId ? 'Template atualizado!' : 'Template criado!', 'success');
-                encShowLibrary();
-            } catch { showToast('Erro de conexão.', 'error'); }
-        }
-
-        async function encDeleteTemplate(id) {
-            if (!confirm('Excluir este template de evento?')) return;
-            const token = localStorage.getItem('guild_token');
-            try {
-                const res = await fetch(`${API_URL}/event-templates/${id}`, {
-                    method:  'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                });
-                if (!res.ok) { showToast('Erro ao excluir template.', 'error'); return; }
-                showToast('Template excluído.', 'success');
-                encLoadTemplates();
-            } catch { showToast('Erro de conexão.', 'error'); }
-        }
-
-        async function encSubmitTrigger() {
-            const token    = localStorage.getItem('guild_token');
-            const scope    = document.getElementById('encTriggerScope').value;
-            const duration = Number(document.getElementById('encTriggerDuration').value);
-            const body     = { template_id: _currentTplId, type: scope, duration_hours: duration };
-            if (scope === 'faction') body.affected_faction = document.getElementById('encTriggerFaction').value;
-            try {
-                const res = await fetch(`${API_URL}/encounters/trigger`, {
-                    method:  'POST',
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                    body:    JSON.stringify(body),
-                });
-                if (!res.ok) { const e = await res.json(); showToast(e.message || 'Erro ao acionar evento.', 'error'); return; }
-                closeEncounterModal();
-                showToast('⚡ Evento acionado com sucesso!', 'success');
-                renderActiveEncountersBoard();
-            } catch { showToast('Erro de conexão ao acionar evento.', 'error'); }
-        }
-
-        async function renderActiveEncountersBoard() {
-            const boardToken = localStorage.getItem('guild_token');
-            const container  = document.getElementById('boardEncounterList');
-            if (!container) return;
-            try {
-                const res = await fetch(`${API_URL}/encounters/active`, {
-                    headers: { 'Authorization': `Bearer ${boardToken}` },
-                });
-                if (!res.ok) { container.innerHTML = ''; return; }
-                const list = await res.json();
-                if (!list.length) {
-                    container.innerHTML = '<span style="font-size:7px;color:#7f8c8d;">Nenhum evento ativo no momento.</span>';
-                    return;
-                }
-                container.innerHTML = list.map(enc => {
-                    const kind  = enc.effect?.kind || 'xp_bonus';
-                    const col   = ENCOUNTER_COLORS_BOARD[kind]  || ENCOUNTER_COLORS_BOARD.xp_bonus;
-                    const icon  = ENCOUNTER_ICONS_BOARD[kind]   || '⚡';
-                    const label = ENCOUNTER_LABELS_BOARD[kind]  || 'EVENTO';
-                    const pct   = Math.round(enc.effect.value * 100);
-                    const until = enc.active_until ? new Date(enc.active_until) : null;
-                    const h     = until ? Math.max(0, Math.floor((until - Date.now()) / 3_600_000)) : 0;
-                    const m     = until ? Math.max(0, Math.floor(((until - Date.now()) % 3_600_000) / 60_000)) : 0;
-                    const scope = enc.type === 'faction' ? enc.affected_faction : 'Todas';
-                    return `<div style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:${col.bg};border:1px solid ${col.border};margin-right:6px;margin-bottom:6px;">
-                        <span style="font-size:11px;">${icon}</span>
-                        <span style="font-size:7px;color:${col.text};">${label} <strong>${pct}%</strong> · ${scope} · ${h}h${m}m</span>
-                        <button onclick="deactivateEncounterBoard('${enc._id}')"
-                                style="background:transparent;border:none;color:#7f8c8d;font-size:9px;cursor:pointer;padding:0 2px;" title="Encerrar">✕</button>
-                    </div>`;
-                }).join('');
-            } catch { container.innerHTML = ''; }
-        }
-
-        async function deactivateEncounterBoard(id) {
-            const boardToken = localStorage.getItem('guild_token');
-            try {
-                const res = await fetch(`${API_URL}/encounters/${id}`, {
-                    method:  'DELETE',
-                    headers: { 'Authorization': `Bearer ${boardToken}` },
-                });
-                if (res.ok) { showToast('Evento encerrado.', 'success'); renderActiveEncountersBoard(); }
-            } catch { showToast('Erro ao encerrar evento.', 'error'); }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            renderActiveEncountersBoard();
-            setInterval(renderActiveEncountersBoard, 30000);
-        });
-    </script>
 
     <!-- Modal: Editar Colunas do Kanban (admin) -->
     <div id="editColumnsModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeEditColumnsModal()">
@@ -957,14 +389,14 @@
                     <div style="font-size:10px;color:#3498db;margin-bottom:6px;">⚙️ CONFIGURAR KANBAN</div>
                     <div id="editColumnsGuildName" style="font-size:7px;color:#5b9fc8;line-height:1.8;">—</div>
                 </div>
-                <button class="btn-pixel" onclick="closeEditColumnsModal()" style="font-size:8px;padding:5px 9px;background:#2c3e50;">✕</button>
+                <button class="btn-pixel btn-neutral" onclick="closeEditColumnsModal()" style="font-size:8px;padding:5px 9px;">✕</button>
             </div>
             <div style="padding:20px;">
                 <div id="editColumnsList" style="max-height:400px;overflow-y:auto;margin-bottom:14px;padding-right:4px;"></div>
-                <button class="btn-pixel" data-cy="btn-add-column" onclick="addNewColumn()" style="width:100%;font-size:8px;padding:10px;background:#2c3e50;margin-bottom:16px;">+ NOVA COLUNA</button>
+                <button class="btn-pixel btn-neutral" data-cy="btn-add-column" onclick="addNewColumn()" style="width:100%;font-size:8px;padding:10px;margin-bottom:16px;">+ NOVA COLUNA</button>
                 <div style="display:flex;gap:8px;">
-                    <button class="btn-pixel" onclick="closeEditColumnsModal()" style="flex:1;font-size:8px;padding:10px;background:#7f8c8d;">CANCELAR</button>
-                    <button class="btn-pixel" data-cy="btn-save-columns" onclick="saveColumnsEdit()" style="flex:1;font-size:8px;padding:10px;background:#2980b9;">⚙️ APLICAR</button>
+                    <button class="btn-pixel btn-muted" onclick="closeEditColumnsModal()" style="flex:1;font-size:8px;padding:10px;">CANCELAR</button>
+                    <button class="btn-pixel btn-info" data-cy="btn-save-columns" onclick="saveColumnsEdit()" style="flex:1;font-size:8px;padding:10px;">⚙️ APLICAR</button>
                 </div>
             </div>
         </div>

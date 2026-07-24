@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -6,157 +6,6 @@
     <title>GuildWork - Leaderboard Sazonal</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>">
     <link rel="stylesheet" href="css/style.css">
-    <style>
-        /* ── TOPO ── */
-        .lb-top-bar {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 12px 24px; background: #0d1520;
-            border-bottom: 2px solid #2c3e50; gap: 16px; flex-wrap: wrap;
-            position: sticky; top: 0; z-index: 100;
-        }
-        .lb-top-player { display: flex; align-items: center; gap: 12px; }
-        .lb-top-avatar { width: 40px; height: 40px; border-radius: 3px; object-fit: cover; border: 2px solid #f39c12; }
-        .lb-top-name   { font-size: 13px; color: #ecf0f1; }
-        .lb-top-level  { font-size: 9px; color: #7f8c8d; }
-        .lb-top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-
-        /* ── WRAPPER ── */
-        .lb-wrapper { max-width: 860px; margin: 32px auto; padding: 0 16px; }
-
-        /* ── CABEÇALHO ── */
-        .lb-title {
-            text-align: center; margin: 0 auto 8px; width: fit-content;
-            font-size: 20px; color: #fbc900; letter-spacing: 3px;
-            background: rgb(0 0 0 / 65%); border: 1px solid #2c3e50;
-            padding: 6px 18px; border-radius: 2px;
-        }
-        .lb-week {
-            text-align: center; margin: 0 auto 32px; width: fit-content;
-            font-size: 10px; color: #ecf0f1; letter-spacing: 2px;
-            background: rgb(0 0 0 / 65%); border: 1px solid #2c3e50;
-            padding: 6px 14px; border-radius: 2px;
-        }
-
-        /* ── PÓDIO ── */
-        .lb-podium {
-            display: flex; align-items: flex-end; justify-content: center;
-            gap: 12px; margin-bottom: 40px;
-        }
-        .podium-card {
-            display: flex; flex-direction: column; align-items: center;
-            background: #111c27; border: 2px solid #2c3e50;
-            border-radius: 4px; padding: 16px 20px 0; width: 200px;
-            position: relative; overflow: hidden;
-        }
-        .podium-card.rank-1 {
-            border-color: #f1c40f; background: #15200d;
-            padding-bottom: 0; order: 2;
-        }
-        .podium-card.rank-2 {
-            border-color: #95a5a6; order: 1;
-            transform: translateY(20px);
-        }
-        .podium-card.rank-3 {
-            border-color: #e67e22; order: 3;
-            transform: translateY(30px);
-        }
-        .podium-card.is-me { box-shadow: 0 0 12px rgba(243,156,18,0.4); }
-
-        .podium-medal { font-size: 28px; line-height: 1; margin-bottom: 8px; }
-        .podium-avatar {
-            width: 56px; height: 56px; border-radius: 4px; object-fit: cover;
-            border: 2px solid #2c3e50; margin-bottom: 8px;
-        }
-        .podium-card.rank-1 .podium-avatar { border-color: #f1c40f; width: 68px; height: 68px; }
-        .podium-card.rank-2 .podium-avatar { border-color: #95a5a6; }
-        .podium-card.rank-3 .podium-avatar { border-color: #e67e22; }
-
-        .podium-name {
-            font-size: 11px; color: #ecf0f1; text-align: center;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            max-width: 160px; margin-bottom: 4px;
-        }
-        .podium-card.rank-1 .podium-name { font-size: 13px; color: #f1c40f; }
-        .podium-faction { font-size: 8px; color: #7f8c8d; margin-bottom: 12px; }
-        .podium-xp { font-size: 14px; color: #a679d6; font-variant-numeric: tabular-nums; margin-bottom: 4px; }
-        .podium-card.rank-1 .podium-xp { font-size: 18px; color: #f1c40f; }
-        .podium-quests { font-size: 8px; color: #7f8c8d; margin-bottom: 0; }
-
-        .podium-base {
-            width: 100%; text-align: center; font-size: 28px; font-weight: bold;
-            letter-spacing: 2px; padding: 8px 0 6px;
-            margin-top: 14px;
-        }
-        .podium-card.rank-1 .podium-base { background: #f1c40f22; color: #f1c40f; font-size: 36px; }
-        .podium-card.rank-2 .podium-base { background: #95a5a622; color: #95a5a6; font-size: 30px; }
-        .podium-card.rank-3 .podium-base { background: #e67e2222; color: #e67e22; font-size: 26px; }
-
-        .podium-me-badge {
-            position: absolute; top: 8px; right: 8px;
-            background: #f39c12; color: #000; font-size: 7px;
-            padding: 2px 5px; border-radius: 2px; letter-spacing: 1px;
-        }
-
-        /* ── TABELA COMPLETA ── */
-        .lb-table-wrap {
-            background: #111c27; border: 2px solid #2c3e50;
-            border-radius: 4px; overflow: hidden; overflow-x: auto;
-        }
-        .lb-table-header {
-            background: #0d1520; border-bottom: 2px solid #2c3e50;
-            padding: 12px 16px; font-size: 12px; color: #f39c12;
-            letter-spacing: 2px; border-left: 3px solid #f39c12;
-        }
-        .lb-table { width: 100%; border-collapse: collapse; min-width: 480px; }
-        .lb-table thead { background: #0d1520; }
-        .lb-table th {
-            font-size: 9px; color: #7f8c8d; text-align: left;
-            padding: 10px 12px; letter-spacing: 1px;
-            border-bottom: 2px solid #2c3e50; white-space: nowrap;
-        }
-        .lb-table td {
-            font-size: 11px; color: #ecf0f1;
-            padding: 10px 12px; border-bottom: 1px solid #1e2f3f;
-        }
-        .lb-table tr:last-child td { border-bottom: none; }
-        .lb-table tbody tr:nth-child(odd) { background: rgba(255,255,255,0.02); }
-        .lb-table tbody tr:hover         { background: rgba(243,156,18,0.06); }
-        .lb-table tbody tr.lb-me-row     {
-            background: rgba(243,156,18,0.08) !important;
-            border-left: 3px solid #f39c12;
-        }
-
-        .lb-rank { color: #f39c12; font-size: 13px; font-weight: bold; text-align: center; width: 40px; }
-        .lb-rank.gold   { color: #f1c40f; }
-        .lb-rank.silver { color: #95a5a6; }
-        .lb-rank.bronze { color: #e67e22; }
-
-        .lb-avatar { width: 30px; height: 30px; border-radius: 2px; object-fit: cover; border: 1px solid #2c3e50; vertical-align: middle; margin-right: 8px; }
-        .lb-name-cell { display: flex; align-items: center; }
-        .lb-name-link { color: inherit; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
-        .lb-name-link:hover { color: #f39c12; text-decoration: underline; }
-        .lb-faction { font-size: 8px; color: #7f8c8d; margin-left: 4px; white-space: nowrap; }
-
-        .lb-xp-cell { min-width: 120px; }
-        .lb-xp-num  { font-size: 11px; color: #a679d6; font-variant-numeric: tabular-nums; margin-bottom: 3px; }
-        .lb-xp-bar-track { background: #1e2f3f; height: 4px; border-radius: 2px; overflow: hidden; }
-        .lb-xp-bar-fill  { height: 100%; background: linear-gradient(90deg,#7d3c98,#a679d6); border-radius: 2px; transition: width 0.5s ease; }
-
-        .lb-quests { color: #27ae60; font-variant-numeric: tabular-nums; }
-        .lb-level  { color: #5dade2; font-variant-numeric: tabular-nums; }
-
-        /* ── VAZIO ── */
-        .lb-empty {
-            text-align: center; padding: 48px 16px;
-            font-size: 10px; color: #7f8c8d; letter-spacing: 1px;
-        }
-
-        @media (max-width: 600px) {
-            .lb-podium { flex-wrap: wrap; }
-            .podium-card { width: 140px; }
-            .podium-card.rank-2, .podium-card.rank-3 { transform: none; }
-        }
-    </style>
 </head>
 <body>
     <div id="loading-overlay" data-cy="loading-overlay">
@@ -177,8 +26,8 @@
             </div>
         </div>
         <div class="actions lb-top-actions">
-            <a href="index.html"  class="btn-pixel" data-cy="btn-board" style="background:#2980b9;">🗺️ Mural</a>
-            <a href="guild.html"  class="btn-pixel" data-cy="btn-guilda" style="background:#8e44ad;">🏰 Guilda</a>
+            <a href="index.html"  class="btn-pixel btn-info" data-cy="btn-board">🗺️ Mural</a>
+            <a href="guild.html"  class="btn-pixel btn-special" data-cy="btn-guilda">🏰 Guilda</a>
 
             <span class="actions-divider"></span>
 
