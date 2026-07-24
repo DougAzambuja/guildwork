@@ -33,6 +33,10 @@ const QuestCompletionSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    applied_encounters: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref:  'RandomEncounter',
+    }],
     completed_at: {
         type: Date,
         default: Date.now

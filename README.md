@@ -29,7 +29,7 @@ GUILDWORK/
 │   │   │   ├── globalTeardown.js   # Para MongoDB in-memory após todos os testes
 │   │   │   ├── testSetup.js        # Connect/clean/disconnect Mongoose por arquivo de teste
 │   │   │   ├── fixtures/index.js   # Helpers: createAdmin, createPlayer, createQuest, createGuild...
-│   │   │   ├── integration/        # 9 suítes (auth, players, quests, admin, guild, loot, metrics, notifications, sprint)
+│   │   │   ├── integration/        # 11 suítes (auth, players, quests, admin, guild, loot, metrics, notifications, sprint, encounters, event-templates)
 │   │   │   └── unit/               # questController (Group Quest) + notificationService
 │   │   ├── app.js                  # Express app (sem MongoDB/server.listen — importado pelo Supertest)
 │   │   ├── jest.config.js          # Configuração Jest 29 (globalSetup/Teardown, maxWorkers: 1)
@@ -54,6 +54,7 @@ GUILDWORK/
 │       ├── admin-sprints.html      # Gestão de Sprints
 │       ├── admin-loot.html         # Gestão da Loja
 │       ├── admin-sprint-board.html # Board Kanban da Sprint (admin)
+│       ├── admin-events.html       # Aba de Eventos Aleatórios (biblioteca + acionar + desativar)
 │       ├── admin-profile.html      # Perfil do Admin (nome, avatar DiceBear, senha)
 │       └── change-password.html    # Troca obrigatória de senha no primeiro acesso (#115)
 ├── scripts/
@@ -225,6 +226,8 @@ npm run test:watch          # Modo watch para desenvolvimento
 | `metrics` | GET métricas admin/403/401 |
 | `notifications` | List, mark-all-read, mark-one-read, 404 |
 | `sprint` | CRUD, sprint ativa, burndown |
+| `encounters` | Trigger global/facção, campos obrigatórios, efeito na conclusão de quest, GET active (admin bypass de facção), PATCH editar término, DELETE encerrar antecipado, agendamento via `start_at` |
+| `event-templates` | CRUD completo, validação de effect_kind/default_value/default_duration, 403/401 |
 | `questController (unit)` | Solo share, party bonus, accepted/rejected tracking, admin crash test |
 | `notificationService (unit)` | Todos os triggers com mocks Mongoose |
 
@@ -334,6 +337,7 @@ npm run test:watch          # Modo watch para desenvolvimento
 | **Customização DiceBear (#116)** | Modal de personalização de avatar em ambas as telas de perfil (aventureiro e admin): 9 categorias (pele, cabelo, olhos, boca, barba, óculos, chapéu, roupa, acessórios), grid de thumbnails ao vivo por categoria, swatches de cores, preview grande em tempo real; seed extraído do avatar salvo para preservar o rosto; módulo `dicebear-customizer.js` auto-contido (IIFE) |
 | **Loading Screen / FOUC (#119)** | Overlay fullscreen `#loading-overlay` em todas as telas do funcionário (board, perfil, loja, ranking, guilda) — cobre o FOUC enquanto os fetches assíncronos completam; emoji e texto temáticos por tela; barra de progresso animada; fade-out suave (350ms) ao concluir; `hideLoadingOverlay()` adicionado a `utils.js` como utilitário compartilhado |
 | **Group Quest (#109)** | Distribuição de XP e Gold entre todos que trabalharam na quest — proporcional ao tempo de posse (`time_held_secs`); quorum mínimo de 10% do tempo total; Party Bonus de +15% no pool quando 2+ contribuidores válidos; buffs e maldições aplicados individualmente por contribuidor; novas maldições (`sla_breach`, `csat_low`) apenas para quem concluiu; admin excluído do registro de contribuidores; badge `↩ N×` no card quando a quest foi devolvida ao backlog; seção "👥 Contribuidores" no modal com avatar, nome, tempo de posse e % de contribuição; notificação individual para cada contribuidor não-completer com sua parcela de XP e Gold |
+| **Eventos Aleatórios — Biblioteca (#85)** | Sistema de buffs/debuffs passivos acionados pelo admin como Mestre do Jogo. Admin gerencia tudo na aba dedicada `admin-events.html`: **biblioteca de templates** (título, descrição, tipo de efeito, valor %, duração padrão, escopo global/facção) + lista de eventos ativos com ✏️ editar término e ✕ encerrar. Ao acionar um template, dois modos de configuração: **Duração** (horas + início imediato ou agendado) e **Período** (datetime início + datetime término com preview de duração calculada). Campo `start_at` no model suporta agendamento futuro — o evento fica salvo mas invisível aos jogadores até o horário. Admin vê todos os eventos independente de facção; players veem apenas global + própria facção. Efeitos: `xp_bonus`, `xp_penalty`, `gold_bonus`, `gold_penalty`, `luck` (2× XP), `slow` (SLA reduzido), `store_discount` (desconto na Loja). **UX do player:** sidebar exibe pill clicável neutro "⚡ EVENTO(S) ATIVO(S)" — 1 evento positivo → card inline com cor/ícone do efeito (não revela debuffs passivamente); negativo ou múltiplos → pill neutro dourado; clique abre modal com detalhes completos (efeito %, alcance, tempo restante com timer por minuto). Loja exibe preço original riscado quando `store_discount` ativo. Endpoints: `GET/POST/PATCH/DELETE /api/event-templates` + `POST /api/encounters/trigger` + `GET /api/encounters/active` + `PATCH /api/encounters/:id` + `DELETE /api/encounters/:id` |
 
 > Todas as telas do painel compartilham `admin-header.js` (header + nav gerados dinamicamente, aba ativa detectada pela URL) e `notifications.js` (sino com polling de 30s).
 

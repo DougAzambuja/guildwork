@@ -191,11 +191,20 @@ async function loadCustomLoot() {
                     ? `<div style="font-size:7px;color:#9b59b6;letter-spacing:1px;margin-bottom:4px;">🎭 COSMÉTICO</div>`
                     : '';
 
+                const discountBadge = item.discount_pct
+                    ? `<div style="font-size:7px;color:#f39c12;letter-spacing:1px;margin-bottom:4px;">🏷️ -${item.discount_pct}%</div>`
+                    : '';
+
+                const priceHtml = item.original_price
+                    ? `<div class="item-price"><span style="text-decoration:line-through;color:#7f8c8d;font-size:8px;">${item.original_price}</span> <span style="color:#f39c12;">${item.price} 💰</span></div>`
+                    : `<div class="item-price">${item.price} 💰</div>`;
+
                 shopItem.innerHTML = `
                     ${cosmeticBadge}
+                    ${discountBadge}
                     <div class="item-name" style="color: #f1c40f;">✨ ${item.name}</div>
                     <img src="${item.image || 'assets/imgs/caneca_pixel.jpg'}" alt="Img" class="item-img" style="border-color: ${item.is_cosmetic ? '#9b59b6' : '#f1c40f'};">
-                    <div class="item-price">${item.price} 💰</div>
+                    ${priceHtml}
                     <div class="shop-item-lock-notice"></div>
                     <button class="btn-pixel btn-buy" data-cy="btn-add-custom-${index}" onclick="addToCart('${item._id}', '${item.name}', ${item.price})">Adicionar</button>
                 `;

@@ -64,6 +64,11 @@
                 <!-- ═══ BUFF ATIVO ═══ -->
                 <div id="buffBanner" style="display:none;" data-cy="buff-banner"></div>
 
+                <!-- ═══ RANDOM ENCOUNTER ═══ -->
+                <div id="encounterBanner" style="display:none;" data-cy="encounter-banner"
+                     onclick="openEncounterModal()" role="button" tabindex="0"
+                     onkeydown="if(event.key==='Enter')openEncounterModal()"></div>
+
                 <!-- ═══ STREAK DE ENTREGAS ═══ -->
                 <div id="streakBanner" style="display:none;" data-cy="streak-banner"></div>
 
@@ -135,6 +140,21 @@
                     ⚠ <span id="slaAlertCount">0</span> quest(s) com SLA crítico
                 </div>
 
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Eventos Ativos -->
+    <div id="encounterModal" class="modal-overlay" style="display:none;"
+         data-cy="encounter-modal" onclick="if(event.target===this)closeEncounterModal()">
+        <div class="modal-content" style="max-width:520px;width:95%;max-height:85vh;overflow-y:auto;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+                <h2 class="section-title" style="margin:0;border:none;padding:0;">⚡ EVENTOS ATIVOS</h2>
+                <button onclick="closeEncounterModal()" data-cy="btn-close-encounter-modal"
+                        style="background:transparent;border:none;color:#7f8c8d;font-size:20px;cursor:pointer;line-height:1;padding:4px;">✕</button>
+            </div>
+            <div id="encounterModalBody" data-cy="encounter-modal-body">
+                <!-- preenchido por JS -->
             </div>
         </div>
     </div>

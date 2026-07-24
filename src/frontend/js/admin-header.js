@@ -8,6 +8,7 @@
         { id: 'loot',      label: '🔨 Loot',       href: 'admin-loot.html',    cy: 'tab-loot'      },
         { id: 'roster',    label: '🛡️ Membros',   href: 'admin-roster.html',  cy: 'tab-roster'    },
         { id: 'sprints',   label: '🏃 Sprints',    href: 'admin-sprints.html', cy: 'tab-sprints'   },
+        { id: 'events',    label: '⚡ Eventos',    href: 'admin-events.html',  cy: 'tab-events'    },
         { id: 'metrics',   label: '📊 Métricas',   href: 'admin-metrics.html', cy: 'tab-metrics'   },
     ];
 
@@ -16,6 +17,7 @@
         if (p.includes('admin-quests'))   return 'quests';
         if (p.includes('admin-loot'))     return 'loot';
         if (p.includes('admin-roster'))   return 'roster';
+        if (p.includes('admin-events'))   return 'events';
         if (p.includes('admin-sprint'))   return 'sprints';
         if (p.includes('admin-metrics'))  return 'metrics';
         return 'dashboard';

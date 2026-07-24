@@ -3,6 +3,7 @@ const QuestCompletion     = require('../models/questCompletion');
 const User                = require('../models/user');
 const Guild               = require('../models/guild');
 const Sprint              = require('../models/sprint');
+const RandomEncounter     = require('../models/randomEncounter');
 const notificationService = require('../services/notificationService');
 
 const WIP_LIMIT = 3;
@@ -189,6 +190,42 @@ function _buildContributorShares(contributors) {
     return effective.map(([userId, time]) => ({ userId, ratio: time / effectiveSum }));
 }
 
+// Busca encontros ativos para a facção informada
+async function _fetchActiveEncounters(faction) {
+    const now = new Date();
+    return RandomEncounter.find({
+        active:       true,
+        active_until: { $gt: now },
+        $or: [
+            { type: 'global' },
+            { type: 'faction', affected_faction: faction },
+        ],
+    }).lean();
+}
+
+// Aplica efeitos dos encontros ativos sobre XP e Gold após buffs/maldições
+// luck: com probabilidade `value`, duplica o XP ganho
+function _applyEncounterEffects(xpGained, coinsGained, encounters) {
+    let xp    = xpGained;
+    let coins = coinsGained;
+    const appliedIds = [];
+
+    for (const enc of encounters) {
+        const { kind, value } = enc.effect;
+        switch (kind) {
+            case 'xp_penalty':   xp    = Math.max(0, Math.round(xp    * (1 - value))); break;
+            case 'xp_bonus':     xp    = Math.round(xp    * (1 + value));               break;
+            case 'gold_penalty': coins = Math.max(0, Math.round(coins * (1 - value)));  break;
+            case 'gold_bonus':   coins = Math.round(coins * (1 + value));               break;
+            case 'luck':         if (Math.random() < value) xp = Math.round(xp * 2);   break;
+            // 'slow' é aplicado na criação da quest, não na conclusão
+        }
+        appliedIds.push(enc._id);
+    }
+
+    return { xp, coins, appliedIds };
+}
+
 // Aplica buffs e maldições da quest para um usuário sobre sua parcela de XP/Gold
 // isCompleter: apenas o completer recebe CSAT scaling, curses, delivery streak e CSAT streak
 function _applyRewardsForUser(user, xpShare, coinsShare, quest, csatScore, isCompleter) {
@@ -313,9 +350,13 @@ async function _executeQuestCompletion(quest, completer, csatScore, columnId = n
         : [{ userId: String(completer._id), ratio: 1 }];
 
     const guild = await Guild.findOne({ faction_key: completer.faction });
+
+    // 3. Encontros ativos — buscados uma vez (todos contribuidores pertencem à mesma facção)
+    const activeEncounters = await _fetchActiveEncounters(completer.faction);
+
     let completerResult = null;
 
-    // 3. Processar cada contribuidor individualmente
+    // 4. Processar cada contribuidor individualmente
     for (const share of effectiveShares) {
         const isCompleter = share.userId === String(completer._id);
         const user = isCompleter ? completer : await User.findById(share.userId);
@@ -325,6 +366,13 @@ async function _executeQuestCompletion(quest, completer, csatScore, columnId = n
         const coinsShare = Math.max(0, Math.round(baseCoins * share.ratio));
 
         const calc = _applyRewardsForUser(user, xpShare, coinsShare, quest, csatScore, isCompleter);
+
+        // Efeitos dos encontros aplicados após buffs/maldições
+        const { xp: encXp, coins: encCoins, appliedIds } = _applyEncounterEffects(
+            calc.xpGained, calc.coinsGained, activeEncounters
+        );
+        calc.xpGained    = encXp;
+        calc.coinsGained = encCoins;
 
         const newQuestsCompleted = isCompleter ? (user.quests_completed || 0) + 1 : (user.quests_completed || 0);
         let newXp    = (user.xp    || 0) + calc.xpGained;
@@ -339,12 +387,13 @@ async function _executeQuestCompletion(quest, completer, csatScore, columnId = n
         }
 
         await QuestCompletion.create({
-            user_id:      user._id,
-            quest_id:     quest._id,
-            xp_gained:    calc.xpGained,
-            coins_gained: calc.coinsGained,
-            csat_score:   isCompleter ? (csatScore || null) : null,
-            was_cursed:   calc.wasCursed,
+            user_id:             user._id,
+            quest_id:            quest._id,
+            xp_gained:           calc.xpGained,
+            coins_gained:        calc.coinsGained,
+            csat_score:          isCompleter ? (csatScore || null) : null,
+            was_cursed:          calc.wasCursed,
+            applied_encounters:  appliedIds,
         });
 
         await User.findByIdAndUpdate(user._id, {
@@ -574,6 +623,14 @@ exports.adminCreateQuest = async (req, res) => {
                 .map(text => ({ text, done: false }))
             : [];
 
+        // Efeito 'slow': reduz o SLA em X% se houver encontro ativo para a facção
+        let finalSla = sla_seconds || null;
+        if (finalSla) {
+            const slowEncounters = await _fetchActiveEncounters(faction || 'Produto');
+            const slowEffect = slowEncounters.find(e => e.effect.kind === 'slow');
+            if (slowEffect) finalSla = Math.round(finalSla * (1 - slowEffect.effect.value));
+        }
+
         const now = new Date();
         const quest = await Quest.create({
             title,
@@ -581,7 +638,7 @@ exports.adminCreateQuest = async (req, res) => {
             type:        type        || 'normal',
             xp_reward,
             coin_reward,
-            sla_seconds:      sla_seconds || null,
+            sla_seconds:      finalSla,
             faction:          faction     || 'Produto',
             sprint_id:        sprint_id   || null,
             labels:           parsedLabels,

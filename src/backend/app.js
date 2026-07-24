@@ -24,6 +24,8 @@ app.use('/api/admin',         require('./routes/admin'));
 app.use('/api/metrics',       require('./routes/metrics'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/guild',         require('./routes/guild'));
+app.use('/api/encounters',     require('./routes/encounters'));
+app.use('/api/event-templates', require('./routes/eventTemplates'));
 
 app.get('/', (_req, res) => res.json({ status: 'online', message: 'GuildWork API', version: '1.0.0' }));
 

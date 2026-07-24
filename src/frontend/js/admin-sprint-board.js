@@ -205,7 +205,7 @@ const SPRINT_STATUS_LABELS = {
 };
 
 const FACTION_ICONS = { Produto: '📦', Suporte: '🎧', 'Customer Service': '📣' };
-const TYPE_LABELS   = { normal: 'Normal', urgent: '⚡ Urgente', support: '🎧 Suporte', jira: 'Jira' };
+const TYPE_LABELS   = { normal: 'Normal', urgent: '🚨 Urgente', support: '🎧 Suporte', jira: 'Jira' };
 
 // ==========================================
 // 2. CARREGAR BOARD
@@ -382,11 +382,84 @@ function renderKanban() {
         }
     });
 
+    // Se o board inteiro está vazio, oferece importação do backlog
+    const totalVisible = Object.values(byColumn).reduce((s, arr) => s + arr.length, 0);
+    if (totalVisible === 0 && !_filterAssigneeId) {
+        renderEmptyBoardState();
+    } else {
+        const emptyState = document.getElementById('boardEmptyState');
+        if (emptyState) emptyState.remove();
+    }
+
     initBoardDnD();
 }
 
 function emptyColumn() {
     return '<div style="font-size:7px;color:#4a5568;text-align:center;padding:20px 0;">Nenhuma quest</div>';
+}
+
+function renderEmptyBoardState() {
+    if (document.getElementById('boardEmptyState')) return;
+    const board = document.getElementById('kanbanBoard');
+    if (!board) return;
+
+    const banner = document.createElement('div');
+    banner.id = 'boardEmptyState';
+    banner.style.cssText = 'grid-column:1/-1;padding:32px;text-align:center;border:2px dashed #2c3e50;margin-top:8px;';
+    banner.innerHTML = `
+        <div style="font-size:9px;color:#7f8c8d;margin-bottom:10px;">NENHUMA QUEST NESTA SPRINT</div>
+        <div style="font-size:8px;color:#bdc3c7;margin-bottom:16px;line-height:1.8;">
+            As quests do backlog não foram adicionadas a esta sprint ainda.
+        </div>
+        <button onclick="importBacklogToSprint()" data-cy="btn-import-backlog"
+                style="font-family:'Press Start 2P',cursive;font-size:7px;padding:8px 14px;background:#27ae60;border:none;color:#fff;cursor:pointer;">
+            📥 Importar Backlog para esta Sprint
+        </button>
+    `;
+    board.appendChild(banner);
+}
+
+async function importBacklogToSprint() {
+    const btn = document.querySelector('[data-cy="btn-import-backlog"]');
+    if (btn) { btn.disabled = true; btn.textContent = 'Importando...'; }
+
+    try {
+        // Busca quests no backlog (sprint_id: null) com filtro de facção se guilda selecionada
+        const factionParam = currentGuildId
+            ? `&faction=${allGuilds.find(g => String(g._id) === String(currentGuildId))?.faction_key || ''}`
+            : '';
+        const res = await fetch(`${API_URL}/quests/all?sprint_id=backlog&limit=200${factionParam}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) { showToast('Erro ao buscar backlog.', 'error'); return; }
+
+        const data  = await res.json();
+        const quests = (Array.isArray(data) ? data : (data.quests || [])).filter(q => q.status !== 'done');
+
+        if (!quests.length) {
+            showToast('Nenhuma quest no backlog para importar.', 'error');
+            return;
+        }
+
+        const addRes = await fetch(`${API_URL}/sprints/${sprintId}/quests`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ quest_ids: quests.map(q => q._id) })
+        });
+
+        if (!addRes.ok) {
+            const err = await addRes.json().catch(() => ({}));
+            showToast(err.message || 'Erro ao importar quests.', 'error');
+            return;
+        }
+
+        showToast(`${quests.length} quest(s) importada(s) para a sprint!`);
+        await loadSprintBoard();
+    } catch {
+        showToast('Erro de conexão.', 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '📥 Importar Backlog para esta Sprint'; }
+    }
 }
 
 // ─── Drag-and-drop ────────────────────────────────────────────────────────────
