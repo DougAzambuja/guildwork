@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // 0. PROTEÇÃO E INICIALIZAÇÃO
 // ==========================================
 const token = localStorage.getItem('guild_token');
@@ -204,7 +204,7 @@ function renderQuestPage(quests) {
     if (!tableBody) return;
 
     if (!quests.length) {
-        tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#7f8c8d;padding:20px;">Nenhuma quest encontrada.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="10" class="empty-state" style="padding:20px">Nenhuma quest encontrada.</td></tr>';
         return;
     }
 
@@ -338,7 +338,7 @@ window.openQuestDetail = async (questId, startInEditMode) => {
 
     modal.style.display = 'flex';
     const commentsEl = document.getElementById('qdm-a-comments');
-    if (commentsEl) commentsEl.innerHTML = '<div style="color:#7f8c8d;font-size:9px;text-align:center;padding:10px;">Carregando...</div>';
+    if (commentsEl) commentsEl.innerHTML = '<div class="empty-state" style="padding:10px">Carregando...</div>';
 
     try {
         const res = await fetch(`${API_URL}/quests/${questId}`, {
@@ -508,7 +508,7 @@ function renderAdminComments(comments) {
     const sorted = [...comments].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
     if (!sorted.length) {
-        listEl.innerHTML = '<div style="color:#7f8c8d;font-size:9px;text-align:center;padding:8px;">Sem atividade ainda.</div>';
+        listEl.innerHTML = '<div class="empty-state empty-state--sm" style="padding:8px">Sem atividade ainda.</div>';
         return;
     }
 
@@ -926,7 +926,7 @@ function renderAdminSubtasks(quest) {
         </div>
         <div style="background:#1a252f;height:4px;border-radius:2px;overflow:hidden;">
             <div style="width:${pct}%;height:100%;background:${pct===100?'#27ae60':'#3498db'};"></div>
-        </div>` : '<div style="font-size:8px;color:#7f8c8d;">Nenhuma subtask ainda.</div>';
+        </div>` : '<div class="label-tag">Nenhuma subtask ainda.</div>';
 
     listEl.innerHTML = subtasks.map(s => {
         const st       = _A_STATUS_SUBTASK[s.status] || _A_STATUS_SUBTASK.todo;

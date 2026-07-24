@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // 0. PROTEÇÃO E INICIALIZAÇÃO
 // ==========================================
 const token    = localStorage.getItem('guild_token');
@@ -395,7 +395,7 @@ function renderKanban() {
 }
 
 function emptyColumn() {
-    return '<div style="font-size:7px;color:#4a5568;text-align:center;padding:20px 0;">Nenhuma quest</div>';
+    return '<div class="empty-state" style="padding:20px 0">Nenhuma quest</div>';
 }
 
 function renderEmptyBoardState() {
@@ -1086,7 +1086,7 @@ window.openBoardQuestDetail = async (questId) => {
     modal.style.display = 'flex';
 
     const commentsEl = document.getElementById('bqd-comments');
-    if (commentsEl) commentsEl.innerHTML = '<div style="color:#7f8c8d;font-size:8px;text-align:center;padding:10px;">Carregando...</div>';
+    if (commentsEl) commentsEl.innerHTML = '<div class="empty-state" style="padding:10px">Carregando...</div>';
 
     try {
         const res = await fetch(`${API_URL}/quests/${questId}`, {
@@ -1374,7 +1374,7 @@ function renderBoardSubtasks(quest) {
         </div>
         <div style="background:#1a252f;height:4px;border-radius:2px;overflow:hidden;">
             <div style="width:${pct}%;height:100%;background:${pct===100?'#27ae60':'#3498db'};"></div>
-        </div>` : '<div style="font-size:8px;color:#7f8c8d;">Nenhuma subtask ainda.</div>';
+        </div>` : '<div class="label-tag">Nenhuma subtask ainda.</div>';
 
     listEl.innerHTML = subtasks.map(s => {
         const st       = _BQD_STATUS[s.status] || _BQD_STATUS.todo;
@@ -1453,7 +1453,7 @@ function renderBoardQuestComments(comments) {
     const sorted = [...comments].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
     if (!sorted.length) {
-        listEl.innerHTML = '<div style="color:#7f8c8d;font-size:8px;text-align:center;padding:8px;">Sem atividade ainda.</div>';
+        listEl.innerHTML = '<div class="empty-state empty-state--sm" style="padding:8px">Sem atividade ainda.</div>';
         return;
     }
 
@@ -1802,12 +1802,12 @@ function encToggleFaction() {
 async function encLoadTemplates() {
     const token     = localStorage.getItem('guild_token');
     const container = document.getElementById('encTemplateList');
-    container.innerHTML = '<div style="font-size:8px;color:#7f8c8d;padding:12px 0;text-align:center;">Carregando...</div>';
+    container.innerHTML = '<div class="empty-state" style="padding:12px 0">Carregando...</div>';
     try {
         const res  = await fetch(`${API_URL}/event-templates`, { headers: { 'Authorization': `Bearer ${token}` } });
         const list = await res.json();
         if (!list.length) {
-            container.innerHTML = '<div style="font-size:8px;color:#7f8c8d;padding:12px 0;text-align:center;">Nenhum template criado ainda.</div>';
+            container.innerHTML = '<div class="empty-state" style="padding:12px 0">Nenhum template criado ainda.</div>';
             return;
         }
         container.innerHTML = list.map(tpl => {
@@ -1900,7 +1900,7 @@ async function renderActiveEncountersBoard() {
         if (!res.ok) { container.innerHTML = ''; return; }
         const list = await res.json();
         if (!list.length) {
-            container.innerHTML = '<span style="font-size:7px;color:#7f8c8d;">Nenhum evento ativo no momento.</span>';
+            container.innerHTML = '<span class="label-tag">Nenhum evento ativo no momento.</span>';
             return;
         }
         container.innerHTML = list.map(enc => {

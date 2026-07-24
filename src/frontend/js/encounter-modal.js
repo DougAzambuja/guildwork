@@ -20,7 +20,7 @@
             <!-- VIEW: BIBLIOTECA -->
             <div id="encViewLibrary" style="padding:20px;">
                 <div id="encTemplateList" data-cy="encounter-template-list">
-                    <div style="font-size:8px; color:#7f8c8d; padding:20px 0; text-align:center;">Carregando biblioteca...</div>
+                    <div class="empty-state">Carregando biblioteca...</div>
                 </div>
                 <button class="btn-pixel btn-neutral" data-cy="btn-enc-new-template" onclick="encShowCreate()"
                         style="width:100%; margin-top:12px; font-size:7px; padding:9px;">

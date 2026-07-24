@@ -367,6 +367,7 @@ Fases planejadas:
 - ✅ **Fase 6 — Tipografia e tokens ausentes:** escala tipográfica `--text-xxs` (7px) a `--text-2xl` (16px); 83 `font-size: Npx` substituídos; tokens de superfície/cor/overlay ausentes adicionados ao `:root` (`--surface-deep`, `--overlay-soft/medium`, `--border-color-mid`, `--color-silver/teal/xp/warning-dark/link-hover`)
 - ✅ **Fase 7 — CSS centralizado:** blocos `<style>` locais de 7 HTMLs migrados para `style.css` com todos os tokens aplicados; conflitos de seletor resolvidos (`.kanban-board .kanban-col-header`, `.burndown-legend .legend-item`); `change-password.html` corrigido (tokens falsos removidos)
 - ✅ **Fase 8 — Limpeza residual:** segunda passagem com regex ampla substituiu 30 hex adicionais nos blocos migrados; residuais restantes são intencionais (gradientes de XP, hover states derivados, cores pixel art)
+- ✅ **Fase 9 — Empty states e label tags:** classes `.empty-state` (centrado, padding 16px, muted) + `.empty-state--sm` (compacto) + `.label-tag` (muted inline sem align) em `style.css`; 29 ocorrências substituídas em 9 arquivos JS (admin.js, admin-events, admin-quests, admin-roster, admin-sprint-board, admin-sprints, admin-metrics, mural.js, leaderboard.js, encounter-modal.js)
 
 ---
 

@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // 0. PROTEÇÃO E INICIALIZAÇÃO
 // ==========================================
 const token = localStorage.getItem('guild_token');
@@ -116,7 +116,7 @@ function renderActiveSprint({ sprint, metrics, by_faction, top_performers }) {
                 </div>
             `;
         }).join('')
-        : '<div style="font-size:8px; color:#7f8c8d;">Nenhuma quest nesta sprint ainda.</div>';
+        : '<div class="label-tag">Nenhuma quest nesta sprint ainda.</div>';
 
     // Top performers — cards enriquecidos
     const performersEl = document.getElementById('sprintTopPerformers');
@@ -149,7 +149,7 @@ function renderActiveSprint({ sprint, metrics, by_faction, top_performers }) {
                 </div>`;
             }).join('')}
            </div>`
-        : '<div style="font-size:8px; color:#7f8c8d; padding:8px 0;">Nenhuma quest concluída ainda.</div>';
+        : '<div class="empty-state empty-state--sm">Nenhuma quest concluída ainda.</div>';
 
     // Exibe "ADICIONAR QUESTS" somente quando visualizando a sprint ativa
     const addSection = document.getElementById('addQuestsSection');
@@ -275,7 +275,7 @@ function populateSprintSelector(sprints) {
 function renderSprintsList(sprints) {
     const container = document.getElementById('sprintsList');
     if (!sprints.length) {
-        container.innerHTML = '<div style="font-size:8px; color:#7f8c8d; padding:12px;">Nenhuma sprint forjada ainda.</div>';
+        container.innerHTML = '<div class="empty-state" style="padding:12px">Nenhuma sprint forjada ainda.</div>';
         return;
     }
 

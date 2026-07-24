@@ -1,4 +1,4 @@
-const ENC_ICONS = {
+﻿const ENC_ICONS = {
     xp_bonus: '✨', gold_bonus: '💰', xp_penalty: '💀',
     gold_penalty: '💸', slow: '🐌', luck: '🍀', store_discount: '🏷️',
 };
@@ -214,7 +214,7 @@ async function loadTemplates() {
 function renderTemplates(templates) {
     const el = document.getElementById('templateList');
     if (!templates.length) {
-        el.innerHTML = '<div style="font-size:10px;color:#7f8c8d;text-align:center;padding:16px 0;">Nenhum template criado ainda.</div>';
+        el.innerHTML = '<div class="empty-state">Nenhum template criado ainda.</div>';
         return;
     }
     el.innerHTML = templates.map(tpl => {
@@ -315,7 +315,7 @@ async function loadActiveEncounters() {
 function renderActiveEncounters(encounters) {
     const el = document.getElementById('activeEventsList');
     if (!encounters.length) {
-        el.innerHTML = '<div style="font-size:10px;color:#7f8c8d;text-align:center;padding:12px 0;">Nenhum evento ativo no momento.</div>';
+        el.innerHTML = '<div class="empty-state" style="padding:12px 0">Nenhum evento ativo no momento.</div>';
         return;
     }
     const now = new Date();
@@ -531,7 +531,7 @@ function _socialEventCard(ev) {
 function renderSocialEvents(events) {
     const el = document.getElementById('socialEventsList');
     if (!events.length) {
-        el.innerHTML = '<div style="font-size:10px;color:#7f8c8d;text-align:center;padding:16px 0;">Nenhum evento na agenda.</div>';
+        el.innerHTML = '<div class="empty-state">Nenhum evento na agenda.</div>';
         return;
     }
 
@@ -652,7 +652,7 @@ async function loadBirthdays() {
             .sort((a, b) => new Date(a.birth_date).getDate() - new Date(b.birth_date).getDate());
 
         if (!birthdays.length) {
-            el.innerHTML = '<div style="font-size:9px;color:#7f8c8d;text-align:center;padding:6px 0;">Nenhum aniversário este mês.</div>';
+            el.innerHTML = '<div class="empty-state empty-state--sm" style="padding:6px 0">Nenhum aniversário este mês.</div>';
             return;
         }
 

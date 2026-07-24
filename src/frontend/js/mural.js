@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // 0. PROTEÇÃO DE ROTA E INICIALIZAÇÃO
 // ==========================================
 const token = localStorage.getItem('guild_token');
@@ -417,7 +417,7 @@ function renderBoard(quests) {
 
         bodyEl.innerHTML = '';
         if (colQuests.length === 0) {
-            bodyEl.innerHTML = '<div style="font-size:8px;color:#bdc3c7;text-align:center;padding:20px;">Nenhuma missão aqui.</div>';
+            bodyEl.innerHTML = '<div class="empty-state" style="padding:20px;color:var(--text-secondary)">Nenhuma missão aqui.</div>';
             return;
         }
         const cardFn = col.status_map === 'todo'        ? (q => renderTodoCard(q, myWipCount))
@@ -467,7 +467,7 @@ function renderColumn(colId, quests, cardFn) {
     if (!body) return;
     body.innerHTML = '';
     if (quests.length === 0) {
-        body.innerHTML = '<div style="font-size:8px;color:#bdc3c7;text-align:center;padding:20px;">Nenhuma missão aqui.</div>';
+        body.innerHTML = '<div class="empty-state" style="padding:20px;color:var(--text-secondary)">Nenhuma missão aqui.</div>';
         return;
     }
     quests.forEach(q => body.appendChild(cardFn(q)));
@@ -660,7 +660,7 @@ async function openQuestModal(questId) {
     const subtaskForm      = document.getElementById('qdm-subtask-form');
     const subtaskSection   = document.getElementById('qdm-subtasks-section');
     if (checklistSection) checklistSection.style.display = 'none';
-    if (commentsList) commentsList.innerHTML = '<div style="color:#7f8c8d;font-size:9px;text-align:center;padding:10px;">Carregando...</div>';
+    if (commentsList) commentsList.innerHTML = '<div class="empty-state" style="padding:10px">Carregando...</div>';
     if (subtaskForm)    subtaskForm.style.display = 'none';
     if (subtaskSection) subtaskSection.style.display = 'none';
 

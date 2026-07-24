@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // 0. PROTEÇÃO E INICIALIZAÇÃO
 // ==========================================
 const token = localStorage.getItem('guild_token');
@@ -165,7 +165,7 @@ function renderDashboardStats(players) {
                     <span style="color:#f1c40f;">${(p.xp || 0).toLocaleString('pt-BR')} XP</span>
                 </div>
             `).join('')
-            : '<div style="font-size:8px;color:#7f8c8d;">Nenhum aventureiro ainda.</div>';
+            : '<div class="empty-state" style="text-align:left">Nenhum aventureiro ainda.</div>';
     }
 
     const factions = {};
@@ -206,7 +206,7 @@ function renderDashboardStats(players) {
                     </div>
                 </div>
             `).join('')
-            : '<div style="font-size:8px;color:#7f8c8d;padding:10px;">Nenhum aventureiro recrutado ainda.</div>';
+            : '<div class="empty-state" style="padding:10px">Nenhum aventureiro recrutado ainda.</div>';
     }
 }
 
@@ -292,12 +292,12 @@ function encToggleFaction() {
 
 async function encLoadTemplates() {
     const container = document.getElementById('encTemplateList');
-    container.innerHTML = '<div style="font-size:8px;color:#7f8c8d;padding:12px 0;text-align:center;">Carregando...</div>';
+    container.innerHTML = '<div class="empty-state" style="padding:12px 0">Carregando...</div>';
     try {
         const res  = await fetch(`${API_URL}/event-templates`, { headers: { 'Authorization': `Bearer ${token}` } });
         const list = await res.json();
         if (!list.length) {
-            container.innerHTML = '<div style="font-size:8px;color:#7f8c8d;padding:12px 0;text-align:center;">Nenhum template criado ainda.</div>';
+            container.innerHTML = '<div class="empty-state" style="padding:12px 0">Nenhum template criado ainda.</div>';
             return;
         }
         container.innerHTML = list.map(tpl => {
