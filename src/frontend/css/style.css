@@ -231,6 +231,17 @@ body {
     background-color: var(--color-danger);
 }
 
+/* Modificadores semânticos — sempre combinados com .btn-pixel (especificidade 0,2,0) */
+.btn-pixel.btn-success { background-color: var(--color-success); }
+.btn-pixel.btn-success:hover { background-color: var(--color-success-bright); }
+.btn-pixel.btn-danger  { background-color: var(--color-danger-dark); }
+.btn-pixel.btn-danger:hover  { background-color: var(--color-danger); }
+.btn-pixel.btn-info    { background-color: var(--color-info); }
+.btn-pixel.btn-muted   { background-color: var(--text-muted); }
+.btn-pixel.btn-special { background-color: var(--color-special); border-color: var(--color-special-light); }
+.btn-pixel.btn-special:hover { background-color: var(--color-special-light); }
+.btn-pixel.btn-neutral { background-color: var(--surface-3); }
+
 /* =========================================
    4. ESPECÍFICOS DO MURAL (INDEX)
    ========================================= */
@@ -255,9 +266,7 @@ body {
     gap: 15px;
 }
 
-/* Modificadores de botão do Mural */
-.actions .btn-pixel { background-color: var(--color-info); } /* Botão Sync Jira */
-.btn-pixel.shop-btn { background-color: var(--color-special); } /* Botão Ir pra Loja */
+.btn-pixel.shop-btn { background-color: var(--surface-4); } /* Botão Ir pra Loja — fundo neutro escuro */
 
 .quest-paper {
     background-color: var(--paper-color);
@@ -1055,7 +1064,6 @@ body:has(.mural-layout) {
     gap: 10px;
 }
 
-.btn-edit { background-color: var(--color-info); font-size: 8px; padding: 6px 12px; }
 .btn-delete { background-color: var(--color-danger-dark); font-size: 8px; padding: 6px 12px; }
 
 .pagination-controls {

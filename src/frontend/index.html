@@ -29,12 +29,12 @@
             </div>
 
             <div class="actions">
-                <button class="btn-pixel" id="btnNewQuest" data-cy="btn-new-guild-quest" onclick="openCreateQuestModal()" style="display:none; background:#27ae60;">+ Nova Missão</button>
+                <button class="btn-pixel btn-success" id="btnNewQuest" data-cy="btn-new-guild-quest" onclick="openCreateQuestModal()" style="display:none;">+ Nova Missão</button>
 
                 <span class="actions-divider"></span>
 
-                <a href="guild.html" class="btn-pixel" data-cy="link-guilda" style="background:#8e44ad;">🏰 Guilda</a>
-                <a href="store.html" class="btn-pixel shop-btn" data-cy="link-loja" style="background:#34495e;">🛒 Loja</a>
+                <a href="guild.html" class="btn-pixel btn-special" data-cy="link-guilda">🏰 Guilda</a>
+                <a href="store.html" class="btn-pixel shop-btn" data-cy="link-loja">🛒 Loja</a>
 
                 <span class="actions-divider"></span>
 
@@ -156,8 +156,8 @@
         <div class="modal-content" style="max-width:520px;width:95%;max-height:85vh;overflow-y:auto;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
                 <h2 class="section-title" style="margin:0;border:none;padding:0;">⚡ EVENTOS ATIVOS</h2>
-                <button onclick="closeEncounterModal()" data-cy="btn-close-encounter-modal"
-                        style="background:transparent;border:none;color:#7f8c8d;font-size:20px;cursor:pointer;line-height:1;padding:4px;">✕</button>
+                <button class="btn-pixel btn-neutral" onclick="closeEncounterModal()" data-cy="btn-close-encounter-modal"
+                        style="font-size:10px;padding:7px 11px;">✕</button>
             </div>
             <div id="encounterModalBody" data-cy="encounter-modal-body">
                 <!-- preenchido por JS -->
@@ -200,13 +200,13 @@
                     <label>Checklist inicial (opcional)</label>
                     <div style="display:flex; gap:8px;">
                         <input type="text" id="cqChecklistInput" class="pixel-input" data-cy="input-cq-checklist-item" placeholder="Ex: Validar com o time" autocomplete="off" style="flex:1;">
-                        <button type="button" class="btn-pixel" style="background:#2980b9; font-size:8px;" onclick="addCreateQuestChecklistItem()" data-cy="btn-cq-add-checklist-item">+ Item</button>
+                        <button type="button" class="btn-pixel btn-info" style="font-size:8px;" onclick="addCreateQuestChecklistItem()" data-cy="btn-cq-add-checklist-item">+ Item</button>
                     </div>
                     <div id="cqChecklistDraft" style="display:flex; flex-direction:column; gap:6px; margin-top:8px;"></div>
                 </div>
                 <div style="display:flex; gap:10px; margin-top:16px;">
-                    <button type="submit" id="btnSubmitCreateQuest" class="btn-pixel" data-cy="btn-submit-cq" style="flex:1; background-color:#8e44ad; padding:12px;">FORJAR MISSÃO</button>
-                    <button type="button" class="btn-pixel" style="flex:1; background-color:#7f8c8d; padding:12px;" onclick="closeCreateQuestModal()">CANCELAR</button>
+                    <button type="submit" id="btnSubmitCreateQuest" class="btn-pixel btn-special" data-cy="btn-submit-cq" style="flex:1; padding:12px;">FORJAR MISSÃO</button>
+                    <button type="button" class="btn-pixel btn-muted" style="flex:1; padding:12px;" onclick="closeCreateQuestModal()">CANCELAR</button>
                 </div>
             </form>
         </div>
@@ -215,7 +215,7 @@
     <!-- Modal de Detalhes da Quest -->
     <div id="questDetailModal" class="modal-overlay" style="display: none;" onclick="if(event.target===this)closeQuestModal()">
         <div class="modal-content quest-detail-modal" style="position:relative;">
-            <button class="btn-pixel" style="position:absolute; top:14px; right:14px; font-size:10px; padding:7px 11px; background:#2c3e50; z-index:2;" data-cy="btn-close-quest-detail" onclick="closeQuestModal()">✕</button>
+            <button class="btn-pixel btn-neutral" style="position:absolute; top:14px; right:14px; font-size:10px; padding:7px 11px; z-index:2;" data-cy="btn-close-quest-detail" onclick="closeQuestModal()">✕</button>
 
             <div style="padding-right:52px; min-height:48px;">
                 <div id="qdm-type-badge"></div>
@@ -224,8 +224,8 @@
 
             <!-- Controles do líder de guilda (só quests da própria guilda) -->
             <div id="qdm-leader-controls" style="display:none; gap:8px; margin-bottom:12px;">
-                <button type="button" class="btn-pixel" id="qdm-btn-edit" data-cy="btn-edit-guild-quest" style="flex:1; font-size:8px; background:#2980b9;" onclick="toggleQuestEditMode(true)">✏️ EDITAR</button>
-                <button type="button" class="btn-pixel" id="qdm-btn-delete" data-cy="btn-delete-guild-quest" style="flex:1; font-size:8px; background:#c0392b;" onclick="deleteQuestFromModal()">🗑️ EXCLUIR</button>
+                <button type="button" class="btn-pixel btn-info" id="qdm-btn-edit" data-cy="btn-edit-guild-quest" style="flex:1; font-size:8px;" onclick="toggleQuestEditMode(true)">✏️ EDITAR</button>
+                <button type="button" class="btn-pixel btn-danger" id="qdm-btn-delete" data-cy="btn-delete-guild-quest" style="flex:1; font-size:8px;" onclick="deleteQuestFromModal()">🗑️ EXCLUIR</button>
             </div>
 
             <!-- Formulário de edição inline (líder de guilda) -->
@@ -291,9 +291,9 @@
                     <select id="qdm-reassign-select" data-cy="select-reassign-member"
                             style="flex:1;font-family:'Press Start 2P',cursive;font-size:9px;padding:8px 6px;background:#0d1b2a;color:#ecf0f1;border:2px solid #2c3e50;outline:none;cursor:pointer;">
                     </select>
-                    <button class="btn-pixel" data-cy="btn-save-assignee"
+                    <button class="btn-pixel btn-success" data-cy="btn-save-assignee"
                             onclick="saveQuestAssignee()"
-                            style="font-size:8px;padding:8px 14px;background:#27ae60;flex-shrink:0;">✔ SALVAR</button>
+                            style="font-size:8px;padding:8px 14px;flex-shrink:0;">✔ SALVAR</button>
                 </div>
             </div>
 
@@ -309,9 +309,9 @@
                     <select id="qdm-move-column-select" data-cy="select-move-column"
                             style="flex:1;font-family:'Press Start 2P',cursive;font-size:9px;padding:8px 6px;background:#0d1b2a;color:#ecf0f1;border:2px solid #2c3e50;outline:none;cursor:pointer;">
                     </select>
-                    <button class="btn-pixel" data-cy="btn-move-column"
+                    <button class="btn-pixel btn-special" data-cy="btn-move-column"
                             onclick="moveCardFromModal()"
-                            style="font-size:8px;padding:8px 14px;background:#8e44ad;flex-shrink:0;">➤ MOVER</button>
+                            style="font-size:8px;padding:8px 14px;flex-shrink:0;">➤ MOVER</button>
                 </div>
             </div>
 
@@ -365,8 +365,8 @@
 
             <!-- Rodapé de ações da edição (líder de guilda) -->
             <div id="qdm-edit-actions" style="display:none; gap:8px; margin-top:14px;">
-                <button type="button" class="btn-pixel" data-cy="btn-save-edit-guild-quest" style="flex:1; background:#27ae60;" onclick="saveQuestEdit()">SALVAR</button>
-                <button type="button" class="btn-pixel" data-cy="btn-cancel-edit-guild-quest" style="flex:1; background:#7f8c8d;" onclick="cancelQuestEdit()">CANCELAR</button>
+                <button type="button" class="btn-pixel btn-success" data-cy="btn-save-edit-guild-quest" style="flex:1;" onclick="saveQuestEdit()">SALVAR</button>
+                <button type="button" class="btn-pixel btn-muted" data-cy="btn-cancel-edit-guild-quest" style="flex:1;" onclick="cancelQuestEdit()">CANCELAR</button>
             </div>
 
             <!-- Contribuidores da quest (Group Quest #109) -->
@@ -387,9 +387,9 @@
                            placeholder="Adicionar comentário..."
                            style="flex:1; font-size:9px; padding:8px;"
                            onkeydown="if(event.key==='Enter')submitQuestComment()">
-                    <button class="btn-pixel" data-cy="btn-submit-quest-comment"
+                    <button class="btn-pixel btn-info" data-cy="btn-submit-quest-comment"
                             onclick="submitQuestComment()"
-                            style="font-size:8px;padding:8px 12px;background:#2980b9;flex-shrink:0;">Enviar</button>
+                            style="font-size:8px;padding:8px 12px;flex-shrink:0;">Enviar</button>
                 </div>
             </div>
         </div>
@@ -403,8 +403,8 @@
                 Você editou título, descrição ou SLA e ainda não salvou. Sair agora vai descartar essas alterações.
             </p>
             <div style="display:flex; gap:10px;">
-                <button class="btn-pixel" style="flex:1; background:#7f8c8d;" data-cy="btn-keep-editing" onclick="cancelDiscardQuestEdit()">CONTINUAR EDITANDO</button>
-                <button class="btn-pixel" style="flex:1; background:#c0392b;" data-cy="btn-discard-quest-edit" onclick="confirmDiscardQuestEdit()">SAIR SEM SALVAR</button>
+                <button class="btn-pixel btn-muted" style="flex:1;" data-cy="btn-keep-editing" onclick="cancelDiscardQuestEdit()">CONTINUAR EDITANDO</button>
+                <button class="btn-pixel btn-danger" style="flex:1;" data-cy="btn-discard-quest-edit" onclick="confirmDiscardQuestEdit()">SAIR SEM SALVAR</button>
             </div>
         </div>
     </div>
@@ -418,8 +418,8 @@
                 Esta ação não pode ser desfeita.
             </p>
             <div style="display:flex; gap:10px;">
-                <button class="btn-pixel" style="flex:1; background:#7f8c8d;" data-cy="btn-cancel-delete-quest" onclick="closeDeleteConfirmModal()">CANCELAR</button>
-                <button class="btn-pixel" style="flex:1; background:#c0392b;" data-cy="btn-confirm-delete-quest" onclick="confirmDeleteQuest()">EXCLUIR</button>
+                <button class="btn-pixel btn-muted" style="flex:1;" data-cy="btn-cancel-delete-quest" onclick="closeDeleteConfirmModal()">CANCELAR</button>
+                <button class="btn-pixel btn-danger" style="flex:1;" data-cy="btn-confirm-delete-quest" onclick="confirmDeleteQuest()">EXCLUIR</button>
             </div>
         </div>
     </div>
@@ -436,11 +436,11 @@
             <!-- Maldição ativa -->
             <div id="modalCurseBanner" style="display:none; margin-bottom:16px;"></div>
 
-            <a id="modalEditPerfilLink" href="#" class="btn-pixel" data-cy="btn-editar-perfil"
-               style="display:block; width:100%; box-sizing:border-box; text-align:center; background:#2980b9; margin-bottom:10px; padding:12px;">
+            <a id="modalEditPerfilLink" href="#" class="btn-pixel btn-info" data-cy="btn-editar-perfil"
+               style="display:block; width:100%; box-sizing:border-box; text-align:center; margin-bottom:10px; padding:12px;">
                🧙 EDITAR PERFIL COMPLETO
             </a>
-            <button class="btn-pixel" style="width:100%; box-sizing:border-box; background:#7f8c8d; padding:10px;" onclick="closeProfileModal()">FECHAR</button>
+            <button class="btn-pixel btn-muted" style="width:100%; box-sizing:border-box; padding:10px;" onclick="closeProfileModal()">FECHAR</button>
         </div>
     </div>
 
@@ -470,14 +470,14 @@
                     <div style="font-size:10px;color:#f1c40f;margin-bottom:5px;">⚔️ CONFIGURAR KANBAN</div>
                     <div style="font-size:7px;color:#c8a165;line-height:1.8;">Organize o fluxo da sua guilda</div>
                 </div>
-                <button class="btn-pixel" onclick="closePlayerColumnsModal()" style="font-size:8px;padding:5px 9px;background:#2c3e50;">✕</button>
+                <button class="btn-pixel btn-neutral" onclick="closePlayerColumnsModal()" style="font-size:8px;padding:5px 9px;">✕</button>
             </div>
             <div style="padding:20px;">
                 <div id="playerEditColumnsList" style="max-height:400px;overflow-y:auto;margin-bottom:14px;padding-right:4px;"></div>
-                <button class="btn-pixel" data-cy="btn-player-add-column" onclick="playerAddNewColumn()" style="width:100%;font-size:8px;padding:10px;background:#2c3e50;margin-bottom:16px;">+ NOVA COLUNA</button>
+                <button class="btn-pixel btn-neutral" data-cy="btn-player-add-column" onclick="playerAddNewColumn()" style="width:100%;font-size:8px;padding:10px;margin-bottom:16px;">+ NOVA COLUNA</button>
                 <div style="display:flex;gap:8px;">
-                    <button class="btn-pixel" onclick="closePlayerColumnsModal()" style="flex:1;font-size:8px;padding:10px;background:#7f8c8d;">CANCELAR</button>
-                    <button class="btn-pixel" data-cy="btn-player-save-columns" onclick="savePlayerColumnsEdit()" style="flex:1;font-size:8px;padding:10px;background:#27ae60;">⚔️ SALVAR</button>
+                    <button class="btn-pixel btn-muted" onclick="closePlayerColumnsModal()" style="flex:1;font-size:8px;padding:10px;">CANCELAR</button>
+                    <button class="btn-pixel btn-success" data-cy="btn-player-save-columns" onclick="savePlayerColumnsEdit()" style="flex:1;font-size:8px;padding:10px;">⚔️ SALVAR</button>
                 </div>
             </div>
         </div>

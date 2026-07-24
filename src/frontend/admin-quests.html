@@ -66,7 +66,7 @@
                         <label for="questLabels">Labels (opcional, separadas por vírgula)</label>
                         <input type="text" id="questLabels" class="pixel-input" data-cy="input-quest-labels" placeholder="Ex: bug, ux, p1">
                     </div>
-                    <button type="submit" class="btn-pixel" data-cy="btn-submit-quest" style="background-color: #c0392b; padding: 15px;">FORJAR QUEST</button>
+                    <button type="submit" class="btn-pixel btn-danger" data-cy="btn-submit-quest" style="padding: 15px;">FORJAR QUEST</button>
                 </form>
             </div>
 
@@ -135,7 +135,7 @@
     <!-- Modal de Detalhe da Quest (Admin) -->
     <div id="questAdminDetailModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeQuestDetail()">
         <div class="modal-content" style="max-width:540px;width:95%;max-height:88vh;overflow-y:auto;position:relative;">
-            <button class="btn-pixel" style="position:absolute;top:14px;right:14px;font-size:10px;padding:7px 11px;background:#2c3e50;z-index:2;" data-cy="btn-close-quest-detail" onclick="closeQuestDetail()">✕</button>
+            <button class="btn-pixel btn-neutral" style="position:absolute;top:14px;right:14px;font-size:10px;padding:7px 11px;z-index:2;" data-cy="btn-close-quest-detail" onclick="closeQuestDetail()">✕</button>
 
             <div style="padding-right:52px;">
                 <div id="qdm-a-type-badge"></div>
@@ -145,7 +145,7 @@
 
             <!-- Controles do admin -->
             <div id="qdm-a-controls" style="display:flex;gap:8px;margin-bottom:12px;">
-                <button type="button" class="btn-pixel" data-cy="btn-admin-edit-quest" style="flex:1;font-size:8px;background:#2980b9;" onclick="adminToggleEditMode(true)">✏️ EDITAR</button>
+                <button type="button" class="btn-pixel btn-info" data-cy="btn-admin-edit-quest" style="flex:1;font-size:8px;" onclick="adminToggleEditMode(true)">✏️ EDITAR</button>
             </div>
 
             <!-- Formulário de edição (admin) — título, tipo, XP/Gold, SLA, guilda, sprint, labels -->
@@ -271,8 +271,8 @@
 
             <!-- Rodapé de ações da edição -->
             <div id="qdm-a-edit-actions" style="display:none;gap:8px;margin-bottom:14px;">
-                <button type="button" class="btn-pixel" data-cy="btn-admin-save-edit" style="flex:1;background:#27ae60;" onclick="adminSaveEdit()">SALVAR</button>
-                <button type="button" class="btn-pixel" data-cy="btn-admin-cancel-edit" style="flex:1;background:#7f8c8d;" onclick="adminCancelEdit()">CANCELAR</button>
+                <button type="button" class="btn-pixel btn-success" data-cy="btn-admin-save-edit" style="flex:1;" onclick="adminSaveEdit()">SALVAR</button>
+                <button type="button" class="btn-pixel btn-muted" data-cy="btn-admin-cancel-edit" style="flex:1;" onclick="adminCancelEdit()">CANCELAR</button>
             </div>
 
             <!-- Timeline de atividade + comentários -->
@@ -301,8 +301,8 @@
                 Você tem alterações não salvas. Sair agora vai descartar tudo.
             </p>
             <div style="display:flex;gap:10px;">
-                <button class="btn-pixel" style="flex:1;background:#7f8c8d;" data-cy="btn-admin-keep-editing" onclick="adminCancelDiscard()">CONTINUAR EDITANDO</button>
-                <button class="btn-pixel" style="flex:1;background:#c0392b;" data-cy="btn-admin-discard-edit" onclick="adminConfirmDiscard()">SAIR SEM SALVAR</button>
+                <button class="btn-pixel btn-muted" style="flex:1;" data-cy="btn-admin-keep-editing" onclick="adminCancelDiscard()">CONTINUAR EDITANDO</button>
+                <button class="btn-pixel btn-danger" style="flex:1;" data-cy="btn-admin-discard-edit" onclick="adminConfirmDiscard()">SAIR SEM SALVAR</button>
             </div>
         </div>
     </div>
@@ -316,8 +316,8 @@
                 Esta ação não pode ser desfeita.
             </p>
             <div style="display:flex;gap:10px;">
-                <button class="btn-pixel" style="flex:1;background:#7f8c8d;" data-cy="btn-cancel-delete-quest" onclick="closeDeleteConfirmModal()">CANCELAR</button>
-                <button class="btn-pixel" style="flex:1;background:#c0392b;" data-cy="btn-confirm-delete-quest" onclick="confirmDeleteQuest()">EXCLUIR</button>
+                <button class="btn-pixel btn-muted" style="flex:1;" data-cy="btn-cancel-delete-quest" onclick="closeDeleteConfirmModal()">CANCELAR</button>
+                <button class="btn-pixel btn-danger" style="flex:1;" data-cy="btn-confirm-delete-quest" onclick="confirmDeleteQuest()">EXCLUIR</button>
             </div>
         </div>
     </div>

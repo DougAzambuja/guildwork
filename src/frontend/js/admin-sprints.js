@@ -301,7 +301,7 @@ function renderSprintsList(sprints) {
                         <span class="status-badge" style="background:${st.color}; font-size:8px; padding:3px 8px;">${st.label}</span>
                         <span style="font-size:9px; color:#2ecc71;">${s.quests_done || 0}/${s.quest_count || 0} quests</span>
                         <button class="btn-pixel" data-cy="btn-view-board" style="font-size:7px; padding:4px 8px; background:#2980b9;" onclick="goToBoard('${s._id}')">Board</button>
-                        <button class="btn-pixel" data-cy="btn-edit-sprint" style="font-size:7px; padding:4px 8px;" onclick="openEditSprintModal('${s._id}', ${JSON.stringify(s).replace(/"/g, '&quot;')})">Editar</button>
+                        <button class="btn-pixel btn-info" data-cy="btn-edit-sprint" style="font-size:7px; padding:4px 8px;" onclick="openEditSprintModal('${s._id}', ${JSON.stringify(s).replace(/"/g, '&quot;')})">Editar</button>
                         <button class="btn-pixel" data-cy="btn-delete-sprint" style="font-size:7px; padding:4px 8px; background:#e74c3c;" onclick="deleteSprint('${s._id}')">Excluir</button>
                     </div>
                 </div>

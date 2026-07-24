@@ -146,7 +146,7 @@ function renderUsersPage() {
                 <td><span class="status-badge ${p.is_cursed ? 'cursed' : 'online'}">
                     ${p.is_cursed ? '🚨 Maldição' : '✅ OK'}
                 </span></td>
-                <td><button class="btn-pixel" style="font-size:8px;padding:4px 8px;" data-cy="btn-edit-${p._id}" onclick="openEditUserModal('${p._id}')">Editar</button></td>
+                <td><button class="btn-pixel btn-info" style="font-size:8px;padding:4px 8px;" data-cy="btn-edit-${p._id}" onclick="openEditUserModal('${p._id}')">Editar</button></td>
             </tr>
         `;
     }).join('');

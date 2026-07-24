@@ -260,7 +260,7 @@
         <div class="dashboard-section" data-cy="board-header-section">
             <div class="board-header">
                 <div>
-                    <a href="admin-sprints.html" class="btn-pixel" style="font-size:7px; padding:6px 10px; text-decoration:none; background:#2c3e50;" data-cy="btn-back-sprints">← VOLTAR</a>
+                    <a href="admin-sprints.html" class="btn-pixel btn-neutral" style="font-size:7px; padding:6px 10px; text-decoration:none;" data-cy="btn-back-sprints">← VOLTAR</a>
                     <h2 class="section-title" id="sprintTitle" style="margin-top:12px; margin-bottom:4px;">Carregando sprint...</h2>
                     <div class="board-meta" id="sprintMeta" data-cy="sprint-board-meta"></div>
                 </div>
@@ -312,7 +312,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
                 <div style="display:flex;align-items:center;gap:10px;">
                     <h2 class="section-title" style="margin:0; border:none;">⚔️ BOARD DE MISSÕES</h2>
-                    <button class="btn-pixel" data-cy="btn-edit-columns" onclick="openEditColumnsModal()" style="font-size:8px;padding:5px 10px;background:#2c3e50;">⚙️ Colunas</button>
+                    <button class="btn-pixel btn-neutral" data-cy="btn-edit-columns" onclick="openEditColumnsModal()" style="font-size:8px;padding:5px 10px;">⚙️ Colunas</button>
                 </div>
                 <div class="faction-filters" data-cy="guild-filters" id="guildFilters">
                     <button class="faction-filter-btn active" data-cy="filter-all-guilds" onclick="setGuildFilter(null, this)">🏰 Todas</button>
@@ -362,7 +362,7 @@
                     <div id="bqd-parent-breadcrumb" style="display:none;margin-bottom:6px;"></div>
                     <h2 id="bqd-title" class="section-title" style="margin:0;border:none;font-size:9px;word-break:break-word;"></h2>
                 </div>
-                <button class="btn-pixel" style="font-size:10px;padding:4px 10px;background:#c0392b;border-color:#e74c3c;flex-shrink:0;" data-cy="btn-close-board-quest-detail" onclick="closeBoardQuestDetail()">✕</button>
+                <button class="btn-pixel btn-neutral" style="font-size:10px;padding:4px 10px;flex-shrink:0;" data-cy="btn-close-board-quest-detail" onclick="closeBoardQuestDetail()">✕</button>
             </div>
 
             <!-- Meta chips -->
@@ -431,7 +431,7 @@
                         <input type="text" id="bqd-edit-labels" class="pixel-input" data-cy="input-bqd-labels" style="font-size:8px;" placeholder="bug, urgente, frontend">
                     </div>
                     <div>
-                        <button class="btn-pixel" style="font-size:7px;padding:6px 14px;background:#27ae60;" data-cy="btn-save-board-quest" onclick="submitBoardQuestEdit()">SALVAR</button>
+                        <button class="btn-pixel btn-success" style="font-size:7px;padding:6px 14px;" data-cy="btn-save-board-quest" onclick="submitBoardQuestEdit()">SALVAR</button>
                     </div>
                 </div>
             </div>
@@ -507,7 +507,7 @@
                     <input type="text" id="bqd-comment-input" class="pixel-input" data-cy="input-bqd-comment"
                            style="flex:1;font-size:8px;" placeholder="Adicionar comentário..."
                            onkeydown="if(event.key==='Enter')submitBoardComment()">
-                    <button class="btn-pixel" style="font-size:7px;padding:6px 10px;background:#2980b9;flex-shrink:0;" data-cy="btn-send-board-comment" onclick="submitBoardComment()">ENVIAR</button>
+                    <button class="btn-pixel btn-info" style="font-size:7px;padding:6px 10px;flex-shrink:0;" data-cy="btn-send-board-comment" onclick="submitBoardComment()">ENVIAR</button>
                 </div>
             </div>
         </div>
@@ -528,8 +528,8 @@
                     <div class="modal-hint">Selecione uma sprint ou deixe em branco para mover ao backlog.</div>
                 </div>
                 <div style="display:flex; gap:8px; margin-top:6px;">
-                    <button class="btn-pixel" data-cy="btn-confirm-transfer-sprint" onclick="confirmTransferSprint()" style="background:#27ae60;">MOVER</button>
-                    <button class="btn-pixel" style="background:#7f8c8d;" onclick="closeModal('modalTransferSprint')">CANCELAR</button>
+                    <button class="btn-pixel btn-success" data-cy="btn-confirm-transfer-sprint" onclick="confirmTransferSprint()">MOVER</button>
+                    <button class="btn-pixel btn-muted" onclick="closeModal('modalTransferSprint')">CANCELAR</button>
                 </div>
             </div>
         </div>
@@ -551,8 +551,8 @@
                     </select>
                 </div>
                 <div style="display:flex; gap:8px; margin-top:6px;">
-                    <button class="btn-pixel" data-cy="btn-confirm-transfer-faction" onclick="confirmTransferFaction()" style="background:#2980b9;">TRANSFERIR</button>
-                    <button class="btn-pixel" style="background:#7f8c8d;" onclick="closeModal('modalTransferFaction')">CANCELAR</button>
+                    <button class="btn-pixel btn-info" data-cy="btn-confirm-transfer-faction" onclick="confirmTransferFaction()">TRANSFERIR</button>
+                    <button class="btn-pixel btn-muted" onclick="closeModal('modalTransferFaction')">CANCELAR</button>
                 </div>
             </div>
         </div>
@@ -582,8 +582,8 @@
                     <div class="modal-hint">A cópia sempre começa como "A Fazer" sem atribuição.</div>
                 </div>
                 <div style="display:flex; gap:8px; margin-top:6px;">
-                    <button class="btn-pixel" data-cy="btn-confirm-copy-quest" onclick="confirmCopyQuest()" style="background:#8e44ad;">COPIAR</button>
-                    <button class="btn-pixel" style="background:#7f8c8d;" onclick="closeModal('modalCopyQuest')">CANCELAR</button>
+                    <button class="btn-pixel btn-special" data-cy="btn-confirm-copy-quest" onclick="confirmCopyQuest()">COPIAR</button>
+                    <button class="btn-pixel btn-muted" onclick="closeModal('modalCopyQuest')">CANCELAR</button>
                 </div>
             </div>
         </div>
@@ -599,8 +599,8 @@
                 A quest será movida para o backlog. O status e atribuição não serão alterados.
             </p>
             <div style="display:flex; gap:8px;">
-                <button class="btn-pixel" data-cy="btn-confirm-remove-quest" onclick="confirmRemoveQuest()" style="background:#e74c3c;">REMOVER</button>
-                <button class="btn-pixel" style="background:#7f8c8d;" onclick="closeModal('modalRemoveQuest')">CANCELAR</button>
+                <button class="btn-pixel btn-danger" data-cy="btn-confirm-remove-quest" onclick="confirmRemoveQuest()">REMOVER</button>
+                <button class="btn-pixel btn-muted" onclick="closeModal('modalRemoveQuest')">CANCELAR</button>
             </div>
         </div>
     </div>
@@ -957,14 +957,14 @@
                     <div style="font-size:10px;color:#3498db;margin-bottom:6px;">⚙️ CONFIGURAR KANBAN</div>
                     <div id="editColumnsGuildName" style="font-size:7px;color:#5b9fc8;line-height:1.8;">—</div>
                 </div>
-                <button class="btn-pixel" onclick="closeEditColumnsModal()" style="font-size:8px;padding:5px 9px;background:#2c3e50;">✕</button>
+                <button class="btn-pixel btn-neutral" onclick="closeEditColumnsModal()" style="font-size:8px;padding:5px 9px;">✕</button>
             </div>
             <div style="padding:20px;">
                 <div id="editColumnsList" style="max-height:400px;overflow-y:auto;margin-bottom:14px;padding-right:4px;"></div>
-                <button class="btn-pixel" data-cy="btn-add-column" onclick="addNewColumn()" style="width:100%;font-size:8px;padding:10px;background:#2c3e50;margin-bottom:16px;">+ NOVA COLUNA</button>
+                <button class="btn-pixel btn-neutral" data-cy="btn-add-column" onclick="addNewColumn()" style="width:100%;font-size:8px;padding:10px;margin-bottom:16px;">+ NOVA COLUNA</button>
                 <div style="display:flex;gap:8px;">
-                    <button class="btn-pixel" onclick="closeEditColumnsModal()" style="flex:1;font-size:8px;padding:10px;background:#7f8c8d;">CANCELAR</button>
-                    <button class="btn-pixel" data-cy="btn-save-columns" onclick="saveColumnsEdit()" style="flex:1;font-size:8px;padding:10px;background:#2980b9;">⚙️ APLICAR</button>
+                    <button class="btn-pixel btn-muted" onclick="closeEditColumnsModal()" style="flex:1;font-size:8px;padding:10px;">CANCELAR</button>
+                    <button class="btn-pixel btn-info" data-cy="btn-save-columns" onclick="saveColumnsEdit()" style="flex:1;font-size:8px;padding:10px;">⚙️ APLICAR</button>
                 </div>
             </div>
         </div>

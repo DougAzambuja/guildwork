@@ -256,7 +256,7 @@ function renderKanbanStructure() {
     const toolbar = document.getElementById('kanban-toolbar');
     if (toolbar) {
         toolbar.innerHTML = isGuildLeader
-            ? `<button class="btn-pixel" data-cy="btn-edit-columns" onclick="openPlayerColumnsModal()" style="font-size:15px;padding:8px 14px;background:#8e44ad;border:2px solid #9b59b6;">⚙️</button>`
+            ? `<button class="btn-pixel btn-special" data-cy="btn-edit-columns" onclick="openPlayerColumnsModal()" style="font-size:15px;padding:8px 14px;">⚙️</button>`
             : '';
     }
 
